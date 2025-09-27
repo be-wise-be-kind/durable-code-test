@@ -31,10 +31,19 @@ repos:
         stages: [pre-commit]
         verbose: true
 
+      # Ensure linting containers are running
+      - id: ensure-lint-containers
+        name: Start linting containers if needed
+        entry: bash -c 'BRANCH=$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]"); if ! docker ps --format "{{.Names}}" | grep -q "durable-code-python-linter-$BRANCH\|durable-code-js-linter-$BRANCH"; then echo "Starting linting containers..."; make lint-start; fi'
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+        always_run: true
+
       # Python Linters - run in Docker on changed files only
       - id: python-ruff
         name: Ruff (Python format + lint)
-        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.py$" | grep -E "^(app|tools)/" || true); if [ -n "$files" ]; then docker exec durable-code-backend-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]")-dev bash -c "cd /app && poetry run ruff format --check $files && poetry run ruff check $files"; fi'
+        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.py$" | grep -E "^(durable-code-app/backend/app|tools)/" | sed "s|^durable-code-app/backend/|/workspace/backend/|; s|^tools/|/workspace/tools/|" || true); if [ -n "$files" ]; then docker exec durable-code-python-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") bash -c "cd /workspace/backend && poetry run ruff format --check $files && poetry run ruff check $files"; fi'
         language: system
         files: \.(py)$
         pass_filenames: false
@@ -42,7 +51,7 @@ repos:
 
       - id: python-flake8
         name: Flake8 (Python style)
-        entry: bash -c 'app_files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^app/.*\.py$" || true); tools_files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^tools/.*\.py$" || true); if [ -n "$app_files" ]; then docker exec durable-code-backend-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]")-dev bash -c "cd /app && poetry run flake8 $app_files"; fi; if [ -n "$tools_files" ]; then docker exec durable-code-backend-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]")-dev bash -c "cd /app && poetry run flake8 $tools_files --config tools/.flake8"; fi'
+        entry: bash -c 'app_files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^durable-code-app/backend/app/.*\.py$" | sed "s|^durable-code-app/backend/|/workspace/backend/|" || true); tools_files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^tools/.*\.py$" | sed "s|^tools/|/workspace/tools/|" || true); if [ -n "$app_files" ]; then docker exec durable-code-python-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") bash -c "cd /workspace/backend && poetry run flake8 $app_files"; fi; if [ -n "$tools_files" ]; then docker exec durable-code-python-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") bash -c "cd /workspace && poetry run flake8 $tools_files --config /workspace/tools/.flake8"; fi'
         language: system
         files: \.(py)$
         pass_filenames: false
@@ -50,7 +59,7 @@ repos:
 
       - id: python-mypy
         name: MyPy (Python type checking)
-        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.py$" || true); if [ -n "$files" ]; then docker exec durable-code-backend-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]")-dev bash -c "cd /app && MYPY_CACHE_DIR=/tmp/mypy_cache poetry run mypy $files"; fi'
+        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.py$" | grep -E "^(durable-code-app/backend|tools)/" | sed "s|^durable-code-app/backend/|/workspace/backend/|; s|^tools/|/workspace/tools/|" || true); if [ -n "$files" ]; then docker exec durable-code-python-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") bash -c "cd /workspace/backend && MYPY_CACHE_DIR=/tmp/mypy_cache poetry run mypy $files"; fi'
         language: system
         files: \.(py)$
         pass_filenames: false
@@ -58,7 +67,7 @@ repos:
 
       - id: python-pylint
         name: Pylint (Python code analysis)
-        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.py$" | grep -E "^(app|tools)/" || true); if [ -n "$files" ]; then docker exec durable-code-backend-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]")-dev bash -c "cd /app && poetry run pylint $files"; fi'
+        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.py$" | grep -E "^(durable-code-app/backend/app|tools)/" | sed "s|^durable-code-app/backend/|/workspace/backend/|; s|^tools/|/workspace/tools/|" || true); if [ -n "$files" ]; then docker exec durable-code-python-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") bash -c "cd /workspace/backend && poetry run pylint $files"; fi'
         language: system
         files: \.(py)$
         pass_filenames: false
@@ -66,7 +75,7 @@ repos:
 
       - id: python-bandit
         name: Bandit (Python security)
-        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.py$" | grep -E "^(app|tools)/" || true); if [ -n "$files" ]; then docker exec durable-code-backend-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]")-dev bash -c "cd /app && poetry run bandit $files"; fi'
+        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.py$" | grep -E "^(durable-code-app/backend/app|tools)/" | sed "s|^durable-code-app/backend/|/workspace/backend/|; s|^tools/|/workspace/tools/|" || true); if [ -n "$files" ]; then docker exec durable-code-python-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") bash -c "cd /workspace/backend && poetry run bandit $files"; fi'
         language: system
         files: \.(py)$
         pass_filenames: false
@@ -74,49 +83,49 @@ repos:
 
       - id: python-xenon
         name: Xenon (Python complexity)
-        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^app/.*\.py$" || true); if [ -n "$files" ]; then docker exec durable-code-backend-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]")-dev bash -c "cd /app && poetry run xenon --max-absolute B --max-modules B --max-average A $files"; fi'
+        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^durable-code-app/backend/app/.*\.py$" | sed "s|^durable-code-app/backend/|/workspace/backend/|" || true); if [ -n "$files" ]; then docker exec durable-code-python-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") bash -c "cd /workspace/backend && poetry run xenon --max-absolute B --max-modules B --max-average A $files"; fi'
         language: system
-        files: ^app/.*\.py$
+        files: ^durable-code-app/backend/app/.*\.py$
         pass_filenames: false
         stages: [pre-commit]
 
       # TypeScript/JavaScript Linters - run in Docker on changed files only
       - id: typescript-check
         name: TypeScript type checking
-        entry: bash -c 'if git diff --cached --name-only --diff-filter=ACM | grep -qE "frontend/.*\.(ts|tsx)$"; then docker exec durable-code-frontend-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]")-dev sh -c "npm run typecheck"; fi'
+        entry: bash -c 'if git diff --cached --name-only --diff-filter=ACM | grep -qE "durable-code-app/frontend/.*\.(ts|tsx)$"; then docker exec durable-code-js-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") sh -c "cd /workspace/frontend && npm run typecheck"; fi'
         language: system
-        files: ^frontend/.*\.(ts|tsx)$
+        files: ^durable-code-app/frontend/.*\.(ts|tsx)$
         pass_filenames: false
         stages: [pre-commit]
 
       - id: eslint
         name: ESLint (JavaScript/TypeScript)
-        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^frontend/.*\.(ts|tsx|js|jsx)$" | sed "s|^frontend/||" || true); if [ -n "$files" ]; then docker exec durable-code-frontend-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]")-dev sh -c "npm run lint -- $files"; fi'
+        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^durable-code-app/frontend/.*\.(ts|tsx|js|jsx)$" | sed "s|^durable-code-app/frontend/||" || true); if [ -n "$files" ]; then docker exec durable-code-js-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") sh -c "cd /workspace/frontend && npm run lint -- $files"; fi'
         language: system
-        files: ^frontend/.*\.(ts|tsx|js|jsx)$
+        files: ^durable-code-app/frontend/.*\.(ts|tsx|js|jsx)$
         pass_filenames: false
         stages: [pre-commit]
 
       - id: stylelint
         name: Stylelint (CSS)
-        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^frontend/.*\.css$" | sed "s|^frontend/||" || true); if [ -n "$files" ]; then docker exec durable-code-frontend-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]")-dev sh -c "npm run lint:css -- $files"; fi'
+        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^durable-code-app/frontend/.*\.css$" | sed "s|^durable-code-app/frontend/||" || true); if [ -n "$files" ]; then docker exec durable-code-js-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") sh -c "cd /workspace/frontend && npm run lint:css -- $files"; fi'
         language: system
-        files: ^frontend/.*\.css$
+        files: ^durable-code-app/frontend/.*\.css$
         pass_filenames: false
         stages: [pre-commit]
 
       - id: prettier-check
         name: Prettier (Frontend formatting)
-        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^frontend/.*\.(ts|tsx|js|jsx|css)$" | sed "s|^frontend/||" || true); if [ -n "$files" ]; then docker exec durable-code-frontend-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]")-dev sh -c "npm run format:check -- $files"; fi'
+        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^durable-code-app/frontend/.*\.(ts|tsx|js|jsx|css)$" | sed "s|^durable-code-app/frontend/||" || true); if [ -n "$files" ]; then docker exec durable-code-js-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") sh -c "cd /workspace/frontend && npm run format:check -- $files"; fi'
         language: system
-        files: ^frontend/.*\.(ts|tsx|js|jsx|css)$
+        files: ^durable-code-app/frontend/.*\.(ts|tsx|js|jsx|css)$
         pass_filenames: false
         stages: [pre-commit]
 
       # Custom Design Linters - run on changed files only
       - id: design-linters
         name: Custom design linters
-        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.(py|md)$" | sed "s|^|/app/|" | xargs || true); if [ -n "$files" ]; then docker exec durable-code-backend-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]")-dev bash -c "cd /app && PYTHONPATH=/app/tools python -m design_linters --categories all --format text --fail-on-error '"$files"'"; fi'
+        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.(py|md)$" | sed "s|^|/workspace/root/|" | xargs || true); if [ -n "$files" ]; then docker exec durable-code-python-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") bash -c "cd /workspace && PYTHONPATH=/workspace/tools python -m design_linters --categories all --format text --fail-on-error '"$files"'"; fi'
         language: system
         files: \.(py|md)$
         pass_filenames: false
