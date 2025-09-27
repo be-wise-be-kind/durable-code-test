@@ -1,5 +1,4 @@
 """Main FastAPI application entry point with middleware configuration.
-Test hook update.
 
 Purpose: Main FastAPI application entry point with middleware configuration and error handling.
 Scope: Application initialization, middleware setup, route registration, and global error handlers
