@@ -183,6 +183,43 @@ resource "aws_iam_role_policy" "github_actions_terraform_state" {
           "arn:aws:s3:::durable-code-terraform-state",
           "arn:aws:s3:::durable-code-terraform-state/*"
         ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:CreateBucket",
+          "s3:DeleteBucket",
+          "s3:ListBucket",
+          "s3:GetBucketLocation",
+          "s3:GetBucketVersioning",
+          "s3:PutBucketVersioning",
+          "s3:GetBucketPolicy",
+          "s3:PutBucketPolicy",
+          "s3:DeleteBucketPolicy",
+          "s3:GetBucketPublicAccessBlock",
+          "s3:PutBucketPublicAccessBlock",
+          "s3:GetBucketAcl",
+          "s3:PutBucketAcl",
+          "s3:GetBucketCORS",
+          "s3:PutBucketCORS",
+          "s3:DeleteBucketCORS",
+          "s3:GetBucketLifecycleConfiguration",
+          "s3:PutBucketLifecycleConfiguration",
+          "s3:DeleteBucketLifecycleConfiguration",
+          "s3:GetBucketTagging",
+          "s3:PutBucketTagging",
+          "s3:DeleteBucketTagging",
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject",
+          "s3:DeleteObjectVersion",
+          "s3:GetObjectVersion",
+          "s3:ListBucketVersions"
+        ]
+        Resource = [
+          "arn:aws:s3:::${var.project_name}-*",
+          "arn:aws:s3:::${var.project_name}-*/*"
+        ]
       }
     ]
   })
@@ -225,13 +262,60 @@ resource "aws_iam_role_policy" "github_actions_infrastructure" {
           "ec2:Describe*",
           "ec2:CreateTags",
           "ec2:DeleteTags",
+          # VPC Core Resources
+          "ec2:CreateVpc",
+          "ec2:DeleteVpc",
+          "ec2:ModifyVpcAttribute",
+          "ec2:CreateSubnet",
+          "ec2:DeleteSubnet",
+          "ec2:ModifySubnetAttribute",
+          "ec2:CreateInternetGateway",
+          "ec2:DeleteInternetGateway",
+          "ec2:AttachInternetGateway",
+          "ec2:DetachInternetGateway",
+          # Route Tables
+          "ec2:CreateRouteTable",
+          "ec2:DeleteRouteTable",
+          "ec2:CreateRoute",
+          "ec2:DeleteRoute",
+          "ec2:ReplaceRoute",
+          "ec2:AssociateRouteTable",
           "ec2:DisassociateRouteTable",
+          "ec2:ReplaceRouteTableAssociation",
+          # NAT Gateway
           "ec2:AllocateAddress",
           "ec2:ReleaseAddress",
           "ec2:AssociateAddress",
           "ec2:DisassociateAddress",
           "ec2:CreateNatGateway",
           "ec2:DeleteNatGateway",
+          # Security Groups
+          "ec2:CreateSecurityGroup",
+          "ec2:DeleteSecurityGroup",
+          "ec2:AuthorizeSecurityGroupIngress",
+          "ec2:AuthorizeSecurityGroupEgress",
+          "ec2:RevokeSecurityGroupIngress",
+          "ec2:RevokeSecurityGroupEgress",
+          "ec2:ModifySecurityGroupRules",
+          # VPC Endpoints
+          "ec2:CreateVpcEndpoint",
+          "ec2:DeleteVpcEndpoints",
+          "ec2:ModifyVpcEndpoint",
+          "ec2:DescribeVpcEndpoints",
+          "ec2:DescribeVpcEndpointServices",
+          # Network Interfaces
+          "ec2:CreateNetworkInterface",
+          "ec2:DeleteNetworkInterface",
+          "ec2:AttachNetworkInterface",
+          "ec2:DetachNetworkInterface",
+          "ec2:ModifyNetworkInterfaceAttribute",
+          # Network ACLs
+          "ec2:CreateNetworkAcl",
+          "ec2:DeleteNetworkAcl",
+          "ec2:CreateNetworkAclEntry",
+          "ec2:DeleteNetworkAclEntry",
+          "ec2:ReplaceNetworkAclAssociation",
+          "ec2:ReplaceNetworkAclEntry",
           # ELB permissions
           "elasticloadbalancing:Describe*",
           "elasticloadbalancing:AddTags",
@@ -251,6 +335,8 @@ resource "aws_iam_role_policy" "github_actions_infrastructure" {
           "elasticloadbalancing:CreateRule",
           "elasticloadbalancing:DeleteRule",
           "elasticloadbalancing:ModifyRule",
+          "elasticloadbalancing:RegisterTargets",
+          "elasticloadbalancing:DeregisterTargets",
           # Route53 permissions
           "route53:GetHostedZone",
           "route53:ListHostedZones",
@@ -258,11 +344,17 @@ resource "aws_iam_role_policy" "github_actions_infrastructure" {
           "route53:ListResourceRecordSets",
           "route53:ListTagsForResource",
           "route53:ChangeResourceRecordSets",
+          "route53:CreateHostedZone",
+          "route53:DeleteHostedZone",
           # ACM permissions
           "acm:ListCertificates",
           "acm:DescribeCertificate",
           "acm:GetCertificate",
           "acm:ListTagsForCertificate",
+          "acm:RequestCertificate",
+          "acm:DeleteCertificate",
+          "acm:AddTagsToCertificate",
+          "acm:RemoveTagsFromCertificate",
           # IAM permissions for role and policy management
           "iam:GetRole",
           "iam:CreateRole",
@@ -275,7 +367,8 @@ resource "aws_iam_role_policy" "github_actions_infrastructure" {
           "iam:AttachRolePolicy",
           "iam:DetachRolePolicy",
           "iam:TagRole",
-          "iam:UntagRole"
+          "iam:UntagRole",
+          "iam:UpdateAssumeRolePolicy"
         ]
         Resource = "*"
       }
