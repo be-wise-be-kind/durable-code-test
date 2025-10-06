@@ -282,6 +282,7 @@ resource "aws_iam_role_policy" "github_actions_infrastructure" {
           "ec2:AssociateRouteTable",
           "ec2:DisassociateRouteTable",
           "ec2:ReplaceRouteTableAssociation",
+          "ec2:DescribeRouteTables",
           # NAT Gateway
           "ec2:AllocateAddress",
           "ec2:ReleaseAddress",
@@ -368,7 +369,8 @@ resource "aws_iam_role_policy" "github_actions_infrastructure" {
           "iam:DetachRolePolicy",
           "iam:TagRole",
           "iam:UntagRole",
-          "iam:UpdateAssumeRolePolicy"
+          "iam:UpdateAssumeRolePolicy",
+          "iam:ListInstanceProfilesForRole"
         ]
         Resource = "*"
       }
