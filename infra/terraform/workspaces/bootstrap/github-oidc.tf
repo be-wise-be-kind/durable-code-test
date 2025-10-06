@@ -84,7 +84,20 @@ resource "aws_iam_role_policy" "github_actions_ecr" {
           "ecr:DescribeRepositories",
           "ecr:DescribeImages",
           "ecr:ListImages",
-          "ecr:ListTagsForResource"
+          "ecr:ListTagsForResource",
+          "ecr:CreateRepository",
+          "ecr:DeleteRepository",
+          "ecr:BatchDeleteImage",
+          "ecr:PutImageTagMutability",
+          "ecr:PutImageScanningConfiguration",
+          "ecr:PutEncryptionConfiguration",
+          "ecr:PutLifecyclePolicy",
+          "ecr:GetLifecyclePolicy",
+          "ecr:GetLifecyclePolicyPreview",
+          "ecr:DeleteLifecyclePolicy",
+          "ecr:SetRepositoryPolicy",
+          "ecr:GetRepositoryPolicy",
+          "ecr:DeleteRepositoryPolicy"
         ]
         Resource = "*"
       }
@@ -117,7 +130,12 @@ resource "aws_iam_role_policy" "github_actions_ecs" {
           "ecs:DescribeTasks",
           "ecs:PutClusterCapacityProviders",
           "ecs:TagResource",
-          "ecs:UntagResource"
+          "ecs:UntagResource",
+          "ecs:UpdateCluster",
+          "ecs:UpdateClusterSettings",
+          "ecs:ListTaskDefinitionFamilies",
+          "ecs:DeleteTaskDefinitions",
+          "ecs:UpdateServicePrimaryTaskSet"
         ]
         Resource = "*"
       },
@@ -155,7 +173,10 @@ resource "aws_iam_role_policy" "github_actions_logs" {
           "logs:DescribeLogGroups",
           "logs:ListTagsForResource",
           "logs:TagResource",
-          "logs:UntagResource"
+          "logs:UntagResource",
+          "logs:PutRetentionPolicy",
+          "logs:DeleteRetentionPolicy",
+          "logs:GetLogEvents"
         ]
         Resource = "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:*"
       }
@@ -214,7 +235,11 @@ resource "aws_iam_role_policy" "github_actions_terraform_state" {
           "s3:DeleteObject",
           "s3:DeleteObjectVersion",
           "s3:GetObjectVersion",
-          "s3:ListBucketVersions"
+          "s3:ListBucketVersions",
+          "s3:GetAccelerateConfiguration",
+          "s3:GetBucketRequestPayment",
+          "s3:GetLifecycleConfiguration",
+          "s3:GetBucketPolicyStatus"
         ]
         Resource = [
           "arn:aws:s3:::${var.project_name}-*",
@@ -338,6 +363,9 @@ resource "aws_iam_role_policy" "github_actions_infrastructure" {
           "elasticloadbalancing:ModifyRule",
           "elasticloadbalancing:RegisterTargets",
           "elasticloadbalancing:DeregisterTargets",
+          "elasticloadbalancing:AddListenerCertificates",
+          "elasticloadbalancing:RemoveListenerCertificates",
+          "elasticloadbalancing:SetRulePriorities",
           # Route53 permissions
           "route53:GetHostedZone",
           "route53:ListHostedZones",
@@ -347,6 +375,10 @@ resource "aws_iam_role_policy" "github_actions_infrastructure" {
           "route53:ChangeResourceRecordSets",
           "route53:CreateHostedZone",
           "route53:DeleteHostedZone",
+          "route53:ListHostedZonesByName",
+          "route53:UpdateHostedZoneComment",
+          "route53:AssociateVPCWithHostedZone",
+          "route53:DisassociateVPCFromHostedZone",
           # ACM permissions
           "acm:ListCertificates",
           "acm:DescribeCertificate",
@@ -356,6 +388,9 @@ resource "aws_iam_role_policy" "github_actions_infrastructure" {
           "acm:DeleteCertificate",
           "acm:AddTagsToCertificate",
           "acm:RemoveTagsFromCertificate",
+          "acm:UpdateCertificateOptions",
+          "acm:RenewCertificate",
+          "acm:ResendValidationEmail",
           # IAM permissions for role and policy management
           "iam:GetRole",
           "iam:CreateRole",
@@ -370,7 +405,13 @@ resource "aws_iam_role_policy" "github_actions_infrastructure" {
           "iam:TagRole",
           "iam:UntagRole",
           "iam:UpdateAssumeRolePolicy",
-          "iam:ListInstanceProfilesForRole"
+          "iam:ListInstanceProfilesForRole",
+          "iam:UpdateRole",
+          "iam:UpdateRoleDescription",
+          "iam:ListRoles",
+          "iam:ListRoleTags",
+          "iam:PutRolePermissionsBoundary",
+          "iam:DeleteRolePermissionsBoundary"
         ]
         Resource = "*"
       }
