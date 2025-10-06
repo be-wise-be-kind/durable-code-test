@@ -35,7 +35,19 @@ echo "Build Timestamp: ${BUILD_TIMESTAMP}"
 
 # Login to ECR
 echo "Logging into ECR..."
-aws ecr get-login-password --region "${AWS_REGION}" | docker login --username AWS --password-stdin "${ECR_REGISTRY}"
+if [ -n "${GITHUB_ACTIONS}" ]; then
+  # Running in GitHub Actions - use OIDC credentials from environment
+  echo "Using AWS credentials from GitHub Actions OIDC"
+  aws ecr get-login-password --region "${AWS_REGION}" | docker login --username AWS --password-stdin "${ECR_REGISTRY}"
+elif [ -n "${AWS_PROFILE}" ]; then
+  # Running locally with AWS profile
+  echo "Using AWS profile: ${AWS_PROFILE}"
+  aws ecr get-login-password --region "${AWS_REGION}" --profile "${AWS_PROFILE}" | docker login --username AWS --password-stdin "${ECR_REGISTRY}"
+else
+  # Fallback to environment credentials
+  echo "Using AWS credentials from environment"
+  aws ecr get-login-password --region "${AWS_REGION}" | docker login --username AWS --password-stdin "${ECR_REGISTRY}"
+fi
 
 # Build and tag images
 echo "Building Docker images..."
@@ -65,11 +77,18 @@ docker push "${ECR_REGISTRY}/durableai-${ENV}-backend:${TAG}"
 echo "=== Registering New Task Definitions ==="
 echo "Creating new task definitions with updated images..."
 
+# Set AWS CLI profile flag if needed
+AWS_PROFILE_FLAG=""
+if [ -z "${GITHUB_ACTIONS}" ] && [ -n "${AWS_PROFILE}" ]; then
+  AWS_PROFILE_FLAG="--profile ${AWS_PROFILE}"
+fi
+
 # Get current task definitions and update image tags
 echo "Fetching current frontend task definition..."
 aws ecs describe-task-definition \
   --task-definition "durableai-${ENV}-frontend" \
   --region "${AWS_REGION}" \
+  ${AWS_PROFILE_FLAG} \
   --query 'taskDefinition' \
   --output json > /tmp/frontend-task-def.json
 
@@ -80,6 +99,7 @@ echo "Registering new frontend task definition..."
 FRONTEND_TASK_ARN=$(aws ecs register-task-definition \
   --cli-input-json file:///tmp/frontend-task-def-new.json \
   --region "${AWS_REGION}" \
+  ${AWS_PROFILE_FLAG} \
   --query 'taskDefinition.taskDefinitionArn' \
   --output text)
 
@@ -87,6 +107,7 @@ echo "Fetching current backend task definition..."
 aws ecs describe-task-definition \
   --task-definition "durableai-${ENV}-backend" \
   --region "${AWS_REGION}" \
+  ${AWS_PROFILE_FLAG} \
   --query 'taskDefinition' \
   --output json > /tmp/backend-task-def.json
 
@@ -97,6 +118,7 @@ echo "Registering new backend task definition..."
 BACKEND_TASK_ARN=$(aws ecs register-task-definition \
   --cli-input-json file:///tmp/backend-task-def-new.json \
   --region "${AWS_REGION}" \
+  ${AWS_PROFILE_FLAG} \
   --query 'taskDefinition.taskDefinitionArn' \
   --output text)
 
@@ -111,6 +133,7 @@ aws ecs update-service \
   --task-definition "${FRONTEND_TASK_ARN}" \
   --force-new-deployment \
   --region "${AWS_REGION}" \
+  ${AWS_PROFILE_FLAG} \
   --output json > /dev/null
 
 echo "Updating backend service with new task definition..."
@@ -120,6 +143,7 @@ aws ecs update-service \
   --task-definition "${BACKEND_TASK_ARN}" \
   --force-new-deployment \
   --region "${AWS_REGION}" \
+  ${AWS_PROFILE_FLAG} \
   --output json > /dev/null
 
 echo "=== Deployment Complete ==="
@@ -129,4 +153,4 @@ echo ""
 echo "The services are now redeploying. Check the ECS console for deployment status."
 echo "To access the application, check the ALB DNS name:"
 echo ""
-aws elbv2 describe-load-balancers --names "durableai-${ENV}-alb" --query 'LoadBalancers[0].DNSName' --output text
+aws elbv2 describe-load-balancers --names "durableai-${ENV}-alb" ${AWS_PROFILE_FLAG} --query 'LoadBalancers[0].DNSName' --output text
