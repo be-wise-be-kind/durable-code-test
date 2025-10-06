@@ -106,7 +106,7 @@ linter_rules:
         - '^\\.ai/[^/]+\\.md$'
         - '^\\.ai/docs/[^/]+\\.md$'
         - '^\\.ai/features/[^/]+\\.md$'
-        - '^\\.ai/howto/[^/]+\\.md$'
+        - '^\\.ai/howtos/[^/]+\\.md$'
         - '^\\.ai/templates/[^/]+\\.template$'
       deny:
         - '\\.py$'
