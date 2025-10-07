@@ -115,7 +115,8 @@ jobs:
           ENV="${{ inputs.environment || 'dev' }}"
 
           echo "📦 Starting application deployment..."
-          make deploy ENV="$ENV" AWS_PROFILE=""
+          unset AWS_PROFILE
+          make deploy ENV="$ENV"
 
       - name: Verify application health
         if: ${{ inputs.deploy_app == true && inputs.dry_run != true }}
