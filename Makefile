@@ -131,24 +131,32 @@ install-hooks: ## Install pre-commit hooks
 # Deployment targets
 deploy: ## Deploy application to dev environment (assumes infrastructure is up)
 	@echo "$(CYAN)Deploying application to development environment...$(NC)"
-	@echo "$(YELLOW)Environment: dev$(NC)"
+	@echo "$(YELLOW)Environment: $(ENV)$(NC)"
 	@echo "$(YELLOW)This assumes infrastructure has been deployed via 'make infra-up'$(NC)"
 	@echo ""
 	@echo "$(YELLOW)Running deployment script...$(NC)"
-	@export AWS_PROFILE=terraform-deploy && ENV=dev ./infra/scripts/deploy-app.sh
+	@if [ -n "$(AWS_PROFILE)" ]; then \
+		export AWS_PROFILE=$(AWS_PROFILE) && ENV=$(ENV) ./infra/scripts/deploy-app.sh; \
+	else \
+		ENV=$(ENV) ./infra/scripts/deploy-app.sh; \
+	fi
 	@echo ""
 	@echo "$(GREEN)✓ Deployment complete!$(NC)"
 	@echo "$(YELLOW)Checking application URL...$(NC)"
 	@echo "Your application should be available at:"
-	@aws elbv2 describe-load-balancers --names durable-code-dev-alb --query 'LoadBalancers[0].DNSName' --output text 2>/dev/null | sed 's/^/  https:\/\//' || echo "  $(RED)Unable to retrieve ALB URL - check AWS credentials$(NC)"
+	@if [ -n "$(AWS_PROFILE)" ]; then \
+		export AWS_PROFILE=$(AWS_PROFILE) && aws elbv2 describe-load-balancers --names durableai-$(ENV)-alb --query 'LoadBalancers[0].DNSName' --output text 2>/dev/null | sed 's/^/  http:\/\//'; \
+	else \
+		aws elbv2 describe-load-balancers --names durableai-$(ENV)-alb --query 'LoadBalancers[0].DNSName' --output text 2>/dev/null | sed 's/^/  http:\/\//'; \
+	fi || echo "  $(RED)Unable to retrieve ALB URL - check AWS credentials$(NC)"
 
 deploy-check: ## Check if infrastructure is deployed and ready
 	@echo "$(CYAN)Checking infrastructure status...$(NC)"
-	@export AWS_PROFILE=terraform-deploy && \
-	if aws elbv2 describe-load-balancers --names durable-code-dev-alb >/dev/null 2>&1; then \
+	@if [ -n "$(AWS_PROFILE)" ]; then export AWS_PROFILE=$(AWS_PROFILE); fi && \
+	if aws elbv2 describe-load-balancers --names durableai-$(ENV)-alb >/dev/null 2>&1; then \
 		echo "$(GREEN)✓ Infrastructure appears to be deployed$(NC)"; \
 		echo "$(YELLOW)ALB DNS:$(NC)"; \
-		aws elbv2 describe-load-balancers --names durable-code-dev-alb --query 'LoadBalancers[0].DNSName' --output text | sed 's/^/  https:\/\//'; \
+		aws elbv2 describe-load-balancers --names durableai-$(ENV)-alb --query 'LoadBalancers[0].DNSName' --output text | sed 's/^/  http:\/\//'; \
 	else \
 		echo "$(RED)❌ Infrastructure not found!$(NC)"; \
 		echo "$(YELLOW)Please run: make infra-up$(NC)"; \
