@@ -103,10 +103,12 @@ data "aws_ecr_repository" "frontend" {
 
 # ALB moved to runtime workspace - created directly instead of looked up
 
-# Route53 Hosted Zone Lookup (conditional - only if domain is configured)
-data "aws_route53_zone" "main" {
-  count = var.domain_name != "" ? 1 : 0
-  name  = var.domain_name
+# Route53 Hosted Zone from base workspace
+# Get the zone_id and name from base workspace remote state
+# The zone is environment-specific (e.g., dev.durableaicoding.net)
+locals {
+  route53_zone_id   = var.domain_name != "" ? data.terraform_remote_state.base.outputs.route53_zone_id : ""
+  route53_zone_name = var.domain_name != "" ? data.terraform_remote_state.base.outputs.route53_zone_name : ""
 }
 
 # ACM Certificate Lookup (conditional - only if domain is configured)
