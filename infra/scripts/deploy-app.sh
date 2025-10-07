@@ -37,6 +37,8 @@ echo "Build Timestamp: ${BUILD_TIMESTAMP}"
 echo "Logging into ECR..."
 if [ -n "${GITHUB_ACTIONS}" ]; then
   # Running in GitHub Actions - use OIDC credentials from environment
+  # Unset AWS_PROFILE to prevent it from overriding OIDC credentials
+  unset AWS_PROFILE
   echo "Using AWS credentials from GitHub Actions OIDC"
   aws ecr get-login-password --region "${AWS_REGION}" | docker login --username AWS --password-stdin "${ECR_REGISTRY}"
 elif [ -n "${AWS_PROFILE}" ]; then
