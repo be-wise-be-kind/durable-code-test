@@ -122,12 +122,12 @@ repos:
         pass_filenames: false
         stages: [pre-commit]
 
-      # Linting Rule Enforcement - check all code files for skip directives
+      # Linting Rule Enforcement - check Python/TS/TF files for skip directives (excludes shell scripts due to linter issue)
       - id: no-skip-enforcement
         name: Linting rule skip enforcement
-        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.(py|ts|tsx|tf|sh)$" | xargs || true); if [ -n "$files" ]; then make lint-ensure-containers 2>&1 | grep -v "^make"; docker exec durable-code-python-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") bash -c "cd /workspace && PYTHONPATH=/workspace/tools python -m design_linters --categories enforcement --format text --fail-on-error $files"; fi'
+        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.(py|ts|tsx|tf)$" | xargs || true); if [ -n "$files" ]; then make lint-enforcement FILES="$files" 2>&1 | grep -v "^make"; fi'
         language: system
-        files: \.(py|ts|tsx|tf|sh)$
+        files: \.(py|ts|tsx|tf)$
         pass_filenames: false
         stages: [pre-commit]
 

@@ -77,74 +77,126 @@ docker push "${ECR_REGISTRY}/durableai-${ENV}-backend:${TAG}"
 echo "=== Registering New Task Definitions ==="
 echo "Creating new task definitions with updated images..."
 
-# Set AWS CLI profile flag if needed
-AWS_PROFILE_FLAG=""
+# Determine AWS CLI profile usage
+USE_PROFILE=false
 if [ -z "${GITHUB_ACTIONS}" ] && [ -n "${AWS_PROFILE}" ]; then
-  AWS_PROFILE_FLAG="--profile ${AWS_PROFILE}"
+  USE_PROFILE=true
 fi
 
 # Get current task definitions and update image tags
 echo "Fetching current frontend task definition..."
-aws ecs describe-task-definition \
-  --task-definition "durableai-${ENV}-frontend" \
-  --region "${AWS_REGION}" \
-  ${AWS_PROFILE_FLAG} \
-  --query 'taskDefinition' \
-  --output json > /tmp/frontend-task-def.json
+if [ "${USE_PROFILE}" = true ]; then
+  aws ecs describe-task-definition \
+    --task-definition "durableai-${ENV}-frontend" \
+    --region "${AWS_REGION}" \
+    --profile "${AWS_PROFILE}" \
+    --query 'taskDefinition' \
+    --output json > /tmp/frontend-task-def.json
+else
+  aws ecs describe-task-definition \
+    --task-definition "durableai-${ENV}-frontend" \
+    --region "${AWS_REGION}" \
+    --query 'taskDefinition' \
+    --output json > /tmp/frontend-task-def.json
+fi
 
 # Update the image tag, ensure port 3000, and fix health check in the task definition
 jq ".containerDefinitions[0].image = \"${ECR_REGISTRY}/durableai-${ENV}-frontend:${TAG}\" | .containerDefinitions[0].portMappings[0].containerPort = 3000 | .containerDefinitions[0].portMappings[0].hostPort = 3000 | .containerDefinitions[0].healthCheck.command = [\"CMD-SHELL\", \"curl -f http://localhost:3000/ || exit 1\"] | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)" /tmp/frontend-task-def.json > /tmp/frontend-task-def-new.json
 
 echo "Registering new frontend task definition..."
-FRONTEND_TASK_ARN=$(aws ecs register-task-definition \
-  --cli-input-json file:///tmp/frontend-task-def-new.json \
-  --region "${AWS_REGION}" \
-  ${AWS_PROFILE_FLAG} \
-  --query 'taskDefinition.taskDefinitionArn' \
-  --output text)
+if [ "${USE_PROFILE}" = true ]; then
+  FRONTEND_TASK_ARN=$(aws ecs register-task-definition \
+    --cli-input-json file:///tmp/frontend-task-def-new.json \
+    --region "${AWS_REGION}" \
+    --profile "${AWS_PROFILE}" \
+    --query 'taskDefinition.taskDefinitionArn' \
+    --output text)
+else
+  FRONTEND_TASK_ARN=$(aws ecs register-task-definition \
+    --cli-input-json file:///tmp/frontend-task-def-new.json \
+    --region "${AWS_REGION}" \
+    --query 'taskDefinition.taskDefinitionArn' \
+    --output text)
+fi
 
 echo "Fetching current backend task definition..."
-aws ecs describe-task-definition \
-  --task-definition "durableai-${ENV}-backend" \
-  --region "${AWS_REGION}" \
-  ${AWS_PROFILE_FLAG} \
-  --query 'taskDefinition' \
-  --output json > /tmp/backend-task-def.json
+if [ "${USE_PROFILE}" = true ]; then
+  aws ecs describe-task-definition \
+    --task-definition "durableai-${ENV}-backend" \
+    --region "${AWS_REGION}" \
+    --profile "${AWS_PROFILE}" \
+    --query 'taskDefinition' \
+    --output json > /tmp/backend-task-def.json
+else
+  aws ecs describe-task-definition \
+    --task-definition "durableai-${ENV}-backend" \
+    --region "${AWS_REGION}" \
+    --query 'taskDefinition' \
+    --output json > /tmp/backend-task-def.json
+fi
 
 # Update the image tag in the task definition
 jq ".containerDefinitions[0].image = \"${ECR_REGISTRY}/durableai-${ENV}-backend:${TAG}\" | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)" /tmp/backend-task-def.json > /tmp/backend-task-def-new.json
 
 echo "Registering new backend task definition..."
-BACKEND_TASK_ARN=$(aws ecs register-task-definition \
-  --cli-input-json file:///tmp/backend-task-def-new.json \
-  --region "${AWS_REGION}" \
-  ${AWS_PROFILE_FLAG} \
-  --query 'taskDefinition.taskDefinitionArn' \
-  --output text)
+if [ "${USE_PROFILE}" = true ]; then
+  BACKEND_TASK_ARN=$(aws ecs register-task-definition \
+    --cli-input-json file:///tmp/backend-task-def-new.json \
+    --region "${AWS_REGION}" \
+    --profile "${AWS_PROFILE}" \
+    --query 'taskDefinition.taskDefinitionArn' \
+    --output text)
+else
+  BACKEND_TASK_ARN=$(aws ecs register-task-definition \
+    --cli-input-json file:///tmp/backend-task-def-new.json \
+    --region "${AWS_REGION}" \
+    --query 'taskDefinition.taskDefinitionArn' \
+    --output text)
+fi
 
 echo "=== Updating ECS Services ==="
 echo "Updating services with new task definitions..."
 
 # Update ECS services to use the new task definitions
 echo "Updating frontend service with new task definition..."
-aws ecs update-service \
-  --cluster "durableai-${ENV}-cluster" \
-  --service "durableai-${ENV}-frontend" \
-  --task-definition "${FRONTEND_TASK_ARN}" \
-  --force-new-deployment \
-  --region "${AWS_REGION}" \
-  ${AWS_PROFILE_FLAG} \
-  --output json > /dev/null
+if [ "${USE_PROFILE}" = true ]; then
+  aws ecs update-service \
+    --cluster "durableai-${ENV}-cluster" \
+    --service "durableai-${ENV}-frontend" \
+    --task-definition "${FRONTEND_TASK_ARN}" \
+    --force-new-deployment \
+    --region "${AWS_REGION}" \
+    --profile "${AWS_PROFILE}" \
+    --output json > /dev/null
+else
+  aws ecs update-service \
+    --cluster "durableai-${ENV}-cluster" \
+    --service "durableai-${ENV}-frontend" \
+    --task-definition "${FRONTEND_TASK_ARN}" \
+    --force-new-deployment \
+    --region "${AWS_REGION}" \
+    --output json > /dev/null
+fi
 
 echo "Updating backend service with new task definition..."
-aws ecs update-service \
-  --cluster "durableai-${ENV}-cluster" \
-  --service "durableai-${ENV}-backend" \
-  --task-definition "${BACKEND_TASK_ARN}" \
-  --force-new-deployment \
-  --region "${AWS_REGION}" \
-  ${AWS_PROFILE_FLAG} \
-  --output json > /dev/null
+if [ "${USE_PROFILE}" = true ]; then
+  aws ecs update-service \
+    --cluster "durableai-${ENV}-cluster" \
+    --service "durableai-${ENV}-backend" \
+    --task-definition "${BACKEND_TASK_ARN}" \
+    --force-new-deployment \
+    --region "${AWS_REGION}" \
+    --profile "${AWS_PROFILE}" \
+    --output json > /dev/null
+else
+  aws ecs update-service \
+    --cluster "durableai-${ENV}-cluster" \
+    --service "durableai-${ENV}-backend" \
+    --task-definition "${BACKEND_TASK_ARN}" \
+    --force-new-deployment \
+    --region "${AWS_REGION}" \
+    --output json > /dev/null
+fi
 
 echo "=== Deployment Complete ==="
 echo "Images pushed successfully to ECR"
@@ -153,4 +205,8 @@ echo ""
 echo "The services are now redeploying. Check the ECS console for deployment status."
 echo "To access the application, check the ALB DNS name:"
 echo ""
-aws elbv2 describe-load-balancers --names "durableai-${ENV}-alb" ${AWS_PROFILE_FLAG} --query 'LoadBalancers[0].DNSName' --output text
+if [ "${USE_PROFILE}" = true ]; then
+  aws elbv2 describe-load-balancers --names "durableai-${ENV}-alb" --profile "${AWS_PROFILE}" --query 'LoadBalancers[0].DNSName' --output text
+else
+  aws elbv2 describe-load-balancers --names "durableai-${ENV}-alb" --query 'LoadBalancers[0].DNSName' --output text
+fi
