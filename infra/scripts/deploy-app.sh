@@ -62,6 +62,7 @@ docker build -t "durableai-${ENV}-frontend:${TAG}" \
   --build-arg BUILD_TIMESTAMP="${BUILD_TIMESTAMP}" \
   .
 docker tag "durableai-${ENV}-frontend:${TAG}" "${ECR_REGISTRY}/durableai-${ENV}-frontend:${TAG}"
+docker tag "durableai-${ENV}-frontend:${TAG}" "${ECR_REGISTRY}/durableai-${ENV}-frontend:latest"
 
 # Backend
 echo "Building backend..."
@@ -70,11 +71,14 @@ docker build -t "durableai-${ENV}-backend:${TAG}" \
   --target prod \
   .
 docker tag "durableai-${ENV}-backend:${TAG}" "${ECR_REGISTRY}/durableai-${ENV}-backend:${TAG}"
+docker tag "durableai-${ENV}-backend:${TAG}" "${ECR_REGISTRY}/durableai-${ENV}-backend:latest"
 
 # Push images to ECR
 echo "Pushing images to ECR..."
 docker push "${ECR_REGISTRY}/durableai-${ENV}-frontend:${TAG}"
+docker push "${ECR_REGISTRY}/durableai-${ENV}-frontend:latest"
 docker push "${ECR_REGISTRY}/durableai-${ENV}-backend:${TAG}"
+docker push "${ECR_REGISTRY}/durableai-${ENV}-backend:latest"
 
 echo "=== Registering New Task Definitions ==="
 echo "Creating new task definitions with updated images..."

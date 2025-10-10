@@ -29,7 +29,6 @@ export function QualityAssuranceTab(): ReactElement {
         '18+ active linters ensuring code quality with magic number detection, file organization, and SOLID principles validation',
       linkText: 'View Linter Reports',
       linkHref: '/reports/linter-summary.html',
-      badge: { text: 'Essential', variant: 'essential' as const },
     },
     {
       icon: <FaChartLine />,
@@ -38,7 +37,6 @@ export function QualityAssuranceTab(): ReactElement {
         '99.2% test coverage with comprehensive quality metrics including maintainability scores and performance tracking',
       linkText: 'View Coverage Report',
       linkHref: '/reports/test-coverage.html',
-      badge: { text: 'Quality', variant: 'quality' as const },
     },
     {
       icon: <FaRocket />,
@@ -47,7 +45,6 @@ export function QualityAssuranceTab(): ReactElement {
         'Automated build, lint, test, security, and deployment pipeline with 100% pass rate and sub-10 second execution',
       linkText: 'View Pipeline Status',
       linkHref: '/pipeline?return=Quality',
-      badge: { text: 'Active', variant: 'active' as const },
     },
     {
       icon: <FaCheckCircle />,
@@ -56,7 +53,6 @@ export function QualityAssuranceTab(): ReactElement {
         'Automated compliance checking for coding standards, best practices, and architectural guidelines',
       linkText: 'View Standards',
       linkHref: '/standards?return=QualityAssurance',
-      badge: { text: 'Essential', variant: 'essential' as const },
     },
     {
       icon: <FaBug />,
@@ -65,7 +61,6 @@ export function QualityAssuranceTab(): ReactElement {
         'Proactive bug detection with 0.3 bugs per KLOC and 68% reduction in production issues',
       linkText: 'View Bug Reports',
       linkHref: '/reports/bug-analysis.html',
-      badge: { text: 'Quality', variant: 'quality' as const },
     },
     {
       icon: <FaFileAlt />,
@@ -74,7 +69,6 @@ export function QualityAssuranceTab(): ReactElement {
         'Comprehensive reporting dashboard with real-time metrics, trends, and actionable insights',
       linkText: 'View All Reports',
       linkHref: '/reports?return=Quality',
-      badge: { text: 'Technical', variant: 'technical' as const },
     },
   ];
 

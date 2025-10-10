@@ -2,9 +2,9 @@ name: Morning Infrastructure Startup
 
 on:
   schedule:
-    # 8 AM PST = 3 PM UTC (during PST) / 4 PM UTC (during PDT)
+    # 9 AM PST = 5 PM UTC (during PST) / 4 PM UTC (during PDT)
     # Run Monday-Friday only to restore infrastructure for work day
-    - cron: '0 15 * * 1-5'  # Monday-Friday 3 PM UTC (8 AM PST)
+    - cron: '0 16 * * 1-5'  # Monday-Friday 4 PM UTC (9 AM PDT) - Weekday startup
   workflow_dispatch:
     inputs:
       environment:
@@ -123,23 +123,31 @@ jobs:
           echo "🏥 Verifying application health..."
           ENV="${{ inputs.environment || 'dev' }}"
 
-          # Wait up to 5 minutes for application to be healthy
-          for i in {1..15}; do
-            echo "  Health check attempt $i/15..."
+          # Get ALB DNS name from infrastructure status
+          ALB_DNS=$(make infra-output ENV="$ENV" AWS_PROFILE="" | grep alb_dns_name | cut -d'"' -f4 || echo "")
 
-            # Get ALB DNS name from infrastructure status
-            ALB_DNS=$(make infra-output ENV="$ENV" AWS_PROFILE="" | grep alb_dns_name | cut -d'"' -f4 || echo "")
+          if [[ -z "$ALB_DNS" ]]; then
+            echo "⚠️ Could not retrieve ALB DNS name"
+            echo "📊 Skipping health check - check ECS console for deployment status"
+            exit 0
+          fi
 
-            if [[ -n "$ALB_DNS" ]]; then
-              if curl -f --max-time 10 "http://$ALB_DNS/health" >/dev/null 2>&1; then
-                echo "✅ Application is healthy!"
-                break
-              fi
+          echo "📍 ALB DNS: $ALB_DNS"
+          echo "🔍 Testing health endpoint: http://$ALB_DNS/health"
+
+          # Wait up to 3 minutes for application to be healthy
+          for i in {1..9}; do
+            echo "  Health check attempt $i/9..."
+
+            if curl -f --max-time 10 "http://$ALB_DNS/health" >/dev/null 2>&1; then
+              echo "✅ Application is healthy!"
+              exit 0
             fi
 
-            if [[ $i -eq 15 ]]; then
-              echo "⚠️ Application health check timeout after 5 minutes"
+            if [[ $i -eq 9 ]]; then
+              echo "⚠️ Application health check timeout after 3 minutes"
               echo "📊 This is normal for first startup - application may still be initializing"
+              echo "💡 Check ECS service status for deployment progress"
             fi
 
             sleep 20

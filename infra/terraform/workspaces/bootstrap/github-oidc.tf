@@ -42,9 +42,9 @@ resource "aws_iam_role" "github_actions" {
           }
           StringLike = {
             "token.actions.githubusercontent.com:sub" = [
-              "repo:steve-e-jackson/durable-code-test:*",
-              "repo:steve-e-jackson/durable-code-test:ref:refs/heads/*",
-              "repo:steve-e-jackson/durable-code-test:pull_request"
+              "repo:be-wise-be-kind/durable-code-test:*",
+              "repo:be-wise-be-kind/durable-code-test:ref:refs/heads/*",
+              "repo:be-wise-be-kind/durable-code-test:pull_request"
             ]
           }
         }

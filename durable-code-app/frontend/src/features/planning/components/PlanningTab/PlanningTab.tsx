@@ -56,45 +56,12 @@ export function PlanningTab(): ReactElement {
     }
   };
 
-  // Convert badge text to proper variant
-  const getBadgeVariant = (
-    badge: string,
-  ):
-    | 'essential'
-    | 'active'
-    | 'strategic'
-    | 'technical'
-    | 'quality'
-    | 'visual'
-    | 'timeline'
-    | 'neutral' => {
-    switch (badge) {
-      case 'Essential':
-        return 'essential';
-      case 'Active':
-        return 'active';
-      case 'Strategic':
-        return 'strategic';
-      case 'Technical':
-        return 'technical';
-      case 'Quality':
-        return 'quality';
-      case 'Visual':
-        return 'visual';
-      case 'Timeline':
-        return 'timeline';
-      default:
-        return 'neutral';
-    }
-  };
-
   const planningFeatures = planningSection.documents.map((doc) => ({
     icon: getIconForDocument(doc.id),
     title: doc.title,
     description: doc.description,
     linkText: `View ${doc.title.split(' ')[0]}`,
     linkHref: doc.href,
-    badge: { text: doc.badge, variant: getBadgeVariant(doc.badge) },
   }));
 
   const handleStepClick = useCallback((step: CaseStudyStep) => {

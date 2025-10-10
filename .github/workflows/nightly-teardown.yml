@@ -2,9 +2,9 @@ name: Nightly Infrastructure Teardown
 
 on:
   schedule:
-    # 8 PM PST = 3 AM UTC (during PST) / 4 AM UTC (during PDT)
-    # Run Monday-Friday only for cost optimization
-    - cron: '0 3 * * 2-6'  # Tuesday-Saturday 3 AM UTC (Monday-Friday 8 PM PST)
+    # 9 PM PST = 5 AM UTC (during PST) / 4 AM UTC (during PDT)
+    # Run Friday-Sunday to keep infrastructure down on weekends
+    - cron: '0 4 * * 6'  # Saturday 4 AM UTC (Friday 9 PM PDT) - Weekend starts
   workflow_dispatch:
     inputs:
       environment:

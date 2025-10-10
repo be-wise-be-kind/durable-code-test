@@ -17,18 +17,6 @@ export interface FeatureCardProps {
   description: string;
   linkText: string;
   linkHref?: string;
-  badge?: {
-    text: string;
-    variant:
-      | 'essential'
-      | 'active'
-      | 'strategic'
-      | 'technical'
-      | 'quality'
-      | 'visual'
-      | 'timeline'
-      | 'neutral';
-  };
   onClick?: () => void;
   className?: string;
 }
@@ -39,7 +27,6 @@ export function FeatureCard({
   description,
   linkText,
   linkHref,
-  badge,
   onClick,
   className = '',
 }: FeatureCardProps): ReactElement {
@@ -67,9 +54,6 @@ export function FeatureCard({
         <button className={styles.cardLink} onClick={handleClick} type="button">
           {linkText} →
         </button>
-      )}
-      {badge && (
-        <div className={`${styles.badge} ${styles[badge.variant]}`}>{badge.text}</div>
       )}
     </div>
   );
