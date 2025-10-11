@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<!--
+Purpose: Interactive visual diagram of the AI-powered community contribution workflow and system architecture
+Scope: Community contribution feature documentation and process visualization for developers and stakeholders
+Overview: Comprehensive visual representation of the complete contribution submission, review, and implementation
+    process for the AI-powered community contribution feature. Displays user journey flow, system architecture,
+    security measures, and implementation phases using interactive Mermaid diagrams. Provides detailed
+    documentation of authentication methods, rate limiting, success metrics, and integration patterns.
+    Serves as the primary reference for understanding the contribution workflow and technical requirements.
+Dependencies: Mermaid.js library for diagram rendering, modern web browser with JavaScript support
+Exports: Interactive HTML visualization with multiple diagram views and detailed workflow documentation
+Interfaces: Web-based interactive diagrams with tabbed navigation and responsive design
+Related: AI_CONTEXT.md, PR_BREAKDOWN.md, SECURITY_STRATEGY.md for detailed implementation specifications
+Implementation: Single-page application with embedded Mermaid diagrams and custom CSS styling for professional presentation
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI-Powered Contribution Flow</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            color: #333;
+        }
+        h1 {
+            color: #764ba2;
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        h2 {
+            color: #667eea;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+            margin-top: 40px;
+        }
+        .diagram-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .mermaid {
+            text-align: center;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        .info-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border-left: 4px solid #667eea;
+        }
+        .info-card h3 {
+            color: #667eea;
+            margin-top: 0;
+        }
+        .info-card ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        .info-card li {
+            padding: 5px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .info-card li:last-child {
+            border-bottom: none;
+        }
+        .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            margin-left: 8px;
+        }
+        .badge-auth { background: #4CAF50; color: white; }
+        .badge-anon { background: #FF9800; color: white; }
+        .badge-admin { background: #f44336; color: white; }
+        .badge-system { background: #2196F3; color: white; }
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 AI-Powered Community Contribution Flow</h1>
+        <p style="text-align: center; color: #666; font-size: 1.1em;">
+            Visual representation of the contribution submission, review, and implementation process
+        </p>
+
+        <div class="legend">
+            <div class="legend-item">
+                <span class="badge badge-anon">Anonymous</span>
+                <span>CAPTCHA Required</span>
+            </div>
+            <div class="legend-item">
+                <span class="badge badge-auth">Authenticated</span>
+                <span>GitHub OAuth</span>
+            </div>
+            <div class="legend-item">
+                <span class="badge badge-admin">Admin</span>
+                <span>Review & Approve</span>
+            </div>
+            <div class="legend-item">
+                <span class="badge badge-system">System</span>
+                <span>Automated Process</span>
+            </div>
+        </div>
+
+        <h2>User Journey Flow</h2>
+        <div class="diagram-container">
+            <div class="mermaid">
+                graph TD
+                    Start([User Visits Site]) --> Notice[User Notices 'Contribute with AI' Link]
+                    Notice --> Click[Clicks Link]
+                    Click --> Landing[Lands on /contribute Page]
+
+                    Landing --> ReadGuidelines[Reads Guidelines & Examples]
+                    ReadGuidelines --> Decision{Choose Auth Method}
+
+                    Decision -->|GitHub User| GitHub[Sign in with GitHub]
+                    Decision -->|Anonymous| Captcha[Complete CAPTCHA]
+
+                    GitHub --> Authenticated[Authenticated User]
+                    Captcha --> Anonymous[Anonymous User]
+
+                    Authenticated --> Form[Fill Contribution Form]
+                    Anonymous --> Form
+
+                    Form --> Validate{Client Validation}
+                    Validate -->|Invalid| Errors[Show Validation Errors]
+                    Errors --> Form
+
+                    Validate -->|Valid| Submit[Submit to API]
+                    Submit --> RateLimit{Rate Limit Check}
+
+                    RateLimit -->|Exceeded| RateLimitError[Show Rate Limit Message]
+                    RateLimit -->|OK| Store[Store in Database]
+
+                    Store --> Queue[Added to Review Queue]
+                    Queue --> Notification[Notify Admins]
+
+                    Notification --> AdminReview[Admin Reviews Submission]
+                    AdminReview --> AdminDecision{Admin Decision}
+
+                    AdminDecision -->|Reject| Rejected[Marked as Rejected]
+                    AdminDecision -->|Approve| Approved[Marked as Approved]
+
+                    Approved --> CreateIssue[Create GitHub Issue]
+                    CreateIssue --> AIImplementation[AI Agent Implements]
+                    AIImplementation --> PR[Creates Pull Request]
+                    PR --> Merged[Code Merged]
+
+                    Merged --> Credit[Contributor Credited]
+                    Rejected --> Feedback[Send Rejection Feedback]
+
+                    style Start fill:#667eea,color:#fff
+                    style Authenticated fill:#4CAF50,color:#fff
+                    style Anonymous fill:#FF9800,color:#fff
+                    style AdminReview fill:#f44336,color:#fff
+                    style CreateIssue fill:#2196F3,color:#fff
+                    style AIImplementation fill:#2196F3,color:#fff
+                    style Credit fill:#4CAF50,color:#fff
+            </div>
+        </div>
+
+        <h2>System Architecture</h2>
+        <div class="diagram-container">
+            <div class="mermaid">
+                graph TB
+                    subgraph "Frontend - React"
+                        UI[Contribution Form UI]
+                        Auth[Auth Component]
+                        Guidelines[Guidelines Display]
+                        Admin[Admin Dashboard]
+                    end
+
+                    subgraph "Backend - FastAPI"
+                        API[Contribution API]
+                        RateLimiter[Rate Limiter]
+                        Validator[Prompt Validator]
+                        AuthService[Auth Service]
+                        GitHubService[GitHub Service]
+                    end
+
+                    subgraph "External Services"
+                        GitHubOAuth[GitHub OAuth]
+                        reCAPTCHA[Google reCAPTCHA]
+                        GitHubAPI[GitHub API]
+                    end
+
+                    subgraph "Data Storage"
+                        PostgreSQL[(PostgreSQL)]
+                        Redis[(Redis Sessions)]
+                    end
+
+                    UI --> API
+                    Auth --> AuthService
+                    Auth --> GitHubOAuth
+                    UI --> reCAPTCHA
+
+                    API --> RateLimiter
+                    API --> Validator
+                    API --> PostgreSQL
+
+                    AuthService --> Redis
+                    AuthService --> GitHubOAuth
+
+                    Admin --> API
+                    Admin --> GitHubService
+                    GitHubService --> GitHubAPI
+
+                    style UI fill:#667eea,color:#fff
+                    style API fill:#764ba2,color:#fff
+                    style PostgreSQL fill:#336791,color:#fff
+                    style Redis fill:#DC382D,color:#fff
+            </div>
+        </div>
+
+        <h2>Security Flow</h2>
+        <div class="diagram-container">
+            <div class="mermaid">
+                graph LR
+                    subgraph "Authentication Layer"
+                        User[User Request]
+                        IPCheck{IP Check}
+                        AuthCheck{Auth Status}
+                    end
+
+                    subgraph "Rate Limiting"
+                        IPLimit[IP Rate Limit]
+                        UserLimit[User Rate Limit]
+                        GlobalLimit[Global Rate Limit]
+                    end
+
+                    subgraph "Validation Layer"
+                        CaptchaVerify{CAPTCHA Valid?}
+                        PromptValidation{Prompt Valid?}
+                        SpamCheck{Spam Check}
+                    end
+
+                    subgraph "Processing"
+                        Store[Store Submission]
+                        Queue[Review Queue]
+                    end
+
+                    User --> IPCheck
+                    IPCheck -->|Blocked| Deny[Deny Access]
+                    IPCheck -->|OK| AuthCheck
+
+                    AuthCheck -->|Anonymous| CaptchaVerify
+                    AuthCheck -->|Authenticated| UserLimit
+
+                    CaptchaVerify -->|Invalid| Deny
+                    CaptchaVerify -->|Valid| IPLimit
+
+                    IPLimit -->|Exceeded| Deny
+                    IPLimit -->|OK| GlobalLimit
+
+                    UserLimit -->|Exceeded| Deny
+                    UserLimit -->|OK| GlobalLimit
+
+                    GlobalLimit -->|Exceeded| Deny
+                    GlobalLimit -->|OK| PromptValidation
+
+                    PromptValidation -->|Invalid| Reject[Reject with Feedback]
+                    PromptValidation -->|Valid| SpamCheck
+
+                    SpamCheck -->|Spam| Reject
+                    SpamCheck -->|Clean| Store
+
+                    Store --> Queue
+
+                    style Deny fill:#f44336,color:#fff
+                    style Reject fill:#FF9800,color:#fff
+                    style Queue fill:#4CAF50,color:#fff
+            </div>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-card">
+                <h3>📋 Submission Requirements</h3>
+                <ul>
+                    <li>Minimum 50 characters <span class="badge badge-system">Validated</span></li>
+                    <li>Maximum 2000 characters <span class="badge badge-system">Validated</span></li>
+                    <li>Clear objective stated</li>
+                    <li>References existing patterns</li>
+                    <li>No spam or promotional content</li>
+                    <li>Follows contribution guidelines</li>
+                </ul>
+            </div>
+
+            <div class="info-card">
+                <h3>🔒 Rate Limits</h3>
+                <ul>
+                    <li>Anonymous: 1/week <span class="badge badge-anon">CAPTCHA</span></li>
+                    <li>Authenticated: 3/day <span class="badge badge-auth">GitHub</span></li>
+                    <li>Trusted: 10/day <span class="badge badge-auth">5+ Approved</span></li>
+                    <li>Admin: 100/day <span class="badge badge-admin">Staff</span></li>
+                    <li>Global: 1000/day <span class="badge badge-system">Circuit Breaker</span></li>
+                </ul>
+            </div>
+
+            <div class="info-card">
+                <h3>⚡ Processing Times</h3>
+                <ul>
+                    <li>Form Submission: < 2 seconds</li>
+                    <li>CAPTCHA Verification: < 1 second</li>
+                    <li>Admin Review: < 24 hours</li>
+                    <li>GitHub Issue Creation: < 5 seconds</li>
+                    <li>AI Implementation: 1-3 days</li>
+                    <li>PR Review: 1-2 days</li>
+                </ul>
+            </div>
+
+            <div class="info-card">
+                <h3>🎯 Success Metrics</h3>
+                <ul>
+                    <li>Approval Rate: > 50%</li>
+                    <li>Spam Rate: < 5%</li>
+                    <li>Implementation Rate: > 80%</li>
+                    <li>User Satisfaction: > 4/5</li>
+                    <li>Repeat Contributors: > 30%</li>
+                    <li>Response Time: < 2 sec</li>
+                </ul>
+            </div>
+
+            <div class="info-card">
+                <h3>🏷️ GitHub Integration</h3>
+                <ul>
+                    <li>Issue Labels: <code>ai-contribution</code></li>
+                    <li>Milestone: <code>Community Contributions</code></li>
+                    <li>Assignee: AI Bot Account</li>
+                    <li>Template: Contribution Template</li>
+                    <li>Links: Back to Submission</li>
+                    <li>Credit: Original Contributor</li>
+                </ul>
+            </div>
+
+            <div class="info-card">
+                <h3>🛡️ Security Measures</h3>
+                <ul>
+                    <li>OAuth 2.0 with PKCE</li>
+                    <li>reCAPTCHA v3 Integration</li>
+                    <li>Input Sanitization</li>
+                    <li>SQL Injection Prevention</li>
+                    <li>XSS Protection</li>
+                    <li>Audit Logging</li>
+                </ul>
+            </div>
+        </div>
+
+        <h2>Implementation Phases</h2>
+        <div class="diagram-container">
+            <div class="mermaid">
+                gantt
+                    title Implementation Timeline
+                    dateFormat YYYY-MM-DD
+                    section Backend
+                    PR1 Infrastructure    :2025-09-26, 3d
+                    PR2 Authentication    :2025-09-29, 2d
+
+                    section Frontend
+                    PR3 Form Component    :2025-10-01, 3d
+                    PR5 UI Integration    :2025-10-04, 1d
+
+                    section Admin
+                    PR4 Review Interface  :2025-10-05, 3d
+
+                    section Testing
+                    PR6 Documentation     :2025-10-08, 2d
+
+                    section Deployment
+                    Beta Testing          :2025-10-10, 5d
+                    Production Release    :2025-10-15, 1d
+            </div>
+        </div>
+
+        <h2>State Transitions</h2>
+        <div class="diagram-container">
+            <div class="mermaid">
+                stateDiagram-v2
+                    [*] --> Draft: User Creates
+                    Draft --> Submitted: User Submits
+                    Submitted --> UnderReview: Admin Opens
+
+                    UnderReview --> Approved: Admin Approves
+                    UnderReview --> Rejected: Admin Rejects
+                    UnderReview --> MoreInfo: Request Details
+
+                    MoreInfo --> UnderReview: User Provides Info
+                    MoreInfo --> Abandoned: No Response (7 days)
+
+                    Approved --> IssueCreated: System Creates Issue
+                    IssueCreated --> InProgress: AI Starts Work
+                    InProgress --> PRCreated: AI Creates PR
+                    PRCreated --> Implemented: PR Merged
+
+                    Rejected --> [*]: End
+                    Abandoned --> [*]: End
+                    Implemented --> [*]: End
+            </div>
+        </div>
+    </div>
+
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'default',
+            themeVariables: {
+                primaryColor: '#667eea',
+                primaryTextColor: '#fff',
+                primaryBorderColor: '#764ba2',
+                lineColor: '#764ba2',
+                secondaryColor: '#764ba2',
+                tertiaryColor: '#f3f4f6'
+            }
+        });
+    </script>
+</body>
+</html>

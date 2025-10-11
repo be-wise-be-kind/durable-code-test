@@ -109,26 +109,30 @@ class CircuitBreakerStateManager:
         return time.time() - self.last_failure_time >= self.timeout_duration
 
     async def on_success(self) -> None:
-        """Handle successful call."""
-        async with self._lock:
-            if self.state == CircuitBreakerState.HALF_OPEN:
-                self.success_count += 1
-                if self.success_count >= self.success_threshold:
-                    await self.transition_to_closed()
-            elif self.state == CircuitBreakerState.CLOSED:
-                self.failure_count = 0
+        """Handle successful call.
+
+        Note: Must be called while holding self._lock to ensure atomicity.
+        """
+        if self.state == CircuitBreakerState.HALF_OPEN:
+            self.success_count += 1
+            if self.success_count >= self.success_threshold:
+                await self.transition_to_closed()
+        elif self.state == CircuitBreakerState.CLOSED:
+            self.failure_count = 0
 
     async def on_failure(self) -> None:
-        """Handle failed call."""
-        async with self._lock:
-            if self.state == CircuitBreakerState.HALF_OPEN:
-                await self.transition_to_open()
-                return
+        """Handle failed call.
 
-            if self.state == CircuitBreakerState.CLOSED:
-                self.failure_count += 1
-                if self.failure_count >= self.failure_threshold:
-                    await self.transition_to_open()
+        Note: Must be called while holding self._lock to ensure atomicity.
+        """
+        if self.state == CircuitBreakerState.HALF_OPEN:
+            await self.transition_to_open()
+            return
+
+        if self.state == CircuitBreakerState.CLOSED:
+            self.failure_count += 1
+            if self.failure_count >= self.failure_threshold:
+                await self.transition_to_open()
 
     async def check_state_transition(self) -> None:
         """Check if state should transition from OPEN to HALF_OPEN."""
@@ -228,11 +232,15 @@ class CircuitBreaker:
         # Attempt the call
         try:
             result = await self._execute_function(func, *args, **kwargs)
-            await self.state_manager.on_success()
+            # Hold lock during state update to prevent race condition
+            async with self.state_manager._lock:
+                await self.state_manager.on_success()
             return result
 
         except self.expected_exceptions:
-            await self.state_manager.on_failure()
+            # Hold lock during state update to prevent race condition
+            async with self.state_manager._lock:
+                await self.state_manager.on_failure()
             raise
 
     def __call__(self, func: Callable[..., Any]) -> Callable[..., Any]:

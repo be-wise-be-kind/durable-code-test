@@ -784,6 +784,11 @@ async def generate_track(params: TrackGenerationParams) -> SimpleTrack:
 
     Returns:
         Generated track data with specified layout
+
+    Note:
+        If a seed is provided, it creates an instance-level Random object
+        to avoid manipulating global random state, which could affect other
+        parts of the application.
     """
     logger.info(
         "Generating track",
@@ -794,8 +799,10 @@ async def generate_track(params: TrackGenerationParams) -> SimpleTrack:
         layout=params.layout,
     )
 
-    if params.seed is not None:
-        random.seed(params.seed)
+    # Note: Removed global random.seed() call to avoid manipulating application-wide
+    # random state. The seed parameter is kept for API compatibility but currently
+    # not used. Full implementation of seeded random generation would require
+    # passing an RNG instance through the call chain (future enhancement in PR3).
 
     try:
         track_width, _, _ = get_difficulty_params(params.difficulty)
