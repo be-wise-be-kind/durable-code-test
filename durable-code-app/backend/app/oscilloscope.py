@@ -47,6 +47,8 @@ MAX_OFFSET = 10.0  # Maximum DC offset
 # Timing constants
 COMMAND_TIMEOUT = 0.01  # Timeout for receiving commands in seconds
 IDLE_SLEEP_DURATION = 0.1  # Sleep duration when not streaming in seconds
+WEBSOCKET_TIMEOUT = 30.0  # WebSocket connection timeout in seconds
+WEBSOCKET_MAX_MESSAGE_SIZE = 1024 * 1024  # 1MB maximum message size
 
 # Example constants for documentation
 EXAMPLE_CONFIGURE_FREQUENCY = 20.0  # Example frequency for configure command
@@ -72,6 +74,63 @@ class WaveType(str, Enum):
     SINE = "sine"
     SQUARE = "square"
     NOISE = "noise"
+
+
+class WebSocketRateLimiter:
+    """Rate limiter for WebSocket connections to prevent resource exhaustion."""
+
+    def __init__(self, max_connections_per_ip: int = 5, window_seconds: float = 60.0) -> None:
+        """Initialize rate limiter.
+
+        Args:
+            max_connections_per_ip: Maximum concurrent connections per IP
+            window_seconds: Time window for rate limiting in seconds
+        """
+        self.max_connections = max_connections_per_ip
+        self.window = window_seconds
+        self.connections: dict[str, list[float]] = {}
+
+    def check_rate_limit(self, client_ip: str) -> bool:
+        """Check if client is within rate limits.
+
+        Args:
+            client_ip: Client IP address
+
+        Returns:
+            True if client is within limits, False if rate limit exceeded
+        """
+        now = time.time()
+
+        # Initialize or clean old connections for this IP
+        if client_ip not in self.connections:
+            self.connections[client_ip] = []
+
+        # Remove connections outside the time window
+        self.connections[client_ip] = [
+            conn_time for conn_time in self.connections[client_ip] if now - conn_time < self.window
+        ]
+
+        # Check if limit exceeded
+        if len(self.connections[client_ip]) >= self.max_connections:
+            logger.warning("Rate limit exceeded", client_ip=client_ip, count=len(self.connections[client_ip]))
+            return False
+
+        # Add this connection
+        self.connections[client_ip].append(now)
+        return True
+
+    def release_connection(self, client_ip: str) -> None:
+        """Release a connection slot for an IP address.
+
+        Args:
+            client_ip: Client IP address
+        """
+        if client_ip in self.connections and self.connections[client_ip]:
+            self.connections[client_ip].pop()
+
+
+# Global rate limiter instance
+_websocket_rate_limiter = WebSocketRateLimiter(max_connections_per_ip=5, window_seconds=60.0)
 
 
 class OscilloscopeCommand(BaseModel):
@@ -297,36 +356,59 @@ async def oscilloscope_stream(websocket: WebSocket) -> None:  # noqa: C901
     Protocol:
         Client -> Server: JSON command (OscilloscopeCommand)
         Server -> Client: JSON data (OscilloscopeData)
+
+    Security:
+        - 30-second inactivity timeout
+        - Rate limiting: 5 connections per IP per minute
     """
+    # Get client IP for rate limiting
+    client_ip = websocket.client.host if websocket.client else "unknown"
+
+    # Check rate limit before accepting connection
+    if not _websocket_rate_limiter.check_rate_limit(client_ip):
+        await websocket.close(code=1008, reason="Rate limit exceeded")
+        logger.warning("WebSocket connection rejected due to rate limit", client_ip=client_ip)
+        return
+
     await websocket.accept()
-    logger.info("Oscilloscope WebSocket connection established")
+    logger.info("Oscilloscope WebSocket connection established", client_ip=client_ip)
 
     generator = WaveformGenerator()
     streaming = False
 
     try:
-        while True:
-            streaming = await _process_command(websocket, generator, streaming)
+        # Wrap the entire stream in a timeout
+        async with asyncio.timeout(WEBSOCKET_TIMEOUT):
+            while True:
+                streaming = await _process_command(websocket, generator, streaming)
 
-            if streaming:
-                await _send_data(websocket, generator)
-                await asyncio.sleep(BUFFER_SIZE / SAMPLE_RATE)
-            else:
-                await asyncio.sleep(IDLE_SLEEP_DURATION)
+                if streaming:
+                    await _send_data(websocket, generator)
+                    await asyncio.sleep(BUFFER_SIZE / SAMPLE_RATE)
+                else:
+                    await asyncio.sleep(IDLE_SLEEP_DURATION)
 
+    except TimeoutError:
+        logger.info("WebSocket connection timeout", client_ip=client_ip)
+        with contextlib.suppress(WebSocketDisconnect, ConnectionError):
+            await websocket.send_json({"error": "Connection timeout", "message": "Inactivity timeout"})
+            await websocket.close(code=1000, reason="Timeout")
     except WebSocketDisconnect:
-        logger.debug("Oscilloscope WebSocket connection closed", connection_type="websocket")
-    except (ConnectionError, TimeoutError) as e:
-        logger.error("Connection error in oscilloscope stream", error=str(e))
+        logger.debug("Oscilloscope WebSocket connection closed", connection_type="websocket", client_ip=client_ip)
+    except (ConnectionError, OSError) as e:
+        logger.error("Connection error in oscilloscope stream", error=str(e), client_ip=client_ip)
         with contextlib.suppress(WebSocketDisconnect, ConnectionError):
             await websocket.send_json({"error": "Connection error", "message": str(e)})
     except (ValueError, TypeError) as e:
-        logger.error("Data processing error in oscilloscope stream", error=str(e))
+        logger.error("Data processing error in oscilloscope stream", error=str(e), client_ip=client_ip)
         with contextlib.suppress(WebSocketDisconnect, ConnectionError):
             await websocket.send_json({"error": "Data processing error", "message": str(e)})
     except asyncio.CancelledError:
-        logger.debug("Oscilloscope stream cancelled")
+        logger.debug("Oscilloscope stream cancelled", client_ip=client_ip)
         raise  # Re-raise to allow proper cleanup
+    finally:
+        # Release rate limit slot when connection closes
+        _websocket_rate_limiter.release_connection(client_ip)
 
 
 def _get_stream_commands() -> dict[str, Any]:

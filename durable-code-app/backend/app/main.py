@@ -13,6 +13,8 @@ Interfaces: Root endpoint (/), health check (/health), and mounted routers for f
 Implementation: Uses FastAPI's dependency injection, middleware stack, and exception handler registration
 """
 
+import os
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -97,19 +99,41 @@ async def handle_validation_error(request: Request, exc: Exception) -> JSONRespo
 
 
 async def handle_general_exception(request: Request, exc: Exception) -> JSONResponse:
-    """Handle unexpected exceptions safely without exposing internals."""
+    """Handle unexpected exceptions safely without exposing internals.
+
+    In production environments, sanitizes all error messages to prevent
+    information disclosure. In development, provides detailed error information
+    for debugging purposes.
+    """
     logger.exception(
         "Unexpected error on %s",
         request.url.path,
         extra={"path": request.url.path, "method": request.method},
     )
-    # Don't expose internal error details in production
+
+    # Check environment - default to production for safety
+    environment = os.getenv("ENVIRONMENT", "production").lower()
+    is_production = environment in ("production", "prod")
+
+    if is_production:
+        # Production: Sanitized error message with no internal details
+        return JSONResponse(
+            status_code=HTTP_INTERNAL_SERVER_ERROR,
+            content={
+                "error": "INTERNAL_ERROR",
+                "message": "An internal error occurred. Please contact support if the problem persists.",
+                "details": {},
+            },
+        )
+
+    # Development: Detailed error information for debugging
     return JSONResponse(
         status_code=HTTP_INTERNAL_SERVER_ERROR,
         content={
             "error": "INTERNAL_ERROR",
-            "message": "An unexpected error occurred",
-            "details": {},
+            "message": str(exc),
+            "type": type(exc).__name__,
+            "details": {"path": request.url.path, "method": request.method},
         },
     )
 

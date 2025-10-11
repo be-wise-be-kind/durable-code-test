@@ -40,6 +40,8 @@ HTTP_TOO_MANY_REQUESTS = 429
 
 # Input sanitization patterns
 ALLOWED_TEXT_PATTERN = re.compile(r"^[a-zA-Z0-9\s\-_.,!?()]+$")
+# Path validation pattern - using atomic grouping (?:...) to prevent ReDoS via backtracking
+PATH_PATTERN = re.compile(r"^(?:/[a-zA-Z0-9_-]+)+$")
 DANGEROUS_PATTERNS = [
     re.compile(r"<script.*?</script>", re.IGNORECASE | re.DOTALL),
     re.compile(r"javascript:", re.IGNORECASE),
@@ -115,6 +117,33 @@ def validate_numeric_range(value: float, min_val: float, max_val: float, field_n
         raise ValueError(f"{field_name} must be between {min_val} and {max_val}")
 
     return float(value)
+
+
+def validate_path(path: str) -> str:
+    """Validate path string to prevent ReDoS and path traversal attacks.
+
+    Uses atomic grouping in regex to prevent catastrophic backtracking
+    that could lead to ReDoS (Regular Expression Denial of Service).
+
+    Args:
+        path: Path string to validate
+
+    Returns:
+        Validated path string
+
+    Raises:
+        ValueError: If path contains invalid characters or patterns
+    """
+    if not path:
+        raise ValueError("Path cannot be empty")
+
+    if ".." in path:
+        raise ValueError("Path traversal not allowed")
+
+    if not PATH_PATTERN.match(path):
+        raise ValueError("Path contains invalid characters or format")
+
+    return path
 
 
 class SecureTextInput(BaseModel):
