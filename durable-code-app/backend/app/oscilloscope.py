@@ -26,6 +26,7 @@ from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect
 from loguru import logger
 from pydantic import BaseModel, Field, validator
 
+from .racing.state_machine import WebSocketState, WebSocketStateMachine
 from .security import get_rate_limiter, get_security_config, validate_numeric_range
 
 # Constants for waveform generation
@@ -259,8 +260,8 @@ class WaveformGenerator:
 
 
 async def _handle_command(
-    command: OscilloscopeCommand, generator: WaveformGenerator, streaming: bool
-) -> tuple[bool, str]:
+    command: OscilloscopeCommand, generator: WaveformGenerator, state_machine: WebSocketStateMachine
+) -> str:
     """Handle incoming WebSocket commands."""
     handlers = {
         "start": _handle_start_command,
@@ -270,15 +271,13 @@ async def _handle_command(
 
     handler = handlers.get(command.command)
     if handler:
-        return handler(command, generator, streaming)
-    return streaming, "Unknown command"
+        return handler(command, generator, state_machine)
+    return "Unknown command"
 
 
 def _handle_start_command(
-    command: OscilloscopeCommand,
-    generator: WaveformGenerator,
-    streaming: bool,  # pylint: disable=unused-argument
-) -> tuple[bool, str]:
+    command: OscilloscopeCommand, generator: WaveformGenerator, state_machine: WebSocketStateMachine
+) -> str:
     """Handle start command."""
     generator.configure(
         wave_type=command.wave_type or WaveType.SINE,
@@ -286,21 +285,23 @@ def _handle_start_command(
         amplitude=command.amplitude or DEFAULT_AMPLITUDE,
         offset=command.offset or DEFAULT_OFFSET,
     )
-    return True, f"Started streaming {command.wave_type} wave"
+    state_machine.start_streaming()
+    return f"Started streaming {command.wave_type} wave"
 
 
 def _handle_stop_command(
     command: OscilloscopeCommand,
-    generator: WaveformGenerator,
-    streaming: bool,  # pylint: disable=unused-argument
-) -> tuple[bool, str]:
+    generator: WaveformGenerator,  # pylint: disable=unused-argument
+    state_machine: WebSocketStateMachine,
+) -> str:
     """Handle stop command."""
-    return False, "Stopped streaming"
+    state_machine.pause_streaming()
+    return "Stopped streaming"
 
 
 def _handle_configure_command(
-    command: OscilloscopeCommand, generator: WaveformGenerator, streaming: bool
-) -> tuple[bool, str]:
+    command: OscilloscopeCommand, generator: WaveformGenerator, state_machine: WebSocketStateMachine
+) -> str:
     """Handle configure command."""
     generator.configure(
         wave_type=command.wave_type or generator.wave_type,
@@ -308,17 +309,19 @@ def _handle_configure_command(
         amplitude=command.amplitude or generator.amplitude,
         offset=command.offset or generator.offset,
     )
-    return streaming, f"Configured to {command.wave_type} wave"
+    return f"Configured to {command.wave_type} wave"
 
 
-async def _process_command(websocket: WebSocket, generator: WaveformGenerator, streaming: bool) -> bool:
+async def _process_command(
+    websocket: WebSocket, generator: WaveformGenerator, state_machine: WebSocketStateMachine
+) -> None:
     """Process incoming WebSocket commands."""
     try:
         message = await asyncio.wait_for(websocket.receive_text(), timeout=COMMAND_TIMEOUT)
         try:
             data = json.loads(message)
             command = OscilloscopeCommand(**data)
-            streaming, log_msg = await _handle_command(command, generator, streaming)
+            log_msg = await _handle_command(command, generator, state_machine)
             logger.info(log_msg)
         except (json.JSONDecodeError, ValueError) as e:
             logger.error("Invalid command received", error=str(e), exc_info=True)
@@ -326,7 +329,6 @@ async def _process_command(websocket: WebSocket, generator: WaveformGenerator, s
     except TimeoutError:  # design-lint: ignore[logging.exception-logging]
         # Timeout is expected when no commands received - no logging needed
         pass
-    return streaming
 
 
 async def _send_data(websocket: WebSocket, generator: WaveformGenerator) -> None:
@@ -346,8 +348,63 @@ async def _send_data(websocket: WebSocket, generator: WaveformGenerator) -> None
     await websocket.send_json(response_data.dict())
 
 
+async def _handle_timeout_error(websocket: WebSocket, state_machine: WebSocketStateMachine, client_ip: str) -> None:
+    """Handle WebSocket timeout errors."""
+    logger.info("WebSocket connection timeout", client_ip=client_ip)
+    state_machine.disconnect()
+    with contextlib.suppress(WebSocketDisconnect, OSError):
+        await websocket.send_json({"error": "Connection timeout", "message": "Inactivity timeout"})
+        await websocket.close(code=1000, reason="Timeout")
+
+
+def _handle_disconnect_error(state_machine: WebSocketStateMachine, client_ip: str) -> None:
+    """Handle WebSocket disconnect errors."""
+    logger.debug("Oscilloscope WebSocket connection closed", connection_type="websocket", client_ip=client_ip)
+    state_machine.disconnect()
+
+
+async def _handle_connection_error(
+    websocket: WebSocket, state_machine: WebSocketStateMachine, client_ip: str, error: OSError
+) -> None:
+    """Handle WebSocket connection errors."""
+    logger.error("Connection error in oscilloscope stream", error=str(error), client_ip=client_ip)
+    state_machine.disconnect()
+    with contextlib.suppress(WebSocketDisconnect, OSError):
+        await websocket.send_json({"error": "Connection error", "message": str(error)})
+
+
+async def _handle_data_processing_error(
+    websocket: WebSocket, state_machine: WebSocketStateMachine, client_ip: str, error: ValueError | TypeError
+) -> None:
+    """Handle data processing errors."""
+    logger.error("Data processing error in oscilloscope stream", error=str(error), client_ip=client_ip)
+    state_machine.disconnect()
+    with contextlib.suppress(WebSocketDisconnect, OSError):
+        await websocket.send_json({"error": "Data processing error", "message": str(error)})
+
+
+def _handle_cancellation_error(state_machine: WebSocketStateMachine, client_ip: str) -> None:
+    """Handle cancellation errors."""
+    logger.debug("Oscilloscope stream cancelled", client_ip=client_ip)
+    state_machine.disconnect()
+
+
+async def _run_stream_loop(
+    websocket: WebSocket, generator: WaveformGenerator, state_machine: WebSocketStateMachine
+) -> None:
+    """Run the main streaming loop."""
+    while not state_machine.is_disconnected():
+        await _process_command(websocket, generator, state_machine)
+
+        if state_machine.is_streaming():
+            await _send_data(websocket, generator)
+            await asyncio.sleep(BUFFER_SIZE / SAMPLE_RATE)
+        else:
+            await asyncio.sleep(IDLE_SLEEP_DURATION)
+
+
 @router.websocket("/stream")
-async def oscilloscope_stream(websocket: WebSocket) -> None:  # noqa: C901
+async def oscilloscope_stream(websocket: WebSocket) -> None:
     """Provide WebSocket endpoint for real-time oscilloscope data streaming.
 
     Accepts commands to start/stop streaming and configure waveform parameters.
@@ -373,40 +430,30 @@ async def oscilloscope_stream(websocket: WebSocket) -> None:  # noqa: C901
     await websocket.accept()
     logger.info("Oscilloscope WebSocket connection established", client_ip=client_ip)
 
+    # Initialize state machine and generator
+    state_machine = WebSocketStateMachine(state=WebSocketState.CONNECTED)
     generator = WaveformGenerator()
-    streaming = False
 
     try:
         # Wrap the entire stream in a timeout
         async with asyncio.timeout(WEBSOCKET_TIMEOUT):
-            while True:
-                streaming = await _process_command(websocket, generator, streaming)
-
-                if streaming:
-                    await _send_data(websocket, generator)
-                    await asyncio.sleep(BUFFER_SIZE / SAMPLE_RATE)
-                else:
-                    await asyncio.sleep(IDLE_SLEEP_DURATION)
+            await _run_stream_loop(websocket, generator, state_machine)
 
     except TimeoutError:
-        logger.info("WebSocket connection timeout", client_ip=client_ip)
-        with contextlib.suppress(WebSocketDisconnect, ConnectionError):
-            await websocket.send_json({"error": "Connection timeout", "message": "Inactivity timeout"})
-            await websocket.close(code=1000, reason="Timeout")
+        await _handle_timeout_error(websocket, state_machine, client_ip)
     except WebSocketDisconnect:
-        logger.debug("Oscilloscope WebSocket connection closed", connection_type="websocket", client_ip=client_ip)
-    except (ConnectionError, OSError) as e:
-        logger.error("Connection error in oscilloscope stream", error=str(e), client_ip=client_ip)
-        with contextlib.suppress(WebSocketDisconnect, ConnectionError):
-            await websocket.send_json({"error": "Connection error", "message": str(e)})
+        _handle_disconnect_error(state_machine, client_ip)
+    except OSError as e:
+        await _handle_connection_error(websocket, state_machine, client_ip, e)
     except (ValueError, TypeError) as e:
-        logger.error("Data processing error in oscilloscope stream", error=str(e), client_ip=client_ip)
-        with contextlib.suppress(WebSocketDisconnect, ConnectionError):
-            await websocket.send_json({"error": "Data processing error", "message": str(e)})
+        await _handle_data_processing_error(websocket, state_machine, client_ip, e)
     except asyncio.CancelledError:
-        logger.debug("Oscilloscope stream cancelled", client_ip=client_ip)
+        _handle_cancellation_error(state_machine, client_ip)
         raise  # Re-raise to allow proper cleanup
     finally:
+        # Ensure state machine is fully disconnected
+        if not state_machine.is_disconnected():
+            state_machine.complete_disconnect()
         # Release rate limit slot when connection closes
         _websocket_rate_limiter.release_connection(client_ip)
 
