@@ -8,6 +8,8 @@
  * Implementation: Uses Performance API for accurate timing measurements
  */
 
+import { logger } from './logger';
+
 interface PerformanceMetrics {
   componentName: string;
   duration: number;
@@ -59,7 +61,7 @@ export function measureComponentPerf(componentName: string): () => void {
 
         // Log if duration exceeds threshold (16ms = 60fps)
         if (latestMeasure.duration > 16) {
-          console.warn(
+          logger.warn(
             `⚠️ Slow render detected: ${componentName} took ${latestMeasure.duration.toFixed(
               2,
             )}ms`,
@@ -67,7 +69,7 @@ export function measureComponentPerf(componentName: string): () => void {
         }
       }
     } catch (error) {
-      console.error(`Failed to measure performance for ${componentName}:`, error);
+      logger.error(`Failed to measure performance for ${componentName}:`, error);
     } finally {
       // Clean up marks to prevent memory leaks
       try {
@@ -146,10 +148,10 @@ export function logPerformanceSummary(): void {
   );
 
   // Log summary table
-  console.error('📊 Performance Summary');
+  logger.error('📊 Performance Summary');
   Object.entries(summary).forEach(([componentName, stats]) => {
     const avgDuration = stats.totalDuration / stats.count;
-    console.error(
+    logger.error(
       `${componentName}:`,
       `Renders: ${stats.count},`,
       `Avg: ${avgDuration.toFixed(2)}ms,`,
@@ -171,7 +173,7 @@ export function observeLongTasks(): void {
     const observer = new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
         if (entry.duration > 50) {
-          console.error(
+          logger.error(
             `⚠️ Long task detected: ${entry.name || 'Unknown'} took ${entry.duration.toFixed(
               2,
             )}ms`,
@@ -202,7 +204,5 @@ if (process.env.NODE_ENV === 'development') {
     logPerformanceSummary,
   };
 
-  console.error(
-    '🚀 Performance monitoring enabled. Use window.__PERF__ for debugging.',
-  );
+  logger.error('🚀 Performance monitoring enabled. Use window.__PERF__ for debugging.');
 }

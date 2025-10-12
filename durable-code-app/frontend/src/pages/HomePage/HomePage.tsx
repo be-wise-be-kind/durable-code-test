@@ -17,14 +17,15 @@ import { tabs } from '../../config/tabs.config';
 import styles from './HomePage.module.css';
 import { MinimalErrorBoundary } from '../../core/errors/MinimalErrorBoundary';
 import { PrinciplesBanner } from '../../components/PrinciplesBanner/PrinciplesBanner';
+import { logger } from '../../utils/logger';
 
 export default function HomePage(): ReactElement {
   const { activeTab, handleTabChange } = useNavigation();
   const tabConfig = tabs[activeTab];
 
   if (!tabConfig) {
-    console.error(`Tab configuration not found for: ${activeTab}`);
-    console.error('Available tabs:', Object.keys(tabs));
+    logger.error(`Tab configuration not found for: ${activeTab}`);
+    logger.error('Available tabs:', Object.keys(tabs));
     throw new Error(`Tab configuration not found for: ${activeTab}`);
   }
 

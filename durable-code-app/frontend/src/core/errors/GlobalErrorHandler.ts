@@ -9,6 +9,7 @@
 
 import type { ErrorInfo, GlobalErrorHandlerOptions } from './ErrorBoundary.types';
 import { errorLogger } from './ErrorLogger';
+import { logger } from '../../utils/logger';
 
 /**
  * GlobalErrorHandler class for handling unhandled errors
@@ -43,7 +44,7 @@ export class GlobalErrorHandler {
 
     // Log setup completion
     if (this.options.logToConsole) {
-      console.error('🛡️ Global error handlers initialized');
+      logger.error('🛡️ Global error handlers initialized');
     }
   }
 
@@ -231,27 +232,45 @@ export class GlobalErrorHandler {
       document.head.appendChild(style);
     }
 
-    notification.innerHTML = `
-      <span style="font-size: 24px;">⚠️</span>
-      <div>
-        <div style="font-weight: 600; margin-bottom: 4px;">An error occurred</div>
-        <div style="font-size: 14px; opacity: 0.9;">
-          ${this.sanitizeErrorMessage(error.message)}
-        </div>
-      </div>
-      <button
-        onclick="this.parentElement.remove()"
-        style="
-          background: none;
-          border: none;
-          color: white;
-          cursor: pointer;
-          font-size: 20px;
-          padding: 0;
-          margin-left: auto;
-        "
-      >×</button>
+    // Create icon
+    const icon = document.createElement('span');
+    icon.textContent = '⚠️';
+    icon.style.fontSize = '24px';
+
+    // Create message container
+    const messageContainer = document.createElement('div');
+
+    const titleDiv = document.createElement('div');
+    titleDiv.textContent = 'An error occurred';
+    titleDiv.style.fontWeight = '600';
+    titleDiv.style.marginBottom = '4px';
+
+    const errorText = document.createElement('div');
+    errorText.textContent = this.sanitizeErrorMessage(error.message);
+    errorText.style.fontSize = '14px';
+    errorText.style.opacity = '0.9';
+
+    messageContainer.appendChild(titleDiv);
+    messageContainer.appendChild(errorText);
+
+    // Create close button
+    const closeButton = document.createElement('button');
+    closeButton.textContent = '×';
+    closeButton.style.cssText = `
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+      font-size: 20px;
+      padding: 0;
+      margin-left: auto;
     `;
+    closeButton.onclick = () => notification?.remove();
+
+    // Append all elements
+    notification.appendChild(icon);
+    notification.appendChild(messageContainer);
+    notification.appendChild(closeButton);
 
     document.body.appendChild(notification);
 
@@ -281,31 +300,48 @@ export class GlobalErrorHandler {
       z-index: 99999;
     `;
 
-    criticalUI.innerHTML = `
-      <div style="text-align: center; max-width: 500px; padding: 32px;">
-        <div style="font-size: 64px; margin-bottom: 24px;">🚨</div>
-        <h1 style="font-size: 28px; margin-bottom: 16px;">Application Error</h1>
-        <p style="font-size: 16px; margin-bottom: 32px; opacity: 0.9;">
-          The application has encountered multiple errors and may not be functioning correctly.
-          Please refresh the page to continue.
-        </p>
-        <button
-          onclick="window.location.reload()"
-          style="
-            background: #dc2626;
-            color: white;
-            border: none;
-            padding: 12px 32px;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-          "
-        >
-          Refresh Page
-        </button>
-      </div>
+    // Create container
+    const container = document.createElement('div');
+    container.style.cssText = 'text-align: center; max-width: 500px; padding: 32px;';
+
+    // Create emoji icon
+    const emojiIcon = document.createElement('div');
+    emojiIcon.textContent = '🚨';
+    emojiIcon.style.cssText = 'font-size: 64px; margin-bottom: 24px;';
+
+    // Create title
+    const title = document.createElement('h1');
+    title.textContent = 'Application Error';
+    title.style.cssText = 'font-size: 28px; margin-bottom: 16px;';
+
+    // Create description
+    const description = document.createElement('p');
+    description.textContent =
+      'The application has encountered multiple errors and may not be functioning correctly. Please refresh the page to continue.';
+    description.style.cssText = 'font-size: 16px; margin-bottom: 32px; opacity: 0.9;';
+
+    // Create refresh button
+    const refreshButton = document.createElement('button');
+    refreshButton.textContent = 'Refresh Page';
+    refreshButton.style.cssText = `
+      background: #dc2626;
+      color: white;
+      border: none;
+      padding: 12px 32px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
     `;
+    refreshButton.onclick = () => window.location.reload();
+
+    // Append all elements
+    container.appendChild(emojiIcon);
+    container.appendChild(title);
+    container.appendChild(description);
+    container.appendChild(refreshButton);
+
+    criticalUI.appendChild(container);
 
     document.body.appendChild(criticalUI);
   }

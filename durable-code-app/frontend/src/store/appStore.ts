@@ -10,8 +10,11 @@ interface AppState {
   setError: (error: string | null) => void;
 }
 
+// Conditionally apply devtools middleware only in development
+const middleware = import.meta.env.DEV ? devtools : <T>(f: T) => f;
+
 export const useAppStore = create<AppState>()(
-  devtools(
+  middleware(
     (set) => ({
       theme: 'light',
       isLoading: false,

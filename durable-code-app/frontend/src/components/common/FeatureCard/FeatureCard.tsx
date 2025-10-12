@@ -10,6 +10,7 @@
 
 import type { ReactElement } from 'react';
 import styles from './FeatureCard.module.css';
+import { logger } from '../../../utils/logger';
 
 export interface FeatureCardProps {
   icon: ReactElement;
@@ -20,6 +21,22 @@ export interface FeatureCardProps {
   onClick?: () => void;
   className?: string;
 }
+
+/**
+ * Validates that a URL is safe to navigate to
+ * Only allows http: and https: protocols to prevent XSS attacks
+ */
+const isValidUrl = (url: string): boolean => {
+  try {
+    const parsed = new URL(url, window.location.origin);
+    if (!['http:', 'https:'].includes(parsed.protocol)) {
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 export function FeatureCard({
   icon,
@@ -34,7 +51,11 @@ export function FeatureCard({
     if (onClick) {
       onClick();
     } else if (linkHref) {
-      window.location.href = linkHref;
+      if (isValidUrl(linkHref)) {
+        window.location.href = linkHref;
+      } else {
+        logger.error('Invalid or unsafe URL prevented:', linkHref);
+      }
     }
   };
 

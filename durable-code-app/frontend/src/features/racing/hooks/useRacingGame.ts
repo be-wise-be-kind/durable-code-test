@@ -33,6 +33,8 @@ import {
 import { SoundManager } from '../audio/soundManager';
 import { TimingSystem } from '../utils/timing';
 import { CheckpointManager } from '../utils/checkpoints';
+import { logger } from '../../../utils/logger';
+import { validateTrack } from '../types/track.schema';
 
 // Constants
 const CANVAS_WIDTH = 1200; // Larger canvas for bigger track
@@ -112,12 +114,18 @@ export function useRacingGame(): UseRacingGameReturn {
         throw new Error(`Failed to load track: ${response.statusText}`);
       }
 
-      const trackData: Track = await response.json();
-      setTrack(trackData);
+      const rawTrackData = await response.json();
+      try {
+        const trackData = validateTrack(rawTrackData);
+        setTrack(trackData);
+      } catch (validationError) {
+        logger.error('Invalid track data received from server:', validationError);
+        throw new Error('Received invalid track data from server');
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       setTrackError(errorMessage);
-      console.error('Failed to load track:', error);
+      logger.error('Failed to load track:', error);
     } finally {
       setIsLoadingTrack(false);
     }
@@ -300,7 +308,7 @@ export function useRacingGame(): UseRacingGameReturn {
 
     const world = initializePhysicsWorld(track);
     if (!world) {
-      console.error('Failed to initialize physics world');
+      logger.error('Failed to initialize physics world');
       return;
     }
 
@@ -424,15 +432,21 @@ export function useRacingGame(): UseRacingGameReturn {
           throw new Error(`Failed to generate track: ${response.statusText}`);
         }
 
-        const trackData: Track = await response.json();
-        setTrack(trackData);
+        const rawTrackData = await response.json();
+        try {
+          const trackData = validateTrack(rawTrackData);
+          setTrack(trackData);
+        } catch (validationError) {
+          logger.error('Invalid track data received from server:', validationError);
+          throw new Error('Received invalid track data from server');
+        }
 
         // Reset game state when track changes
         setGameState(GameState.MENU);
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         setTrackError(errorMessage);
-        console.error('Failed to generate track:', error);
+        logger.error('Failed to generate track:', error);
       } finally {
         setIsLoadingTrack(false);
       }

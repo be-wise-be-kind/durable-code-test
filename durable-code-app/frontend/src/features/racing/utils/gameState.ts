@@ -11,6 +11,7 @@
  */
 
 import { GameState } from '../types/racing.types';
+import { logger } from '../../../utils/logger';
 
 /**
  * Valid state transitions mapping
@@ -204,7 +205,7 @@ export class GameStateManager {
       try {
         listener(event);
       } catch (error) {
-        console.error('Error in state change listener:', error);
+        logger.error('Error in state change listener:', error);
       }
     });
   }
