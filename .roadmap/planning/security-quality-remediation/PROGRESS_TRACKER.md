@@ -28,10 +28,10 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Security &
 4. **Update this document** after completing each PR
 
 ## 📍 Current Status
-**Current PR**: PR3 In Progress - Sub-PR 3.1 Complete ✅, Ready for Sub-PR 3.2
+**Current PR**: PR3 In Progress - Sub-PR 3.2 Complete ✅, Ready for Sub-PR 3.3
 **Infrastructure State**: Production infrastructure running - changes must be backward compatible
 **Feature Target**: Reduce security issues from 67 to <10, improve grade from B+ to A
-**Latest Completion**: PR3 Sub-PR 3.1 - 2025-10-12 (Types & Geometry Extraction)
+**Latest Completion**: PR3 Sub-PR 3.2 - 2025-10-12 (API Routes & Complexity Reduction)
 **Current Work**: Refactoring racing.py into modular package (branch: refactor/python-quality)
 
 ## 📁 Required Documents Location
@@ -97,7 +97,7 @@ Refactor Python codebase to improve maintainability: split racing.py god object,
 |----|-------|--------|------------|------------|----------|-------|
 | PR1 | Python Backend Security | 🟢 Complete | 100% | High | P0 | All 6 issues fixed, tests passing (commit 4066d52) |
 | PR2 | Frontend Security | 🟢 Complete | 100% | Medium | P0 | All 7 issues fixed, Zod validation added (commit 54d87c2, PR #5) |
-| PR3 | Python Code Quality | 🟡 In Progress | 35% | High | P1 | Sub-PR 3.1 complete ✅ (12 modules, 33 tests), Sub-PR 3.2 next |
+| PR3 | Python Code Quality | 🟡 In Progress | 65% | High | P1 | Sub-PR 3.1 & 3.2 complete ✅ (API routes, 50+ tests), Sub-PR 3.3 next |
 | PR4 | React Quality | 🔴 Not Started | 0% | Medium | P2 | Split hooks, error boundaries |
 | PR5 | AWS Infrastructure | 🔴 Not Started | 0% | High | P0 | IAM scoping, encryption, WAF |
 | PR6 | Final Evaluation | 🔴 Not Started | 0% | Low | P0 | Re-run 5-agent analysis |
@@ -253,15 +253,15 @@ Refactor Python codebase to improve maintainability: split racing.py god object,
 
 ## PR3: Python Code Quality Improvements
 
-**Status**: 🟡 In Progress (Sub-PR 3.1 started)
+**Status**: 🟡 In Progress (Sub-PR 3.1 & 3.2 Complete)
 **Branch**: `refactor/python-quality`
 **Estimated Effort**: 3-4 days (broken into 3 sub-PRs)
 **Dependencies**: PR1 (circuit breaker fixes) ✅ Complete
 
 **Implementation Strategy**: Breaking into 3 atomic sub-PRs for manageability:
-- **Sub-PR 3.1**: Foundation - Types and Geometry Extraction (Day 1-2)
-- **Sub-PR 3.2**: API Routes and Complexity Reduction (Day 3-4)
-- **Sub-PR 3.3**: WebSocket State Machine and Algorithms (Day 5-6)
+- **Sub-PR 3.1**: Foundation - Types and Geometry Extraction (Day 1-2) ✅ Complete
+- **Sub-PR 3.2**: API Routes and Complexity Reduction (Day 3-4) ✅ Complete
+- **Sub-PR 3.3**: WebSocket State Machine and Algorithms (Day 5-6) - Next
 
 ### Issues Addressed (14 total)
 
@@ -345,21 +345,21 @@ app/racing/
 
 ### Sub-PR 3.2: API Routes and Complexity Reduction
 
-**Status**: 🔴 Not Started
+**Status**: 🟢 Complete (2025-10-12)
 **Goal**: Extract API routes, reduce function complexity to ≤10
 
 **Checklist**:
-- [ ] Create `app/racing/api/routes.py`
-- [ ] Move route handlers to routes.py
-- [ ] Reduce `generate_procedural_track` complexity
-- [ ] Reduce `compute_concave_hull` complexity
-- [ ] Extract helper functions for complexity reduction
-- [ ] Fix broad exception handling in route handlers
-- [ ] Change `except Exception as e:` to specific exceptions
-- [ ] Create `tests/racing/test_api_routes.py`
-- [ ] Add complexity check to validation (radon cc ≤10)
-- [ ] Run `make lint-all` - all pass
-- [ ] Verify all tests pass
+- [x] Create `app/racing/api/routes.py`
+- [x] Move route handlers to routes.py
+- [x] Reduce `generate_procedural_track` complexity (already ≤10 from 3.1)
+- [x] Reduce `compute_concave_hull` complexity (already ≤10 from 3.1)
+- [x] Extract helper functions for complexity reduction
+- [x] Fix broad exception handling in route handlers
+- [x] Change `except Exception as e:` to specific exceptions
+- [x] Create `tests/racing/test_api_routes.py` (50+ test cases)
+- [x] Add complexity check to validation (radon cc ≤10)
+- [x] Run `make lint-all` - all pass ✅
+- [x] Verify all tests pass ✅ (445 tests passing)
 
 ---
 
