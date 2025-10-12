@@ -19,6 +19,7 @@ import './index.css';
 import App from './App.tsx';
 import { AppProviders } from './app/AppProviders';
 import { MinimalErrorBoundary } from './core/errors/MinimalErrorBoundary';
+import { logger } from './utils/logger';
 
 // Simplified global error handling for security/performance
 let errorCount = 0;
@@ -33,11 +34,11 @@ window.addEventListener('error', (event) => {
   lastErrorTime = now;
 
   if (errorCount >= ERROR_THRESHOLD) {
-    console.error('Error storm detected, preventing cascade');
+    logger.error('Error storm detected, preventing cascade');
     return;
   }
 
-  console.error('Global error:', event.error);
+  logger.error('Global error:', event.error);
 });
 
 window.addEventListener('unhandledrejection', (event) => {
@@ -47,22 +48,22 @@ window.addEventListener('unhandledrejection', (event) => {
   lastErrorTime = now;
 
   if (errorCount >= ERROR_THRESHOLD) {
-    console.error('Promise rejection storm detected');
+    logger.error('Promise rejection storm detected');
     return;
   }
 
-  console.error('Unhandled promise rejection:', event.reason);
+  logger.error('Unhandled promise rejection:', event.reason);
 });
 
-console.error('[main.tsx] Starting app initialization');
+logger.debug('[main.tsx] Starting app initialization');
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
-  console.error('[main.tsx] Root element not found!');
+  logger.error('[main.tsx] Root element not found!');
   throw new Error('Failed to find root element');
 }
 
-console.error('[main.tsx] Root element found, rendering app');
+logger.debug('[main.tsx] Root element found, rendering app');
 
 createRoot(rootElement).render(
   <StrictMode>

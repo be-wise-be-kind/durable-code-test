@@ -20,8 +20,11 @@ interface NavigationState {
   navigateBack: () => void;
 }
 
+// Conditionally apply devtools middleware only in development
+const middleware = import.meta.env.DEV ? devtools : <T>(f: T) => f;
+
 export const useNavigationStore = create<NavigationState>()(
-  devtools(
+  middleware(
     (set, get) => ({
       activeTab: 'Repository',
       activeSubTab: null,
