@@ -12,11 +12,7 @@ Implementation: Re-exports from refactored modules
 """
 
 # Re-export models for backward compatibility
-# Import router for backward compatibility - will be created in Sub-PR 3.2
-# For now, we'll import from the old racing_old module temporarily
-# This will be replaced once we create api/routes.py
-from ..racing_old import router
-
+# Import router from new api module
 # Re-export algorithms
 from .algorithms.hull import (
     compute_concave_hull,
@@ -25,6 +21,7 @@ from .algorithms.hull import (
 )
 from .algorithms.layouts import generate_figure8_track
 from .algorithms.random_points import generate_random_track_points
+from .api import router
 
 # Re-export domain/generation functions
 from .domain.generator import (

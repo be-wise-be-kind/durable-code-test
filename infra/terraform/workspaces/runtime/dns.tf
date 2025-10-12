@@ -8,7 +8,7 @@ resource "aws_route53_record" "main" {
   count = var.domain_name != "" ? 1 : 0
 
   zone_id = local.route53_zone_id
-  name    = local.route53_zone_name  # Apex: dev.durableaicoding.net
+  name    = local.route53_zone_name # Apex: dev.durableaicoding.net
   type    = "A"
 
   alias {
@@ -28,7 +28,7 @@ resource "aws_route53_record" "www" {
   count = var.domain_name != "" ? 1 : 0
 
   zone_id = local.route53_zone_id
-  name    = "www.${local.route53_zone_name}"  # www.dev.durableaicoding.net
+  name    = "www.${local.route53_zone_name}" # www.dev.durableaicoding.net
   type    = "A"
 
   alias {
@@ -48,7 +48,7 @@ resource "aws_route53_record" "api" {
   count = var.domain_name != "" ? 1 : 0
 
   zone_id = local.route53_zone_id
-  name    = "api.${local.route53_zone_name}"  # api.dev.durableaicoding.net
+  name    = "api.${local.route53_zone_name}" # api.dev.durableaicoding.net
   type    = "A"
 
   alias {
