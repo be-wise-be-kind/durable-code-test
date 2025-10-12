@@ -28,10 +28,11 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Security &
 4. **Update this document** after completing each PR
 
 ## 📍 Current Status
-**Current PR**: PR2 Complete - Ready for PR3 or PR5
+**Current PR**: PR3 In Progress - Sub-PR 3.1 Complete ✅, Ready for Sub-PR 3.2
 **Infrastructure State**: Production infrastructure running - changes must be backward compatible
 **Feature Target**: Reduce security issues from 67 to <10, improve grade from B+ to A
-**Latest Completion**: PR2 (commit 54d87c2) - 2025-10-11
+**Latest Completion**: PR3 Sub-PR 3.1 - 2025-10-12 (Types & Geometry Extraction)
+**Current Work**: Refactoring racing.py into modular package (branch: refactor/python-quality)
 
 ## 📁 Required Documents Location
 ```
@@ -43,30 +44,35 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Security &
 
 ## 🎯 Next PR to Implement
 
-### ➡️ START HERE: PR3 - Python Code Quality Improvements
+### ➡️ IN PROGRESS: PR3 - Python Code Quality Improvements (Sub-PR 3.1)
 
 **Quick Summary**:
 Refactor Python codebase to improve maintainability: split racing.py god object, reduce cyclomatic complexity to ≤10, extract magic numbers to constants, create domain types, fix broad exception handling, implement State Machine pattern for WebSocket.
 
-**Branch**: `refactor/python-quality`
-**Estimated Effort**: 3-4 days
+**Branch**: `refactor/python-quality` ✅ Created
+**Estimated Effort**: 3-4 days (broken into 3 sub-PRs)
 **Priority**: P1 (High)
 **Dependencies**: PR1 (circuit breaker fixes) ✅ Complete
 
+**Current Sub-PR**: 3.1 - Foundation (Types & Geometry Extraction)
+**Progress**: Types.py created, geometry modules in progress
+
 **Pre-flight Checklist**:
-- [ ] Read AI_CONTEXT.md for overall feature context
-- [ ] Read PR_BREAKDOWN.md PR3 section for detailed steps
-- [ ] Ensure main branch is up to date with PR1 changes
-- [ ] Create feature branch from main
-- [ ] Review racing.py structure (824 lines, complexity 47)
-- [ ] Plan package structure for racing module
+- [x] Read AI_CONTEXT.md for overall feature context
+- [x] Read PR_BREAKDOWN.md PR3 section for detailed steps
+- [x] Ensure main branch is up to date with PR1 changes
+- [x] Create feature branch from main
+- [x] Review racing.py structure (832 lines, complexity 47)
+- [x] Plan package structure for racing module (3 sub-PRs defined)
 
 **Prerequisites Complete**:
 ✅ PR1 merged (circuit breaker fixes available)
 ✅ 5-agent security analysis completed
 ✅ Code quality issues documented
 ✅ Refactoring patterns identified
+✅ 3-phase implementation plan defined
 
+**Next Steps**: Complete Sub-PR 3.1, then proceed to 3.2 (API Routes)
 **Alternative**: PR5 - AWS Infrastructure Security (can run in parallel with PR3)
 
 ---
@@ -91,7 +97,7 @@ Refactor Python codebase to improve maintainability: split racing.py god object,
 |----|-------|--------|------------|------------|----------|-------|
 | PR1 | Python Backend Security | 🟢 Complete | 100% | High | P0 | All 6 issues fixed, tests passing (commit 4066d52) |
 | PR2 | Frontend Security | 🟢 Complete | 100% | Medium | P0 | All 7 issues fixed, Zod validation added (commit 54d87c2, PR #5) |
-| PR3 | Python Code Quality | 🔴 Not Started | 0% | High | P1 | Split racing.py, reduce complexity |
+| PR3 | Python Code Quality | 🟡 In Progress | 35% | High | P1 | Sub-PR 3.1 complete ✅ (12 modules, 33 tests), Sub-PR 3.2 next |
 | PR4 | React Quality | 🔴 Not Started | 0% | Medium | P2 | Split hooks, error boundaries |
 | PR5 | AWS Infrastructure | 🔴 Not Started | 0% | High | P0 | IAM scoping, encryption, WAF |
 | PR6 | Final Evaluation | 🔴 Not Started | 0% | Low | P0 | Re-run 5-agent analysis |
@@ -247,18 +253,23 @@ Refactor Python codebase to improve maintainability: split racing.py god object,
 
 ## PR3: Python Code Quality Improvements
 
-**Status**: 🔴 Not Started
+**Status**: 🟡 In Progress (Sub-PR 3.1 started)
 **Branch**: `refactor/python-quality`
-**Estimated Effort**: 3-4 days
-**Dependencies**: PR1 (circuit breaker fixes)
+**Estimated Effort**: 3-4 days (broken into 3 sub-PRs)
+**Dependencies**: PR1 (circuit breaker fixes) ✅ Complete
+
+**Implementation Strategy**: Breaking into 3 atomic sub-PRs for manageability:
+- **Sub-PR 3.1**: Foundation - Types and Geometry Extraction (Day 1-2)
+- **Sub-PR 3.2**: API Routes and Complexity Reduction (Day 3-4)
+- **Sub-PR 3.3**: WebSocket State Machine and Algorithms (Day 5-6)
 
 ### Issues Addressed (14 total)
 
 #### God Object - racing.py (HIGH)
-- **File**: `app/racing.py` (824 lines, complexity 47)
+- **File**: `app/racing.py` (832 lines, complexity 47)
 - **Issue**: Massive file violates SRP
-- **Fix**: Split into package with 6 modules
-- **Modules**: routes, generator, curves, boundaries, smoothing, types
+- **Fix**: Split into package with 12 modules across 4 sub-packages
+- **Structure**: api/, domain/, geometry/, algorithms/
 
 #### High Complexity Functions (HIGH)
 - **Multiple functions** exceed complexity 10
@@ -267,42 +278,126 @@ Refactor Python codebase to improve maintainability: split racing.py god object,
 
 #### Magic Numbers (MEDIUM)
 - **Throughout codebase**
-- **Fix**: Extract to named constants
-- **Example**: `MIN_TRACK_RADIUS = 100.0`
+- **Fix**: Extract to named constants in types.py
+- **Example**: `MIN_TRACK_RADIUS = 100.0`, `DIFFICULTY_PARAMS`
 
 #### Primitive Obsession (MEDIUM)
 - **Points as tuples** `(x, y)`
-- **Fix**: Create `Point` domain type
+- **Fix**: Create `Point` domain type with immutability
 - **Benefits**: Type safety, methods, immutability
 
 #### Broad Exception Handling (MEDIUM)
 - **Catch-all except blocks** mask errors
 - **Fix**: Catch specific exceptions
-- **Pattern**: `except ValueError as e:`
+- **Pattern**: `except (ValueError, KeyError) as e:`
 
 #### State Machine Pattern (MEDIUM)
 - **WebSocket state management** is ad-hoc
-- **Fix**: Implement State Machine pattern
-- **Benefits**: Clear state transitions, testability
+- **Fix**: Implement State Machine pattern with validation
+- **Benefits**: Clear state transitions, testability, error prevention
 
-### Checklist
-- [ ] Create branch `refactor/python-quality`
-- [ ] Create `app/racing/types.py` with Point, TrackConfig
-- [ ] Create racing package structure (6 modules)
-- [ ] Migrate track generation to new package
-- [ ] Extract all magic numbers to constants
-- [ ] Replace tuples with Point type
-- [ ] Fix broad exception handling
-- [ ] Reduce all functions to complexity ≤10
-- [ ] Implement WebSocket State Machine
-- [ ] Write tests for new modules
-- [ ] Verify all original tests still pass
-- [ ] Run complexity analysis - all pass
-- [ ] Run `make lint` - all pass
-- [ ] Delete old `racing.py` file
-- [ ] Create PR
-- [ ] Merge to main
+---
+
+### Sub-PR 3.1: Foundation - Types and Geometry Extraction
+
+**Status**: 🟢 Complete (2025-10-12)
+**Goal**: Extract domain types, geometry operations, and basic track generation
+
+**Package Structure**:
+```
+app/racing/
+├── __init__.py              # Re-export for backward compatibility
+├── types.py                 # Point, TrackConfig, constants
+├── models.py                # Pydantic models
+├── geometry/
+│   ├── __init__.py
+│   ├── curves.py           # Catmull-Rom, smoothing
+│   └── boundaries.py       # Boundary generation
+├── domain/
+│   ├── __init__.py
+│   └── generator.py        # Track generation logic
+└── algorithms/
+    ├── __init__.py
+    ├── hull.py             # Concave hull computation
+    ├── layouts.py          # Figure-8 track generation
+    └── random_points.py    # Random point generation
+```
+
+**Checklist**:
+- [x] Create branch `refactor/python-quality`
+- [x] Create `app/racing/types.py` with Point, TrackConfig, constants
+- [x] Create `app/racing/models.py` with Pydantic models
+- [x] Create `app/racing/geometry/curves.py`
+- [x] Create `app/racing/geometry/boundaries.py`
+- [x] Create `app/racing/domain/generator.py`
+- [x] Create `app/racing/algorithms/hull.py`
+- [x] Create `app/racing/algorithms/layouts.py`
+- [x] Create `app/racing/algorithms/random_points.py`
+- [x] Create `app/racing/__init__.py` with backward compatibility exports
+- [x] Update `app/famous_tracks.py` imports
+- [x] Create `tests/racing/test_types.py` (13 tests)
+- [x] Create `tests/racing/test_curves.py` (13 tests)
+- [x] Create `tests/racing/test_generator.py` (7 tests)
+- [x] Run `make lint-all` - all pass ✅
+- [x] Verify all existing tests still pass ✅ (20 tests)
+
+---
+
+### Sub-PR 3.2: API Routes and Complexity Reduction
+
+**Status**: 🔴 Not Started
+**Goal**: Extract API routes, reduce function complexity to ≤10
+
+**Checklist**:
+- [ ] Create `app/racing/api/routes.py`
+- [ ] Move route handlers to routes.py
+- [ ] Reduce `generate_procedural_track` complexity
+- [ ] Reduce `compute_concave_hull` complexity
+- [ ] Extract helper functions for complexity reduction
+- [ ] Fix broad exception handling in route handlers
+- [ ] Change `except Exception as e:` to specific exceptions
+- [ ] Create `tests/racing/test_api_routes.py`
+- [ ] Add complexity check to validation (radon cc ≤10)
+- [ ] Run `make lint-all` - all pass
+- [ ] Verify all tests pass
+
+---
+
+### Sub-PR 3.3: WebSocket State Machine and Algorithms
+
+**Status**: 🔴 Not Started
+**Goal**: Implement State Machine pattern, extract remaining algorithms
+
+**Checklist**:
+- [ ] Create `app/racing/state_machine.py`
+- [ ] Implement WebSocketStateMachine class
+- [ ] Update `app/oscilloscope.py` to use state machine
+- [ ] Create `app/racing/algorithms/hull.py`
+- [ ] Create `app/racing/algorithms/random_points.py`
+- [ ] Extract compute_concave_hull and helpers
+- [ ] Delete original `app/racing.py` file
+- [ ] Update all imports throughout codebase
+- [ ] Verify no references to old module
+- [ ] Create `tests/test_state_machine.py`
+- [ ] Create `tests/racing/test_algorithms.py`
+- [ ] Integration test: Full track generation pipeline
+- [ ] Integration test: WebSocket lifecycle
+- [ ] Run `make lint-all` - all pass
+- [ ] Verify all tests pass (unit + integration)
+- [ ] Create final PR to main
 - [ ] Update this document
+
+---
+
+### Overall PR3 Success Criteria
+- ✅ racing.py deleted (832 lines → 0 lines)
+- ✅ New package: ~800 lines across 12 focused modules
+- ✅ All functions complexity ≤10
+- ✅ Zero magic numbers (all in types.py)
+- ✅ State machine pattern for WebSocket
+- ✅ 100% backward compatibility
+- ✅ All tests passing (old + new)
+- ✅ Zero linting violations
 
 ---
 

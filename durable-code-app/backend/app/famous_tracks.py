@@ -12,7 +12,7 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from app.racing import TrackBoundary
+    from app.racing.models import TrackBoundary
 
 
 def generate_spa_inspired_track(

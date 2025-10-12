@@ -722,21 +722,33 @@ def _select_track_layout(params: TrackGenerationParams, track_width: float) -> T
     layout_generators = {
         "figure8": lambda: generate_figure8_track(params.width, params.height, track_width),
         "spa": lambda: generate_spa_inspired_track(
-            params.width, params.height, track_width, generate_boundaries_from_centerline
+            params.width,
+            params.height,
+            track_width,
+            generate_boundaries_from_centerline,  # type: ignore[arg-type]
         ),
         "monaco": lambda: generate_monaco_style_track(
-            params.width, params.height, track_width, generate_boundaries_from_centerline
+            params.width,
+            params.height,
+            track_width,
+            generate_boundaries_from_centerline,  # type: ignore[arg-type]
         ),
         "laguna": lambda: generate_laguna_seca_track(
-            params.width, params.height, track_width, generate_boundaries_from_centerline
+            params.width,
+            params.height,
+            track_width,
+            generate_boundaries_from_centerline,  # type: ignore[arg-type]
         ),
         "suzuka": lambda: generate_suzuka_style_track(
-            params.width, params.height, track_width, generate_boundaries_from_centerline
+            params.width,
+            params.height,
+            track_width,
+            generate_boundaries_from_centerline,  # type: ignore[arg-type]
         ),
     }
 
     if params.layout in layout_generators:
-        return layout_generators[params.layout]()
+        return layout_generators[params.layout]()  # type: ignore[return-value]
 
     return generate_procedural_track(
         params.width,
