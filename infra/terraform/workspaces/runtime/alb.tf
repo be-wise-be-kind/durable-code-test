@@ -13,14 +13,12 @@ resource "aws_lb" "main" {
   enable_http2                     = true
   enable_cross_zone_load_balancing = false # Cost optimization - avoid cross-AZ charges
 
-  # Access logs disabled for cost optimization in dev
-  # Enable in production for compliance/debugging
-  dynamic "access_logs" {
-    for_each = local.environment == "prod" ? [1] : []
-    content {
-      bucket  = aws_s3_bucket.alb_logs[0].bucket
-      enabled = true
-    }
+  # Access logs enabled for all environments for security monitoring
+  # Critical for incident response, compliance, and debugging
+  access_logs {
+    bucket  = aws_s3_bucket.alb_logs.bucket
+    enabled = true
+    prefix  = "alb"
   }
 
   tags = merge(
@@ -33,9 +31,8 @@ resource "aws_lb" "main" {
   )
 }
 
-# S3 bucket for ALB access logs (production only)
+# S3 bucket for ALB access logs (all environments for security)
 resource "aws_s3_bucket" "alb_logs" {
-  count  = local.environment == "prod" ? 1 : 0
   bucket = "${var.project_name}-${local.environment}-alb-logs-${data.aws_caller_identity.current.account_id}"
 
   tags = merge(
@@ -50,8 +47,7 @@ resource "aws_s3_bucket" "alb_logs" {
 
 # S3 bucket lifecycle configuration for log retention
 resource "aws_s3_bucket_lifecycle_configuration" "alb_logs" {
-  count  = local.environment == "prod" ? 1 : 0
-  bucket = aws_s3_bucket.alb_logs[0].id
+  bucket = aws_s3_bucket.alb_logs.id
 
   rule {
     id     = "expire-old-logs"
@@ -60,15 +56,14 @@ resource "aws_s3_bucket_lifecycle_configuration" "alb_logs" {
     filter {} # Required even if empty
 
     expiration {
-      days = 30 # Keep logs for 30 days
+      days = lookup(var.log_retention_days, var.environment, 7)
     }
   }
 }
 
 # S3 bucket public access block
 resource "aws_s3_bucket_public_access_block" "alb_logs" {
-  count  = local.environment == "prod" ? 1 : 0
-  bucket = aws_s3_bucket.alb_logs[0].id
+  bucket = aws_s3_bucket.alb_logs.id
 
   block_public_acls       = true
   block_public_policy     = true
@@ -76,10 +71,12 @@ resource "aws_s3_bucket_public_access_block" "alb_logs" {
   restrict_public_buckets = true
 }
 
+# Data source for ELB service account
+data "aws_elb_service_account" "main" {}
+
 # S3 bucket policy for ALB access logs
 resource "aws_s3_bucket_policy" "alb_logs" {
-  count  = local.environment == "prod" ? 1 : 0
-  bucket = aws_s3_bucket.alb_logs[0].id
+  bucket = aws_s3_bucket.alb_logs.id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -88,10 +85,33 @@ resource "aws_s3_bucket_policy" "alb_logs" {
         Sid    = "ALBAccessLogsWrite"
         Effect = "Allow"
         Principal = {
-          AWS = "arn:aws:iam::797873946194:root" # ALB service account for us-west-2
+          AWS = data.aws_elb_service_account.main.arn
         }
         Action   = "s3:PutObject"
-        Resource = "${aws_s3_bucket.alb_logs[0].arn}/*"
+        Resource = "${aws_s3_bucket.alb_logs.arn}/*"
+      },
+      {
+        Sid    = "AWSLogDeliveryWrite"
+        Effect = "Allow"
+        Principal = {
+          Service = "delivery.logs.amazonaws.com"
+        }
+        Action   = "s3:PutObject"
+        Resource = "${aws_s3_bucket.alb_logs.arn}/*"
+        Condition = {
+          StringEquals = {
+            "s3:x-amz-acl" = "bucket-owner-full-control"
+          }
+        }
+      },
+      {
+        Sid    = "AWSLogDeliveryAclCheck"
+        Effect = "Allow"
+        Principal = {
+          Service = "delivery.logs.amazonaws.com"
+        }
+        Action   = "s3:GetBucketAcl"
+        Resource = aws_s3_bucket.alb_logs.arn
       }
     ]
   })

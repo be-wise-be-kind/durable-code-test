@@ -128,6 +128,22 @@ output "acm_certificate_status" {
 
 # VPC Endpoint outputs moved to runtime workspace
 
+# VPC Flow Logs Outputs
+output "vpc_flow_log_id" {
+  description = "VPC Flow Log ID"
+  value       = aws_flow_log.main.id
+}
+
+output "vpc_flow_log_group_name" {
+  description = "CloudWatch Log Group name for VPC Flow Logs"
+  value       = aws_cloudwatch_log_group.vpc_flow_logs.name
+}
+
+output "vpc_flow_log_group_arn" {
+  description = "CloudWatch Log Group ARN for VPC Flow Logs"
+  value       = aws_cloudwatch_log_group.vpc_flow_logs.arn
+}
+
 # Resource Tags (for data source filtering)
 output "base_resource_tags" {
   description = "Tags applied to base resources for filtering"
