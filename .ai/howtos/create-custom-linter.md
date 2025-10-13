@@ -137,7 +137,7 @@ touch test/unit_test/tools/design_linters/test_{rule_name}_rules.py
 
 ```bash
 # Run via make
-make lint-custom
+just lint-custom
 
 # Run directly
 python tools/design_linters/cli.py --rules category.rule-name src/
@@ -424,7 +424,7 @@ if __name__ == '__main__':
 
 ```bash
 # Run all linter tests
-make test
+just test
 
 # Run specific test file
 PYTHONPATH=/home/stevejackson/Projects/durable-code-test/tools python -m pytest \
@@ -490,9 +490,9 @@ problematic_code()
 ### Make Targets
 
 Your rule is automatically included in:
-- `make lint-custom`: Runs all custom linting rules
-- `make lint-all`: Runs all linters including yours
-- `make lint-list-rules`: Lists all available rules
+- `just lint-custom`: Runs all custom linting rules
+- `just lint-all`: Runs all linters including yours
+- `just lint-list-rules`: Lists all available rules
 
 ### CLI Usage
 
@@ -802,10 +802,10 @@ After implementing your custom linter rule, you must verify that it integrates p
 
 ```bash
 # Run comprehensive linting
-make lint-all
+just lint-all
 
 # Run all tests
-make test-all
+just test-all
 ```
 
 **IMPORTANT**: Both commands must pass successfully. Since linting can modify code and tests can affect linting results, you must run both commands repeatedly until both pass in succession without errors:
@@ -813,20 +813,20 @@ make test-all
 ```bash
 # Verification loop
 while true; do
-    make lint-all
+    just lint-all
     if [ $? -ne 0 ]; then
         echo "Linting failed - fix issues and try again"
         break
     fi
 
-    make test-all
+    just test-all
     if [ $? -ne 0 ]; then
         echo "Tests failed - fix issues and try again"
         break
     fi
 
     # Run once more to ensure stability
-    make lint-all && make test-all
+    just lint-all && just test-all
     if [ $? -eq 0 ]; then
         echo "Success! Both linting and tests pass consistently"
         break

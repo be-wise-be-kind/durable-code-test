@@ -73,13 +73,13 @@ def check_file_placement(filepath: Path) -> List[LintViolation]:
 ## 2. Deterministic Operations
 
 ### Abstract Principle
-**Same command = same result, always.** AI-generated code often works in one environment but fails in another. Containerization and make targets ensure identical execution everywhere.
+**Same command = same result, always.** AI-generated code often works in one environment but fails in another. Containerization and just targets ensure identical execution everywhere.
 
 ### Our Implementation: Docker-Wrapped Make Targets
 
 Location: `Makefile`, `Makefile.lint`, `Makefile.test`
 
-```makefile
+```justfile
 # Every operation runs in Docker with pinned versions
 test: docker-check
 	docker-compose -f docker-compose.test.yml run \
@@ -108,7 +108,7 @@ services:
       - POETRY_VERSION=1.7.0
 ```
 
-**Result:** `make test` produces identical results on developer machines, CI/CD, and production.
+**Result:** `just test` produces identical results on developer machines, CI/CD, and production.
 
 ---
 
@@ -189,7 +189,7 @@ repos:
     hooks:
       - id: design-linters
         name: Custom Design Linters
-        entry: make lint-custom
+        entry: just lint-custom
         language: system
         always_run: true
 
@@ -211,7 +211,7 @@ jobs:
         check: [lint-all, test-all, security-scan]
     steps:
       - uses: actions/checkout@v4
-      - run: make ${{ matrix.check }}
+      - run: just ${{ matrix.check }}
       - if: failure()
         run: echo "::error::${{ matrix.check }} failed"
 ```
@@ -355,10 +355,10 @@ structure:
     tests: src/**/*.test.tsx
 
 commands:
-  test: "make test-all"
-  lint: "make lint-all"
-  build: "make build"
-  run: "make dev"
+  test: "just test-all"
+  lint: "just lint-all"
+  build: "just build"
+  run: "just dev"
 
 features:
   - name: design-linters
@@ -544,10 +544,10 @@ Our repository transforms AI from an unpredictable assistant into a reliable eng
 ## Getting Started
 
 1. **Clone the repository**: Get the complete repository
-2. **Run `make setup`**: Initialize your environment
+2. **Run `just setup`**: Initialize your environment
 3. **Explore `.ai/`**: Understand the structure
-4. **Try `make lint-all`**: See comprehensive validation
+4. **Try `just lint-all`**: See comprehensive validation
 5. **Read the templates**: Learn the patterns
-6. **Run `make test`**: Experience deterministic testing
+6. **Run `just test`**: Experience deterministic testing
 
-Every piece of repository exists to make AI-assisted development predictable, reliable, and production-ready.
+Every piece of repository exists to just AI-assisted development predictable, reliable, and production-ready.

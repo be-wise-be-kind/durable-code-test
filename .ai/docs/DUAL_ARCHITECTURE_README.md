@@ -55,45 +55,45 @@ Resources that can be quickly destroyed and recreated:
 
 ```bash
 # Deploy everything (first time setup)
-make infra-up SCOPE=all AUTO=true
+just infra-up SCOPE=all AUTO=true
 
 # Deploy only runtime resources (fast, default)
-make infra-up
+just infra-up
 
 # Deploy only base resources
-make infra-up SCOPE=base
+just infra-up SCOPE=base
 
 # Deploy with specific environment
-ENV=prod make infra-up SCOPE=all
+ENV=prod just infra-up SCOPE=all
 ```
 
 ### Destroy Infrastructure
 
 ```bash
 # Destroy only runtime resources (default, safe, fast)
-make infra-down
+just infra-down
 
 # Destroy everything (removes all AWS resources)
-make infra-down SCOPE=all
+just infra-down SCOPE=all
 
 # Destroy only base resources (rare)
-make infra-down SCOPE=base
+just infra-down SCOPE=base
 
 # Auto-approve destruction (use with caution)
-make infra-down AUTO=true
+just infra-down AUTO=true
 ```
 
 ### Plan Changes
 
 ```bash
 # Plan runtime changes (default)
-make infra-plan
+just infra-plan
 
 # Plan all changes
-make infra-plan SCOPE=all
+just infra-plan SCOPE=all
 
 # Plan base resource changes
-make infra-plan SCOPE=base
+just infra-plan SCOPE=base
 ```
 
 ## Cost Optimization Workflow
@@ -101,10 +101,10 @@ make infra-plan SCOPE=base
 ### Daily Development Workflow
 ```bash
 # Morning: Spin up runtime resources
-make infra-up              # Deploys ECS, listeners in <5 minutes
+just infra-up              # Deploys ECS, listeners in <5 minutes
 
 # Evening: Tear down runtime resources
-make infra-down            # Removes ECS, saves ~$4/day
+just infra-down            # Removes ECS, saves ~$4/day
 
 # Base resources remain: VPC, NAT ($1.50/day), ECR, Route53
 ```
@@ -112,10 +112,10 @@ make infra-down            # Removes ECS, saves ~$4/day
 ### Weekend Shutdown
 ```bash
 # Friday evening: Destroy everything
-make infra-down SCOPE=all AUTO=true
+just infra-down SCOPE=all AUTO=true
 
 # Monday morning: Recreate infrastructure
-make infra-up SCOPE=all AUTO=true
+just infra-up SCOPE=all AUTO=true
 ```
 
 ## Implementation Details
@@ -146,14 +146,14 @@ All resources remain in a single Terraform state file. The separation is achieve
 ### From Existing Infrastructure
 1. The current infrastructure remains compatible
 2. No state migration required
-3. Default behavior (`make infra-down`) now only affects runtime resources
-4. To maintain old behavior, use `make infra-down SCOPE=all`
+3. Default behavior (`just infra-down`) now only affects runtime resources
+4. To maintain old behavior, use `just infra-down SCOPE=all`
 
 ### Rollback Plan
 If issues occur, the previous behavior can be restored by:
 ```bash
 # Deploy everything
-make infra-up SCOPE=all
+just infra-up SCOPE=all
 
 # Or use Terraform directly
 cd infra/terraform
@@ -165,28 +165,28 @@ terraform apply -var-file=../environments/dev.tfvars
 ### Verify Scope Targeting
 ```bash
 # Check what would be destroyed (dry run)
-make infra-plan SCOPE=runtime
-make infra-plan SCOPE=base
-make infra-plan SCOPE=all
+just infra-plan SCOPE=runtime
+just infra-plan SCOPE=base
+just infra-plan SCOPE=all
 ```
 
 ### Test Deployment
 ```bash
 # 1. Deploy base infrastructure
-make infra-up SCOPE=base
+just infra-up SCOPE=base
 
 # 2. Deploy runtime on top
-make infra-up SCOPE=runtime
+just infra-up SCOPE=runtime
 
 # 3. Destroy runtime only
-make infra-down SCOPE=runtime
+just infra-down SCOPE=runtime
 
 # 4. Verify base remains
 aws ec2 describe-vpcs --region us-west-2
 aws ec2 describe-nat-gateways --region us-west-2
 
 # 5. Recreate runtime (should be fast)
-make infra-up SCOPE=runtime
+just infra-up SCOPE=runtime
 ```
 
 ## Troubleshooting
@@ -194,16 +194,16 @@ make infra-up SCOPE=runtime
 ### State Lock Issues
 ```bash
 # If terraform state is locked
-make infra-plan SCOPE=runtime  # Will show if state is accessible
+just infra-plan SCOPE=runtime  # Will show if state is accessible
 ```
 
 ### Missing Dependencies
 If runtime resources fail to deploy due to missing base resources:
 ```bash
 # Ensure base resources exist
-make infra-up SCOPE=base
+just infra-up SCOPE=base
 # Then deploy runtime
-make infra-up SCOPE=runtime
+just infra-up SCOPE=runtime
 ```
 
 ### Verification Commands

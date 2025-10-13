@@ -1,6 +1,6 @@
 # How to Run Unit Tests
 
-**Purpose**: Guide for executing unit tests using Make targets and Docker-based testing workflows
+**Purpose**: Guide for executing unit tests using Just targets and Docker-based testing workflows
 
 **Scope**: Unit test execution, coverage analysis, test automation, Docker-based testing requirements
 
@@ -21,22 +21,22 @@
 
 ## Primary Method: Make Targets (Required)
 
-The project enforces Docker/Make usage requirements for consistent testing. **Always use make targets first.**
+The project enforces Docker/Make usage requirements for consistent testing. **Always use just targets first.**
 
 ```bash
 # See all available test commands
-make help
+just help
 
 # Run all unit tests (recommended)
-make test-backend-quick
+just test-backend-quick
 
 # Run with coverage
-make test-backend-coverage
+just test-backend-coverage
 
 # Run specific test categories
-make test-framework    # Design linter framework tests
-make test-rules       # All linting rule tests
-make test-component COMPONENT=test/path  # Specific component
+just test-framework    # Design linter framework tests
+just test-rules       # All linting rule tests
+just test-component COMPONENT=test/path  # Specific component
 ```
 
 ## Available Make Targets
@@ -45,7 +45,7 @@ make test-component COMPONENT=test/path  # Specific component
 
 **Backend Unit Tests (Fastest):**
 ```bash
-make test-backend-quick
+just test-backend-quick
 ```
 - Runs all backend unit tests without coverage
 - Fast feedback for development cycles
@@ -53,7 +53,7 @@ make test-backend-quick
 
 **Backend with Coverage:**
 ```bash
-make test-backend-coverage
+just test-backend-coverage
 ```
 - Includes coverage reporting
 - Identifies untested code paths
@@ -61,7 +61,7 @@ make test-backend-coverage
 
 **All Tests (Complete Suite):**
 ```bash
-make test-all
+just test-all
 ```
 - Backend + frontend tests with coverage
 - Full validation before commits
@@ -70,21 +70,21 @@ make test-all
 
 **Framework Tests:**
 ```bash
-make test-framework
+just test-framework
 ```
 - Core linting framework functionality
 - Base classes and utilities
 
 **Rule Tests:**
 ```bash
-make test-rules
+just test-rules
 ```
 - All individual linting rules
 - Magic numbers, SRP, logging, etc.
 
 **Specific Components:**
 ```bash
-make test-component COMPONENT=test/unit_test/tools/design_linters/test_basic.py
+just test-component COMPONENT=test/unit_test/tools/design_linters/test_basic.py
 ```
 
 ## Specific Test Execution
@@ -150,9 +150,9 @@ TOTAL                     20      2    90%
 
 ### Running Tests for New Features
 1. **Create feature code**
-2. **Run affected tests**: `make test-unit`
-3. **Check coverage**: `make test-coverage`
-4. **Run full suite**: `make test`
+2. **Run affected tests**: `just test-unit`
+3. **Check coverage**: `just test-coverage`
+4. **Run full suite**: `just test`
 
 ### Debugging Test Failures
 ```bash
@@ -242,15 +242,15 @@ export PYTHONPATH=/home/stevejackson/Projects/durable-code-test/tools
 
 **Docker Permission Issues**:
 ```bash
-# Use make targets instead of direct Docker commands
-make test  # Instead of docker-compose exec
+# Use just targets instead of direct Docker commands
+just test  # Instead of docker-compose exec
 ```
 
 **Test Database Issues**:
 ```bash
 # Clean and rebuild test environment
-make clean
-make test
+just clean
+just test
 ```
 
 ### Debug Mode
@@ -265,11 +265,11 @@ PYTHONPATH=/home/stevejackson/Projects/durable-code-test/tools python -m pytest 
 ## Best Practices
 
 ### Before Committing
-1. **Check available commands**: `make help`
-2. **Run unit tests**: `make test-backend-quick`
-3. **Check coverage**: `make test-backend-coverage`
-4. **Run linting**: `make lint-all`
-5. **Full validation**: `make test-all`
+1. **Check available commands**: `just help`
+2. **Run unit tests**: `just test-backend-quick`
+3. **Check coverage**: `just test-backend-coverage`
+4. **Run linting**: `just lint-all`
+5. **Full validation**: `just test-all`
 
 ### Test Development
 1. **Write tests first** (TDD approach)

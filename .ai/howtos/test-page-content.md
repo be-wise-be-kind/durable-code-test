@@ -10,7 +10,7 @@ Page content verification, React app testing, error boundary validation, blank p
 This guide explains how to verify that React applications render correctly using various testing scripts executed via Docker. These tools are essential for debugging rendering issues, validating error boundary implementations, and ensuring the application loads properly.
 
 ## Dependencies
-- Docker containers running (via `make dev`)
+- Docker containers running (via `just dev`)
 - Node.js scripts in scripts/ directory
 - Frontend container: durable-code-frontend-dev
 
@@ -19,7 +19,7 @@ This guide explains how to verify that React applications render correctly using
 ### Basic Verification
 ```bash
 # Start development environment
-make dev
+just dev
 
 # Basic page content check via Docker
 docker exec durable-code-frontend-dev node /app/scripts/check-page-content.js
@@ -144,7 +144,7 @@ docker exec durable-code-frontend-dev node /app/scripts/check-page-content.js
 ### Issue: "Container not found" Error
 ```bash
 # Ensure containers are running
-make dev
+just dev
 
 # Verify container name
 docker ps | grep frontend

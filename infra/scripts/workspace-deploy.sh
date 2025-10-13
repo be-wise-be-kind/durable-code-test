@@ -101,5 +101,5 @@ esac
 
 echo ""
 echo -e "${CYAN}Deployment complete!${NC}"
-echo -e "${YELLOW}To view infrastructure status, run: make infra-status ENV=${ENV}${NC}"
-echo -e "${YELLOW}To view outputs, run: make infra-output SCOPE=${SCOPE} ENV=${ENV}${NC}"
+echo -e "${YELLOW}To view infrastructure status, run: just infra-status ENV=${ENV}${NC}"
+echo -e "${YELLOW}To view outputs, run: just infra-output SCOPE=${SCOPE} ENV=${ENV}${NC}"

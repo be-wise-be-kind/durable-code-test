@@ -36,7 +36,7 @@ fi
 # Validate PR exists
 if [ -z "$PR_NUMBER" ]; then
     echo -e "${RED}❌ No PR found for current branch${NC}"
-    echo -e "${YELLOW}💡 Create a PR first with: make gh-pr-create${NC}"
+    echo -e "${YELLOW}💡 Create a PR first with: just gh-pr-create${NC}"
     exit 1
 fi
 
@@ -148,12 +148,12 @@ show_checks() {
     # Status messages
     if [ "$failed" -gt 0 ]; then
         printf "${RED}${BOLD}⚠️  FAILURES DETECTED${NC}\n"
-        printf "${YELLOW}Run 'make gh-check-details' for failure logs${NC}\n"
+        printf "${YELLOW}Run 'just gh-check-details' for failure logs${NC}\n"
     elif [ "$running" -gt 0 ] || [ "$queued" -gt 0 ]; then
         printf "${BLUE}${BOLD}🔄 Checks in progress...${NC}\n"
     elif [ "$passed" = "$total" ] && [ "$total" -gt 0 ]; then
         printf "${GREEN}${BOLD}✅ All checks passed!${NC}\n"
-        printf "${YELLOW}Ready to merge with: make gh-pr-merge${NC}\n"
+        printf "${YELLOW}Ready to merge with: just gh-pr-merge${NC}\n"
         return 0
     fi
 

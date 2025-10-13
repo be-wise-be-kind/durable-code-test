@@ -1,12 +1,12 @@
 # How to Run Linting - Updated for Dedicated Containers
 
-**Purpose**: Guide for running linting and code quality checks using dedicated Docker containers and Make targets
+**Purpose**: Guide for running linting and code quality checks using dedicated Docker containers and Just targets
 
 **Scope**: Code quality analysis, linting automation, style enforcement, design linter execution
 
 **Overview**: Linting is now performed using dedicated Docker containers separate from development containers.
     This provides better performance, tool isolation, and cleaner separation of concerns.
-    All existing Make targets have been preserved for a seamless developer experience.
+    All existing Just targets have been preserved for a seamless developer experience.
 
 **Dependencies**: Make build system, dedicated linting Docker containers, design linters, code quality frameworks
 
@@ -37,38 +37,38 @@ Linting has been separated into dedicated Docker containers for improved perform
 
 ```bash
 # Run all linting rules
-make lint-all
+just lint-all
 
 # Run custom design linters only
-make lint-custom
+just lint-custom
 
 # Auto-fix issues where possible
-make lint-fix
+just lint-fix
 
 # List available rules
-make lint-list-rules
+just lint-list-rules
 
 # Check container status (new)
-make lint-containers-status
+just lint-containers-status
 ```
 
-> **Note**: All existing Make targets work exactly as before. The dedicated containers are managed automatically.
+> **Note**: All existing Just targets work exactly as before. The dedicated containers are managed automatically.
 
 ## Important: Always Check Available Make Targets First
 
 ```bash
 # Get basic list of available commands
-make help
+just help
 
-# Get comprehensive list of all make targets (recommended)
-make help-full
+# Get comprehensive list of all just targets (recommended)
+just help-full
 ```
 
 ## Make Target Details
 
 ### Complete Linting Suite
 ```bash
-make lint-all
+just lint-all
 ```
 **What it runs** (now in dedicated containers):
 - Python linting (Black, isort, Ruff, Flake8, MyPy, Pylint, Bandit, Xenon)
@@ -80,7 +80,7 @@ make lint-all
 
 ### Custom Design Linters
 ```bash
-make lint-custom
+just lint-custom
 ```
 **What it runs**:
 - SOLID principle enforcement
@@ -94,7 +94,7 @@ make lint-custom
 
 ### Auto-fix Linting Issues
 ```bash
-make lint-fix
+just lint-fix
 ```
 **What it fixes**:
 - Code formatting (Black, Prettier)
@@ -105,18 +105,18 @@ make lint-fix
 
 ### Rule Discovery
 ```bash
-make lint-list-rules
+just lint-list-rules
 ```
 **Output**: All available linting rules organized by category
 
 ## Container Management (Advanced)
 
-While Make targets handle containers automatically, you can manage them manually if needed:
+While Just targets handle containers automatically, you can manage them manually if needed:
 
 ### Container Status
 ```bash
 # Check linting container status
-make lint-containers-status
+just lint-containers-status
 ```
 
 ### Manual Container Operations
@@ -145,10 +145,10 @@ docker exec durable-code-js-linter-$(git branch --show-current) sh -c "cd /works
 ### Via Make Targets (Recommended)
 ```bash
 # Run all custom design linters
-make lint-custom
+just lint-custom
 
 # Run with categories
-make lint-categories
+just lint-categories
 ```
 
 ### Direct CLI Usage (in Container)
@@ -234,12 +234,12 @@ tools/example.py:23: [WARNING] literals.magic-number
 
 ### JSON Output
 ```bash
-make lint-custom-json
+just lint-custom-json
 ```
 
 ### SARIF Output
 ```bash
-make lint-custom-sarif
+just lint-custom-sarif
 ```
 
 ## Frontend Linting
@@ -249,7 +249,7 @@ All frontend linting now runs in the dedicated JavaScript linting container:
 ### ESLint
 ```bash
 # Via Make target (recommended)
-make lint-all
+just lint-all
 
 # Direct execution in container
 docker exec durable-code-js-linter-$(git branch --show-current) sh -c "cd /workspace/frontend && npm run lint"
@@ -261,13 +261,13 @@ docker exec durable-code-js-linter-$(git branch --show-current) sh -c "cd /works
 docker exec durable-code-js-linter-$(git branch --show-current) sh -c "cd /workspace/frontend && npm run format:check"
 
 # Auto-format via Make
-make lint-fix
+just lint-fix
 ```
 
 ### TypeScript Checking
 ```bash
 # Via Make target
-make lint-all
+just lint-all
 
 # Direct execution
 docker exec durable-code-js-linter-$(git branch --show-current) sh -c "cd /workspace/frontend && npm run typecheck"
@@ -280,7 +280,7 @@ All Python linting now runs in the dedicated Python linting container:
 ### Black (Formatting)
 ```bash
 # Via Make target
-make lint-all
+just lint-all
 
 # Direct execution
 docker exec durable-code-python-linter-$(git branch --show-current) bash -c "cd /workspace && poetry run black --check backend"
@@ -292,7 +292,7 @@ docker exec durable-code-python-linter-$(git branch --show-current) bash -c "cd 
 docker exec durable-code-python-linter-$(git branch --show-current) bash -c "cd /workspace && poetry run ruff check backend"
 
 # Auto-fix
-make lint-fix
+just lint-fix
 ```
 
 ### MyPy (Type Checking)
@@ -405,19 +405,19 @@ docker system prune -f
 ## Best Practices
 
 ### Development Workflow
-1. **Use Make targets**: Always use `make lint-all`, `make lint-fix`, etc.
-2. **Containers are automatic**: Make targets handle container lifecycle
+1. **Use Just targets**: Always use `just lint-all`, `just lint-fix`, etc.
+2. **Containers are automatic**: Just targets handle container lifecycle
 3. **Fix promptly**: Address linting issues as they arise
-4. **Full validation**: Run `make lint-all` before commits
+4. **Full validation**: Run `just lint-all` before commits
 
 ### Performance Tips
-- **Containers stay running**: Make targets keep containers alive for faster subsequent runs
+- **Containers stay running**: Just targets keep containers alive for faster subsequent runs
 - **Parallel execution**: Multiple linting types run simultaneously
 - **Cached results**: CI uses Docker layer caching effectively
 - **Resource limits**: Containers have appropriate CPU/memory limits
 
 ### Migration Notes
-- All existing Make targets work identically
+- All existing Just targets work identically
 - No changes required to developer workflow
 - Linting output format unchanged
 - Pre-commit hooks automatically use dedicated containers
@@ -428,11 +428,11 @@ All existing commands and workflows continue to work:
 
 ```bash
 # These all work exactly as before
-make lint-all
-make lint-fix
-make lint-custom
-make lint-categories
-make lint-list-rules
+just lint-all
+just lint-fix
+just lint-custom
+just lint-categories
+just lint-list-rules
 ```
 
 The only difference is better performance and cleaner architecture behind the scenes!

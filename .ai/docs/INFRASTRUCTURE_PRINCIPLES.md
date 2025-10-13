@@ -103,8 +103,8 @@ Infrastructure can be destroyed and recreated at will. No manual configuration o
   - Running ECS tasks (pay per hour)
   - EIP when unattached ($3.60/month)
 - **Smart Shutdown Strategy**:
-  - `make infra-down-expensive`: Removes NAT, ALB, ECS services
-  - `make infra-up`: Quickly restores from preserved base
+  - `just infra-down-expensive`: Removes NAT, ALB, ECS services
+  - `just infra-up`: Quickly restores from preserved base
   - Total restart time: <5 minutes vs 30+ minutes full rebuild
 
 ## Monitoring Philosophy

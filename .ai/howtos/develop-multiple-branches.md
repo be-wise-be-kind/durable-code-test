@@ -39,20 +39,20 @@ The system uses a deterministic hash function on the branch name to calculate po
 
 ```bash
 # See ports for current branch
-make branch-ports
+just branch-ports
 
 # See all port assignments
-make port-status
+just port-status
 ```
 
 ### 2. Start Development Environment
 
 ```bash
 # Ports are automatically assigned based on branch
-make dev
+just dev
 
 # Or with browser launch
-make launch
+just launch
 ```
 
 ### 3. Access Your Services
@@ -69,49 +69,49 @@ The Makefile will display the correct URLs when starting:
 ```bash
 # Terminal 1 - Main branch
 git checkout main
-make dev
+just dev
 # Running on default ports: 5173, 8000
 
 # Terminal 2 - Feature branch
 git checkout feat/new-feature
-make dev
+just dev
 # Running on calculated ports: e.g., 5234, 8061
 
 # Check all running environments
-make port-status
+just port-status
 ```
 
 ### Switching Between Branches
 
 ```bash
 # Stop current branch's containers
-make dev-stop
+just dev-stop
 
 # Switch branch
 git checkout other-branch
 
 # Start new branch's containers with its ports
-make dev
+just dev
 ```
 
 ### Finding Active Ports
 
 ```bash
 # Show all active port mappings
-make show-ports
+just show-ports
 
 # Show detailed container status
-make status
+just status
 ```
 
 ## Port Management Commands
 
 | Command | Description |
 |---------|------------|
-| `make port-status` | Show port assignments for all branches |
-| `make branch-ports` | Display ports for current branch |
-| `make show-ports` | Show all active port mappings |
-| `make status` | Show container status with ports |
+| `just port-status` | Show port assignments for all branches |
+| `just branch-ports` | Display ports for current branch |
+| `just show-ports` | Show all active port mappings |
+| `just status` | Show container status with ports |
 
 ## Troubleshooting
 
@@ -121,12 +121,12 @@ If you get a port conflict error:
 
 1. Check if another branch is using the port:
    ```bash
-   make port-status
+   just port-status
    ```
 
 2. Stop conflicting containers:
    ```bash
-   make dev-stop
+   just dev-stop
    # Or stop specific branch
    docker stop durable-code-backend-[branch-name]-dev
    docker stop durable-code-frontend-[branch-name]-dev
@@ -191,11 +191,11 @@ To modify port ranges, edit `scripts/get-branch-ports.sh`:
 
 ## Best Practices
 
-1. **Always check ports before starting**: Run `make port-status` to see what's running
-2. **Stop environments when switching**: Use `make dev-stop` before changing branches
+1. **Always check ports before starting**: Run `just port-status` to see what's running
+2. **Stop environments when switching**: Use `just dev-stop` before changing branches
 3. **Bookmark branch URLs**: Since ports are deterministic, you can bookmark each branch's URLs
-4. **Use make commands**: They handle port calculation automatically
-5. **Clean up unused containers**: Run `make clean` periodically to remove orphaned containers
+4. **Use just commands**: They handle port calculation automatically
+5. **Clean up unused containers**: Run `just clean` periodically to remove orphaned containers
 
 ## Benefits
 
@@ -222,7 +222,7 @@ To modify port ranges, edit `scripts/get-branch-ports.sh`:
 ```bash
 # Start working on a feature
 git checkout -b feat/awesome-feature
-make dev
+just dev
 # Ports assigned: 5234, 8061
 
 # Open browser to frontend
@@ -230,20 +230,20 @@ open http://localhost:5234
 
 # In another terminal, work on a bugfix
 git checkout -b fix/urgent-bug
-make dev
+just dev
 # Ports assigned: 5892, 8719
 
 # Check what's running
-make port-status
+just port-status
 
 # Switch back to feature
 cd ../project-feat
-make dev-stop
+just dev-stop
 git checkout feat/awesome-feature
-make dev
+just dev
 
 # Clean up when done
-make clean
+just clean
 ```
 
 ## Related Documentation

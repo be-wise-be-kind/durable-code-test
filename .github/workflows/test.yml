@@ -5,7 +5,7 @@
 #     dev, lint, test, and prod stages to reduce build times by 70%. Detects changes and runs only
 #     affected test suites while maintaining comprehensive coverage reporting. Provides fast feedback
 #     through selective execution while ensuring all tests run on main branch merges.
-# Dependencies: Docker BuildKit, multi-stage Dockerfiles, make targets, change detection actions
+# Dependencies: Docker BuildKit, multi-stage Dockerfiles, just task runner, change detection actions
 # Exports: Test execution status, coverage reports, test artifacts, and targeted test summaries
 # Environment: GitHub Actions CI/CD pipeline with smart caching and conditional execution
 # Related: Multi-stage Dockerfile architecture, change detection, selective test documentation
@@ -36,6 +36,10 @@ jobs:
         if: ${{ !env.ACT }}
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Install Just task runner
+      - name: Install Just
+        uses: extractions/setup-just@v2
 
       # Detect which files changed to run selective tests
       - name: Detect changes
@@ -125,11 +129,11 @@ jobs:
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
-      # Run tests using make test-all (uses dev containers)
+      # Run tests using just test (uses dev containers)
       - name: Run test suite
         run: |
-          echo "Running comprehensive test suite via make test-all"
-          make test-all
+          echo "Running comprehensive test suite via just test"
+          just test
 
       - name: Upload coverage reports
         if: always()
@@ -146,7 +150,7 @@ jobs:
         if: always()
         run: |
           echo "## 🧪 Test Summary" >> $GITHUB_STEP_SUMMARY
-          echo "### Tests Executed via \`make test-all\`" >> $GITHUB_STEP_SUMMARY
+          echo "### Tests Executed via \`just test\`" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Backend tests with coverage (pytest)" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Frontend tests with coverage (Vitest)" >> $GITHUB_STEP_SUMMARY
           echo "- ✅ Playwright integration tests" >> $GITHUB_STEP_SUMMARY
@@ -156,4 +160,4 @@ jobs:
           echo "- **Frontend Dev Container**: \`durable-code-frontend-dev\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Playwright Container**: Built on-demand for integration tests" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "💡 **Consistent Testing**: Same \`make test-all\` command runs locally and in CI" >> $GITHUB_STEP_SUMMARY
+          echo "💡 **Consistent Testing**: Same \`just test\` command runs locally and in CI" >> $GITHUB_STEP_SUMMARY

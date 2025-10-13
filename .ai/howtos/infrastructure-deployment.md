@@ -6,8 +6,8 @@ Overview: This guide provides comprehensive instructions for deploying and manag
     initial setup through daily operations, cost optimization, and maintenance. The guide includes
     both automated and manual deployment procedures, troubleshooting guidance, and integration
     with application deployment workflows. Updated for the final implementation with parameter-driven
-    make commands and automated orchestration.
-Dependencies: Terraform workspaces, AWS credentials, Docker, make targets, GitHub Actions
+    just commands and automated orchestration.
+Dependencies: Terraform workspaces, AWS credentials, Docker, just targets, GitHub Actions
 Exports: Complete deployment procedures, operational workflows, best practices
 Environment: Supports dev, staging, and production with environment-specific configurations
 Implementation: Production-ready deployment system with cost optimization and automation
@@ -44,20 +44,20 @@ aws --version        # Latest
 export AWS_PROFILE=terraform-deploy
 aws sts get-caller-identity
 
-# Verify make targets
-make -f Makefile.infra infra-help
+# Verify just targets
+just -f Makefile.infra infra-help
 ```
 
 ### First-Time Deployment
 ```bash
 # Deploy complete infrastructure
-make infra-up SCOPE=all ENV=dev
+just infra-up SCOPE=all ENV=dev
 
 # Deploy application
-make deploy ENV=dev
+just deploy ENV=dev
 
 # Verify deployment
-make infra-status ENV=dev
+just infra-status ENV=dev
 ```
 
 ## Deployment Commands
@@ -67,16 +67,16 @@ make infra-status ENV=dev
 #### Complete Infrastructure
 ```bash
 # Deploy everything (base + runtime)
-make infra-up SCOPE=all ENV=dev
+just infra-up SCOPE=all ENV=dev
 
 # With auto-approval (for automation)
-make infra-up SCOPE=all ENV=dev AUTO=true
+just infra-up SCOPE=all ENV=dev AUTO=true
 ```
 
 #### Base Infrastructure Only
 ```bash
 # Deploy persistent resources only
-make infra-up SCOPE=base ENV=dev
+just infra-up SCOPE=base ENV=dev
 
 # Use cases:
 # - New environment setup
@@ -87,7 +87,7 @@ make infra-up SCOPE=base ENV=dev
 #### Runtime Infrastructure Only
 ```bash
 # Deploy ephemeral resources only (assumes base exists)
-make infra-up SCOPE=runtime ENV=dev
+just infra-up SCOPE=runtime ENV=dev
 
 # Use cases:
 # - Daily restoration after cost optimization
@@ -100,7 +100,7 @@ make infra-up SCOPE=runtime ENV=dev
 #### Cost-Optimized Teardown (Recommended)
 ```bash
 # Preserve base, destroy runtime
-make infra-down SCOPE=runtime ENV=dev
+just infra-down SCOPE=runtime ENV=dev
 
 # Benefits:
 # - ~50% cost savings
@@ -111,7 +111,7 @@ make infra-down SCOPE=runtime ENV=dev
 #### Complete Teardown (Emergency/Weekend)
 ```bash
 # DANGEROUS: Destroys everything including expensive resources
-CONFIRM=destroy-base make infra-down SCOPE=all ENV=dev
+CONFIRM=destroy-base just infra-down SCOPE=all ENV=dev
 
 # Use only for:
 # - Complete environment cleanup
@@ -124,7 +124,7 @@ CONFIRM=destroy-base make infra-down SCOPE=all ENV=dev
 #### Infrastructure Status
 ```bash
 # Check deployment status
-make infra-status ENV=dev
+just infra-status ENV=dev
 
 # Example output:
 # Base Infrastructure: ✓ Deployed (7 resources)
@@ -134,12 +134,12 @@ make infra-status ENV=dev
 #### Planning Changes
 ```bash
 # Plan infrastructure changes
-make infra-plan SCOPE=runtime ENV=dev
-make infra-plan SCOPE=base ENV=dev
-make infra-plan SCOPE=all ENV=dev
+just infra-plan SCOPE=runtime ENV=dev
+just infra-plan SCOPE=base ENV=dev
+just infra-plan SCOPE=all ENV=dev
 
 # View outputs
-make infra-output ENV=dev FORMAT=json
+just infra-output ENV=dev FORMAT=json
 ```
 
 ## Deployment Workflows
@@ -149,22 +149,22 @@ make infra-output ENV=dev FORMAT=json
 #### Morning Startup
 ```bash
 # Check if runtime needs restoration
-make infra-status ENV=dev
+just infra-status ENV=dev
 
 # If runtime is down, restore it
-make infra-up SCOPE=runtime ENV=dev
+just infra-up SCOPE=runtime ENV=dev
 
 # Deploy latest application changes
-make deploy ENV=dev
+just deploy ENV=dev
 
 # Verify services are healthy
-curl -f http://$(make infra-output ENV=dev | grep alb_dns_name)/health
+curl -f http://$(just infra-output ENV=dev | grep alb_dns_name)/health
 ```
 
 #### Evening Shutdown (Cost Optimization)
 ```bash
 # Save costs by destroying runtime
-make infra-down SCOPE=runtime ENV=dev
+just infra-down SCOPE=runtime ENV=dev
 
 # Estimated savings: $1.50/day (~$30/month)
 ```
@@ -174,29 +174,29 @@ make infra-down SCOPE=runtime ENV=dev
 #### Staging Deployment
 ```bash
 # Deploy staging infrastructure
-make infra-up SCOPE=all ENV=staging
+just infra-up SCOPE=all ENV=staging
 
 # Deploy and test application
-make deploy ENV=staging
-make test ENV=staging
+just deploy ENV=staging
+just test ENV=staging
 
 # Monitor for issues
-make infra-status ENV=staging
+just infra-status ENV=staging
 ```
 
 #### Production Deployment
 ```bash
 # Ensure staging is validated
-make test ENV=staging
+just test ENV=staging
 
 # Deploy production infrastructure (if needed)
-make infra-up SCOPE=all ENV=prod
+just infra-up SCOPE=all ENV=prod
 
 # Deploy application with zero-downtime
-make deploy ENV=prod
+just deploy ENV=prod
 
 # Monitor deployment
-make infra-status ENV=prod
+just infra-status ENV=prod
 aws ecs describe-services --cluster durableai-prod-cluster --services durableai-prod-frontend
 ```
 
@@ -205,23 +205,23 @@ aws ecs describe-services --cluster durableai-prod-cluster --services durableai-
 #### Service Restoration
 ```bash
 # Quick service restoration
-make infra-up SCOPE=runtime ENV=dev
-make deploy ENV=dev
+just infra-up SCOPE=runtime ENV=dev
+just deploy ENV=dev
 
 # If base infrastructure is missing
-make infra-up SCOPE=all ENV=dev
-make deploy ENV=dev
+just infra-up SCOPE=all ENV=dev
+just deploy ENV=dev
 ```
 
 #### Emergency Cost Reduction
 ```bash
 # Immediate cost reduction
-make infra-down SCOPE=runtime ENV=dev
-make infra-down SCOPE=runtime ENV=staging
+just infra-down SCOPE=runtime ENV=dev
+just infra-down SCOPE=runtime ENV=staging
 
 # If maximum savings needed
-CONFIRM=destroy-base make infra-down SCOPE=all ENV=dev
-CONFIRM=destroy-base make infra-down SCOPE=all ENV=staging
+CONFIRM=destroy-base just infra-down SCOPE=all ENV=dev
+CONFIRM=destroy-base just infra-down SCOPE=all ENV=staging
 ```
 
 ## Environment Management
@@ -229,25 +229,25 @@ CONFIRM=destroy-base make infra-down SCOPE=all ENV=staging
 ### Development Environment
 ```bash
 # Aggressive cost optimization
-make infra-down SCOPE=runtime ENV=dev    # Nightly
-make infra-up SCOPE=runtime ENV=dev      # Morning
+just infra-down SCOPE=runtime ENV=dev    # Nightly
+just infra-up SCOPE=runtime ENV=dev      # Morning
 
 # Weekend extended shutdown
-CONFIRM=destroy-base make infra-down SCOPE=all ENV=dev    # Friday
-make infra-up SCOPE=all ENV=dev          # Monday
+CONFIRM=destroy-base just infra-down SCOPE=all ENV=dev    # Friday
+just infra-up SCOPE=all ENV=dev          # Monday
 ```
 
 ### Staging Environment
 ```bash
 # Moderate optimization
-make infra-down SCOPE=runtime ENV=staging  # Off-hours only
+just infra-down SCOPE=runtime ENV=staging  # Off-hours only
 # Keep base infrastructure always up for quick testing
 ```
 
 ### Production Environment
 ```bash
 # Always-on with monitoring
-make infra-status ENV=prod
+just infra-status ENV=prod
 # No automated shutdowns
 # Focus on right-sizing rather than shutdown
 ```
@@ -275,7 +275,7 @@ gh run list --workflow=nightly-teardown --limit=5
 ### Cost Monitoring
 ```bash
 # Daily cost check
-make infra-status ENV=dev
+just infra-status ENV=dev
 echo "Expected daily cost: ~$1.50 (runtime down), ~$3.50 (runtime up)"
 
 # Monthly cost review
@@ -291,22 +291,22 @@ aws ce get-cost-and-usage \
 ### Pre-Deployment Checks
 ```bash
 # Always verify infrastructure before deploying
-make infra-check ENV=dev || {
+just infra-check ENV=dev || {
     echo "Infrastructure not ready, restoring..."
-    make infra-up SCOPE=runtime ENV=dev
+    just infra-up SCOPE=runtime ENV=dev
 }
 
 # Then deploy application
-make deploy ENV=dev
+just deploy ENV=dev
 ```
 
 ### Application Deployment Flow
 ```bash
 # Complete deployment workflow
-make infra-up SCOPE=runtime ENV=dev    # Ensure runtime exists
-make build-and-push ENV=dev            # Build containers
-make deploy ENV=dev                     # Deploy to ECS
-make test ENV=dev                       # Run health checks
+just infra-up SCOPE=runtime ENV=dev    # Ensure runtime exists
+just build-and-push ENV=dev            # Build containers
+just deploy ENV=dev                     # Deploy to ECS
+just test ENV=dev                       # Run health checks
 ```
 
 ## Troubleshooting
@@ -316,17 +316,17 @@ make test ENV=dev                       # Run health checks
 #### Runtime Won't Deploy
 ```bash
 # Check if base infrastructure exists
-make infra-status ENV=dev
+just infra-status ENV=dev
 
 # If base missing, deploy it first
-make infra-up SCOPE=base ENV=dev
-make infra-up SCOPE=runtime ENV=dev
+just infra-up SCOPE=base ENV=dev
+just infra-up SCOPE=runtime ENV=dev
 ```
 
 #### Application Deployment Fails
 ```bash
 # Verify runtime infrastructure
-make infra-check ENV=dev
+just infra-check ENV=dev
 
 # Check ECS services
 aws ecs describe-services --cluster durableai-dev-cluster --services durableai-dev-frontend
@@ -341,7 +341,7 @@ aws ecs update-service --cluster durableai-dev-cluster --service durableai-dev-f
 gh run list --workflow=nightly-teardown --status=success --limit=7
 
 # Manual cost optimization
-make infra-down SCOPE=runtime ENV=dev
+just infra-down SCOPE=runtime ENV=dev
 
 # Check for rogue resources
 aws ec2 describe-instances --filters "Name=instance-state-name,Values=running"
@@ -404,33 +404,33 @@ Optimized: ~$55-75/month (30-50% savings)
 ### State Management
 ```bash
 # List resources in state
-make infra-state-list SCOPE=base ENV=dev
+just infra-state-list SCOPE=base ENV=dev
 
 # Show resource details
-make infra-state-show SCOPE=base ENV=dev RESOURCE=aws_vpc.main
+just infra-state-show SCOPE=base ENV=dev RESOURCE=aws_vpc.main
 
 # Import existing resources
-make infra-import SCOPE=base ENV=dev RESOURCE=aws_vpc.main ID=vpc-12345678
+just infra-import SCOPE=base ENV=dev RESOURCE=aws_vpc.main ID=vpc-12345678
 ```
 
 ### Workspace Management
 ```bash
 # List workspaces
-make infra-workspace-list SCOPE=base ENV=dev
+just infra-workspace-list SCOPE=base ENV=dev
 
 # Create new workspace
-make infra-workspace-new SCOPE=base ENV=dev WORKSPACE=base-staging
+just infra-workspace-new SCOPE=base ENV=dev WORKSPACE=base-staging
 
 # Switch workspace
-make infra-workspace-select SCOPE=base ENV=dev WORKSPACE=base-dev
+just infra-workspace-select SCOPE=base ENV=dev WORKSPACE=base-dev
 ```
 
 ### Performance Optimization
 ```bash
 # Parallel deployment (experimental)
-make infra-up SCOPE=base ENV=dev &
+just infra-up SCOPE=base ENV=dev &
 sleep 60  # Wait for base to start
-make infra-up SCOPE=runtime ENV=dev &
+just infra-up SCOPE=runtime ENV=dev &
 wait  # Wait for both to complete
 ```
 

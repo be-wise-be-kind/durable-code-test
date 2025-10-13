@@ -123,7 +123,7 @@ import { MinimalErrorBoundary } from '../../core/errors/MinimalErrorBoundary';
 - `scripts/check-page-content.js` - Comprehensive Playwright verification
 
 ### Verification Process
-1. **Start development**: `make dev`
+1. **Start development**: `just dev`
 2. **Basic check**: `docker exec durable-code-frontend-dev node /app/scripts/check-page-content.js`
 3. **Content verification**: `docker exec durable-code-frontend-dev node /app/scripts/test-rendered-content.js`
 4. **Continuous monitoring**: `docker exec -it durable-code-frontend-dev node /app/scripts/simple-check.js --watch`

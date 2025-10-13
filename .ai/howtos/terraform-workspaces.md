@@ -78,20 +78,20 @@ Workspaces follow the naming pattern: `{workspace}-{environment}`
 
 ```bash
 # Deploy base infrastructure (rarely needed)
-make infra-up-base ENV=dev
+just infra-up-base ENV=dev
 
 # Deploy runtime infrastructure (daily)
-make infra-up-runtime ENV=dev
+just infra-up-runtime ENV=dev
 ```
 
 ### Destroy Infrastructure
 
 ```bash
 # Destroy runtime only (nightly for cost savings)
-make infra-down-runtime ENV=dev
+just infra-down-runtime ENV=dev
 
 # Destroy base (requires confirmation - DANGEROUS)
-CONFIRM=destroy-base make infra-down-base ENV=dev
+CONFIRM=destroy-base just infra-down-base ENV=dev
 ```
 
 ## Resource Separation
@@ -148,10 +148,10 @@ data "aws_vpc" "main" {
 ### Automated Shutdown Schedule
 ```bash
 # Nightly shutdown (cron: 0 20 * * *)
-make infra-down-runtime ENV=dev
+just infra-down-runtime ENV=dev
 
 # Morning startup (cron: 0 8 * * *)
-make infra-up-runtime ENV=dev
+just infra-up-runtime ENV=dev
 ```
 
 ## Implementation Status
@@ -189,7 +189,7 @@ Backend configs are stored in `infra/terraform/backend-config/`:
 ### Check Workspace Status
 ```bash
 # Show current workspace and available resources
-make infra-status ENV=dev
+just infra-status ENV=dev
 ```
 
 ### Switch Between Workspaces
@@ -214,9 +214,9 @@ terraform workspace list
 ### Issue: "No matching VPC found"
 **Cause**: Runtime workspace can't find base resources
 **Solution**:
-1. Verify base workspace is deployed: `make infra-status ENV=dev`
+1. Verify base workspace is deployed: `just infra-status ENV=dev`
 2. Check tags on base resources
-3. Redeploy base if needed: `make infra-up-base ENV=dev`
+3. Redeploy base if needed: `just infra-up-base ENV=dev`
 
 ### Issue: "Workspace already exists"
 **Cause**: Trying to create an existing workspace

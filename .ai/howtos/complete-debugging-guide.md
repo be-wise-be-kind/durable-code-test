@@ -17,10 +17,10 @@ This guide covers two main debugging scenarios:
 
 ```bash
 # Check service status
-make status
+just status
 
 # View all logs
-make logs
+just logs
 
 # View specific service logs
 docker logs durable-code-test-frontend-1
@@ -36,7 +36,7 @@ docker exec -it durable-code-test-frontend-1 npm run dev
 #### Services Not Starting
 ```bash
 # Check container status
-make status
+just status
 docker ps -a
 
 # View startup logs
@@ -247,7 +247,7 @@ PYTHONPATH=/home/stevejackson/Projects/durable-code-test/tools python -m pytest 
 #### Linting Failures
 ```bash
 # Run specific linter
-make lint-custom
+just lint-custom
 
 # Check design linter logs
 docker exec -it durable-code-test-tools-1 design-linter tools/ --verbose
@@ -272,7 +272,7 @@ docker exec -it durable-code-test-tools-1 design-linter --list-rules
 #### Test Failures
 ```bash
 # Run tests with verbose output
-make test-unit
+just test-unit
 
 # Run specific test file
 PYTHONPATH=/home/stevejackson/Projects/durable-code-test/tools python -m pytest test/unit_test/tools/design_linters/test_basic.py -v -s
@@ -286,7 +286,7 @@ PYTHONPATH=/home/stevejackson/Projects/durable-code-test/tools python -m pytest 
 **Always follow this pattern**:
 
 1. **Red**: Write a failing test that reproduces the bug
-2. **Green**: Implement minimal fix to make test pass
+2. **Green**: Implement minimal fix to just test pass
 3. **Refactor**: Clean up code while keeping tests passing
 4. **Verify**: Run full test suite to ensure no regressions
 
@@ -452,7 +452,7 @@ logger.add(
 ### 1. Gather Information
 ```bash
 # System overview
-make status
+just status
 docker ps -a
 docker images
 docker network ls
@@ -487,11 +487,11 @@ diff .env.example .env
 ### 4. Reproduce the Issue
 ```bash
 # Clean environment
-make clean
-make init
+just clean
+just init
 
 # Step-by-step recreation
-make dev
+just dev
 # Test after each step
 ```
 
@@ -503,7 +503,7 @@ make dev
 1. **Write unit tests** to reproduce issues
 2. **Use Loguru logging** for investigation
 3. **Follow TDD cycle**: Red → Green → Refactor
-4. **Run tests through proper repository** (make targets, docker)
+4. **Run tests through proper repository** (just targets, docker)
 5. **Document findings in test names and comments**
 6. **Use systematic debugging approach**
 7. **Check repository before diving into code**
@@ -514,13 +514,13 @@ make dev
 - Skip the test framework
 - Debug without tests to verify fixes
 - Run tests locally (always use docker or make)
-- Call linting directly (use make targets)
+- Call linting directly (use just targets)
 
 ## Emergency Quick Fixes
 
 ```bash
 # Reset everything
-make clean && make init && make dev
+just clean && just init && just dev
 
 # Restart specific service
 docker restart durable-code-test-backend-1
@@ -530,7 +530,7 @@ docker system prune -a
 
 # Reset database
 docker volume rm durable-code-test_postgres_data
-make dev
+just dev
 ```
 
 ## Error Pattern Recognition

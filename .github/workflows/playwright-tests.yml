@@ -5,11 +5,11 @@
 #     orchestrates service startup and teardown, handles test artifact collection, and provides
 #     comprehensive test coverage reporting. Integrates with Docker containerization for consistent
 #     test environments and supports parallel test execution with proper resource management.
-# Dependencies: Docker, make targets, branch port allocation scripts, GitHub Actions runners
+# Dependencies: Docker, just task runner, branch port allocation scripts, GitHub Actions runners
 # Exports: Test execution status, coverage reports, test artifacts, and integration test validation
 # Environment: GitHub Actions CI/CD pipeline for pull requests and main branch deployments
 # Related: Links to test framework configuration, Docker setup, and deployment workflows
-# Implementation: Uses GitHub Actions with Docker orchestration and make-based test execution
+# Implementation: Uses GitHub Actions with Docker orchestration and just-based test execution
 
 name: Playwright Integration Tests
 
@@ -31,7 +31,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Start services
-        run: make dev-start
+        run: just dev-start
 
       - name: Get dynamic ports
         id: ports
@@ -57,12 +57,12 @@ jobs:
           timeout 60 bash -c 'until curl -s http://localhost:${{ steps.ports.outputs.backend_port }}/health > /dev/null; do sleep 1; done'
 
       - name: Build Playwright container
-        run: make test-playwright-build
+        run: just test-playwright-build
 
       - name: Run oscilloscope tests
         env:
           CI: true
-        run: make test-playwright-oscilloscope
+        run: just test-playwright-oscilloscope
 
       - name: Upload test results
         if: always()
@@ -75,4 +75,4 @@ jobs:
 
       - name: Stop services
         if: always()
-        run: make dev-stop
+        run: just dev-stop

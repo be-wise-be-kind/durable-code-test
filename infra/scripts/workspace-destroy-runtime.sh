@@ -37,7 +37,7 @@ cd "$(dirname "$0")/../terraform/workspaces/runtime"
 # Check if workspace is initialized
 if [ ! -d ".terraform" ]; then
     echo -e "${RED}Error: Runtime workspace not initialized${NC}"
-    echo "Run 'make infra-init SCOPE=runtime ENV=${ENV}' first"
+    echo "Run 'just infra-init SCOPE=runtime ENV=${ENV}' first"
     exit 1
 fi
 

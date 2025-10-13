@@ -51,7 +51,7 @@ cd "$(dirname "$0")/../terraform/workspaces/base"
 # Check if workspace is initialized
 if [ ! -d ".terraform" ]; then
     echo -e "${RED}Error: Base workspace not initialized${NC}"
-    echo "Run 'make infra-init SCOPE=base ENV=${ENV}' first"
+    echo "Run 'just infra-init SCOPE=base ENV=${ENV}' first"
     exit 1
 fi
 
@@ -112,5 +112,5 @@ rm -f destroy.tfplan
 echo -e "${GREEN}✓ Base infrastructure destroyed${NC}"
 echo ""
 echo -e "${YELLOW}All base resources have been removed.${NC}"
-echo -e "${YELLOW}To recreate, run: make infra-up SCOPE=base ENV=${ENV}${NC}"
+echo -e "${YELLOW}To recreate, run: just infra-up SCOPE=base ENV=${ENV}${NC}"
 echo -e "${YELLOW}Note: NAT Gateway creation can take 5-10 minutes${NC}"

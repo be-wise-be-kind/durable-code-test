@@ -3,11 +3,11 @@
 # Purpose: Integration test script for Docker reorganization validation
 # Scope: Tests Docker builds, compose files, and service connectivity
 # Overview: Validates that the new .docker/ directory structure works correctly
-#     with all Docker operations including builds, compose services, and Make targets.
+#     with all Docker operations including builds, compose services, and Just targets.
 #     Tests development, production, and linting environments to ensure the
 #     reorganization maintains full functionality.
 # Dependencies: Docker, Docker Compose, Make, curl
-# Related: .docker/ directory structure, Makefile targets, CI/CD workflows
+# Related: .docker/ directory structure, justfile targets, CI/CD workflows
 
 set -e  # Exit on error
 set -u  # Exit on undefined variable
@@ -113,18 +113,18 @@ test_file_exists ".docker/dockerfiles/linting/Dockerfile.python-lint" "Python li
 test_file_exists ".docker/dockerfiles/linting/Dockerfile.js-lint" "JavaScript linting Dockerfile"
 echo ""
 
-# Test 4: Verify Makefile references new paths
-print_status "INFO" "Testing Makefile integration..."
-if grep -q "\.docker/compose/dev\.yml" Makefile; then
-    print_status "PASS" "Makefile references new dev compose path"
+# Test 4: Verify justfile references new paths
+print_status "INFO" "Testing justfile integration..."
+if grep -q "\.docker/compose/dev\.yml" justfile; then
+    print_status "PASS" "justfile references new dev compose path"
 else
-    print_status "FAIL" "Makefile does not reference new dev compose path"
+    print_status "FAIL" "justfile does not reference new dev compose path"
 fi
 
-if grep -q "\.docker/compose/prod\.yml" Makefile; then
-    print_status "PASS" "Makefile references new prod compose path"
+if grep -q "\.docker/compose/prod\.yml" justfile; then
+    print_status "PASS" "justfile references new prod compose path"
 else
-    print_status "FAIL" "Makefile does not reference new prod compose path"
+    print_status "FAIL" "justfile does not reference new prod compose path"
 fi
 echo ""
 
@@ -132,7 +132,7 @@ echo ""
 print_status "INFO" "Testing Docker builds (this may take a moment)..."
 
 # Test development build
-if make build-dev > /dev/null 2>&1; then
+if just build-dev > /dev/null 2>&1; then
     print_status "PASS" "Development Docker build successful"
 else
     print_status "FAIL" "Development Docker build failed"
@@ -158,10 +158,10 @@ else
 fi
 echo ""
 
-# Test 6: Test Make targets work
-print_status "INFO" "Testing Make targets..."
-test_command "make help" "Make help target"
-test_command "make status" "Make status target"
+# Test 6: Test Just targets work
+print_status "INFO" "Testing Just targets..."
+test_command "just help" "Make help target"
+test_command "just status" "Make status target"
 echo ""
 
 # Test 7: Verify no old Docker files remain in root
@@ -190,13 +190,13 @@ if command -v docker &> /dev/null && docker info &> /dev/null; then
     print_status "INFO" "Testing service startup (optional)..."
 
     # Try to start services briefly
-    if timeout 10 make dev > /dev/null 2>&1; then
+    if timeout 10 just dev > /dev/null 2>&1; then
         print_status "PASS" "Services can start with new structure"
-        make dev-stop > /dev/null 2>&1
+        just dev-stop > /dev/null 2>&1
     else
         # Even if it times out, that's okay - we're just checking if it starts
         print_status "PASS" "Service startup initiated successfully"
-        make dev-stop > /dev/null 2>&1
+        just dev-stop > /dev/null 2>&1
     fi
 else
     print_status "INFO" "Skipping service startup test (Docker daemon not available)"

@@ -139,9 +139,9 @@ design-linter src/ --format json --output report.json
 
 **Development Commands**:
 ```bash
-make dev      # Start development environment
-make launch   # Build and start with browser
-make build    # Production build
+just dev      # Start development environment
+just launch   # Build and start with browser
+just build    # Production build
 ```
 
 ### development-tooling
@@ -159,10 +159,10 @@ make build    # Production build
 
 **Key Commands**:
 ```bash
-make help         # Show all available commands
-make init         # Complete project setup
-make test         # Run all tests
-make lint-all     # Run all linting rules
+just help         # Show all available commands
+just init         # Complete project setup
+just test         # Run all tests
+just lint-all     # Run all linting rules
 ```
 
 ### claude-integration
@@ -194,11 +194,11 @@ make lint-all     # Run all linting rules
 
 **Execution Strategy**:
 ```bash
-make test              # Complete test suite
-make test-backend      # Backend tests only
-make test-frontend     # Frontend tests only
-make test-playwright   # Playwright integration tests
-make test-all          # All tests with coverage
+just test              # Complete test suite
+just test-backend      # Backend tests only
+just test-frontend     # Frontend tests only
+just test-playwright   # Playwright integration tests
+just test-all          # All tests with coverage
 ```
 
 ## Howto Guides
@@ -208,50 +208,50 @@ make test-all          # All tests with coverage
 The `.ai/howto/` directory contains step-by-step guides for common development tasks:
 
 #### run-tests.md
-**Purpose**: Execute tests using Make targets and Docker
+**Purpose**: Execute tests using Just targets and Docker
 **Key Commands**:
-- `make help` / `make help-full` - Always check available commands first
-- `make test` - Complete test suite
-- `make test-backend` - Backend tests only
-- `make test-frontend` - Frontend tests only
-- `make test-all` - All tests with coverage
+- `just help` / `just help-full` - Always check available commands first
+- `just test` - Complete test suite
+- `just test-backend` - Backend tests only
+- `just test-frontend` - Frontend tests only
+- `just test-all` - All tests with coverage
 
-**Important**: Always use Make targets, never run tests locally per `CLAUDE.md`
+**Important**: Always use Just targets, never run tests locally per `CLAUDE.md`
 
 #### run-linting.md
 **Purpose**: Run linting and code quality checks
 **Key Commands**:
-- `make help` / `make help-full` - Check available linting commands
-- `make lint-all` - Complete linting suite
-- `make lint-custom` - Design linters only
-- `make lint-fix` - Auto-fix issues
+- `just help` / `just help-full` - Check available linting commands
+- `just lint-all` - Complete linting suite
+- `just lint-custom` - Design linters only
+- `just lint-fix` - Auto-fix issues
 
 **Features**: Design linter framework, ignore functionality, multiple output formats
 
 #### setup-development.md
 **Purpose**: Complete development environment setup
 **Key Commands**:
-- `make init` - First-time project setup
-- `make dev` - Start development environment
-- `make status` - Check container status
+- `just init` - First-time project setup
+- `just dev` - Start development environment
+- `just status` - Check container status
 
 **Coverage**: Prerequisites, Docker configuration, IDE setup, troubleshooting
 
 #### deploy-application.md
 **Purpose**: Production deployment and monitoring
 **Key Commands**:
-- `make build` - Production image builds
-- `make start` - Production environment
-- `make status` - Deployment verification
+- `just build` - Production image builds
+- `just start` - Production environment
+- `just status` - Deployment verification
 
 **Coverage**: Cloud deployment, SSL/TLS, monitoring, backup strategies
 
 #### debug-issues.md
 **Purpose**: Systematic debugging and troubleshooting
 **Key Commands**:
-- `make logs` - View all service logs
+- `just logs` - View all service logs
 - `docker logs [container]` - Specific service logs
-- `make status` - Container health check
+- `just status` - Container health check
 
 **Coverage**: Container issues, network problems, performance debugging
 
@@ -354,28 +354,28 @@ Implementation: [Implementation approach and patterns]
 
 ### Quick Start
 
-1. **Initial Setup**: `make init` - Complete project initialization
-2. **Development**: `make dev` - Start development environment
-3. **Testing**: `make test` - Run quality assurance
+1. **Initial Setup**: `just init` - Complete project initialization
+2. **Development**: `just dev` - Start development environment
+3. **Testing**: `just test` - Run quality assurance
 4. **Code Generation**: Follow `.ai/howto/create-new-code-files.md` guide with templates
 
 ### Environment Commands
 
 ```bash
 # Development
-make dev          # Start development environment
-make dev-logs     # View development logs
-make dev-stop     # Stop development environment
+just dev          # Start development environment
+just dev-logs     # View development logs
+just dev-stop     # Stop development environment
 
 # Production
-make build        # Build production images
-make start        # Start production environment
-make status       # Check container status
+just build        # Build production images
+just start        # Start production environment
+just status       # Check container status
 
 # Quality Assurance
-make test         # Run all tests
-make lint-all     # Run all linting
-make clean        # Clean environment
+just test         # Run all tests
+just lint-all     # Run all linting
+just clean        # Clean environment
 ```
 
 ### Configuration Files

@@ -104,10 +104,10 @@ Comprehensive YAML configuration supporting:
 
 **Location**: `Makefile.lint`
 
-- `make lint-custom`: Run design linters with custom rules
-- `make lint-all`: Comprehensive linting across all categories
-- `make lint-fix`: Automated fixing where possible
-- `make lint-list-rules`: Display all available rules
+- `just lint-custom`: Run design linters with custom rules
+- `just lint-all`: Comprehensive linting across all categories
+- `just lint-fix`: Automated fixing where possible
+- `just lint-list-rules`: Display all available rules
 
 ### Testing Repository
 
