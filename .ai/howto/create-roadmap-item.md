@@ -229,15 +229,23 @@ The PROGRESS_TRACKER.md is a **living document** that must be updated:
 
 ### After Each PR Completion:
 1. Update PR status to 🟢 Complete
-2. **Calculate new completion percentage**
-3. Update overall progress percentage in PROGRESS_TRACKER.md
-4. Move "Next PR" pointer
-5. Document any deviations or learnings
-6. Note any new blockers or dependencies
-7. **Check if directory move needed**:
+2. **Add commit hash to Notes column**:
+   ```bash
+   # Get the short commit hash from the PR you just completed
+   git log --oneline -1
+
+   # Add to Notes in format: "Description (commit abc1234)"
+   # Example: "Implemented authentication service (commit c124b88)"
+   ```
+3. **Calculate new completion percentage**
+4. Update overall progress percentage in PROGRESS_TRACKER.md
+5. Move "Next PR" pointer
+6. Document any deviations or learnings
+7. Note any new blockers or dependencies
+8. **Check if directory move needed**:
    - If moving from 0% to >0%: Move from `planning/` to `in_progress/`
    - If reaching 100%: Move from `in_progress/` to `complete/`
-8. **Update master ROADMAP.md** with new percentage
+9. **Update master ROADMAP.md** with new percentage
 
 ### When Blocked:
 1. Mark PR as 🔵 Blocked
