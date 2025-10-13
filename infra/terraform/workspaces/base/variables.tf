@@ -102,6 +102,17 @@ variable "enable_waf" {
   default     = false
 }
 
+# Logging Configuration
+variable "log_retention_days" {
+  description = "CloudWatch log retention in days by environment"
+  type        = map(number)
+  default = {
+    dev     = 7
+    staging = 14
+    prod    = 30
+  }
+}
+
 # Tags
 variable "additional_tags" {
   description = "Additional tags to apply to all resources"
