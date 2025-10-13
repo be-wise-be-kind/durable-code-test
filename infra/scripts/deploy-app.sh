@@ -19,7 +19,16 @@ set -e
 
 # Configuration
 AWS_REGION="us-west-2"
-AWS_ACCOUNT_ID="449870229058"
+
+# Dynamically retrieve AWS account ID (security best practice - no hardcoded credentials)
+echo "Retrieving AWS account ID..."
+AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text 2>/dev/null)
+if [ -z "$AWS_ACCOUNT_ID" ] || [ "$AWS_ACCOUNT_ID" = "None" ]; then
+  echo "ERROR: Failed to retrieve AWS account ID. Please check your AWS credentials."
+  echo "Run 'aws configure' or set AWS_PROFILE environment variable."
+  exit 1
+fi
+
 ECR_REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
 ENV="${ENV:-dev}"
 TAG="v$(date +%Y%m%d-%H%M%S)"
