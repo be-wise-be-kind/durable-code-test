@@ -72,6 +72,7 @@ class PrintStatementRule(ASTLintRule):  # design-lint: ignore[solid.srp.too-many
         return [
             self.create_violation_from_node(
                 context=context,
+                node=node,
                 message="Print statement found - use logging instead",
                 description=(
                     "Print statements should be replaced with proper logging "

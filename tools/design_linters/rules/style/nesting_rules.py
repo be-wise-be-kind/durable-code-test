@@ -45,7 +45,7 @@ class ExcessiveNestingRule(ASTLintRule):
 
     @property
     def severity(self) -> Severity:
-        return Severity.ERROR
+        return Severity.WARNING
 
     @property
     def categories(self) -> set[str]:
@@ -135,7 +135,7 @@ class DeepFunctionRule(ASTLintRule):
 
     @property
     def severity(self) -> Severity:
-        return Severity.ERROR
+        return Severity.INFO
 
     @property
     def categories(self) -> set[str]:
