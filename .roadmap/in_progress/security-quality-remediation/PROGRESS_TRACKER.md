@@ -28,15 +28,17 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Security &
 4. **Update this document** after completing each PR
 
 ## 📍 Current Status
-**Current PR**: PR3 Complete ✅ - All 3 sub-PRs merged to main
+**Status**: 🟡 Active Implementation
+**Current PR**: PR5 Starting - AWS Infrastructure Security
 **Infrastructure State**: Production infrastructure running - changes must be backward compatible
 **Feature Target**: Reduce security issues from 67 to <10, improve grade from B+ to A
 **Latest Completion**: PR3 Sub-PR 3.3 - 2025-10-12 (WebSocket State Machine, commit 1af0cf3, PR #8)
-**Current Work**: Python quality refactoring complete. Ready for PR4 or PR5
+**Current Work**: Starting PR5 - AWS Infrastructure Security (Critical P0)
+**Roadmap Status**: Moved to `in_progress/` (2025-10-12)
 
 ## 📁 Required Documents Location
 ```
-.roadmap/planning/security-quality-remediation/
+.roadmap/in_progress/security-quality-remediation/
 ├── AI_CONTEXT.md          # Overall feature architecture and context
 ├── PR_BREAKDOWN.md        # Detailed instructions for each PR
 ├── PROGRESS_TRACKER.md    # THIS FILE - Current progress and handoff notes
@@ -44,33 +46,33 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Security &
 
 ## 🎯 Next PR to Implement
 
-### ➡️ READY: PR4 - TypeScript/React Quality Improvements
+### ➡️ IN PROGRESS: PR5 - AWS Infrastructure Security
 
 **Quick Summary**:
-Refactor React codebase to improve maintainability: split useRacingGame god hook (507 lines), add error boundaries, fix direct DOM manipulation, add WebSocket disposal, fix type assertions, improve React keys.
+Harden AWS infrastructure: remove hardcoded account ID, scope all IAM wildcards, enable CloudWatch/ECR encryption (KMS), add VPC Flow Logs, enable ALB logging, deploy AWS WAF, integrate Secrets Manager.
 
-**Branch**: `refactor/react-quality` (to be created)
-**Estimated Effort**: 2 days
-**Priority**: P2 (Medium)
-**Dependencies**: PR2 (error boundaries) ✅ Complete
+**Branch**: `security/aws-infrastructure` (to be created)
+**Estimated Effort**: 3-4 days
+**Priority**: P0 (Critical)
+**Dependencies**: None
 
 **Pre-flight Checklist**:
 - [ ] Read AI_CONTEXT.md for overall feature context
-- [ ] Read PR_BREAKDOWN.md PR4 section for detailed steps
-- [ ] Ensure main branch is up to date with PR2 & PR3 changes
+- [ ] Read PR_BREAKDOWN.md PR5 section for detailed steps
+- [ ] Ensure main branch is up to date with all PR3 changes
 - [ ] Create feature branch from main
-- [ ] Review useRacingGame.ts structure (507 lines)
-- [ ] Plan hook extraction strategy
+- [ ] Review current Terraform configuration
+- [ ] Understand current IAM wildcard usage
 
 **Prerequisites Complete**:
 ✅ PR1 merged (Python backend security)
-✅ PR2 merged (Frontend security, error boundaries available)
+✅ PR2 merged (Frontend security)
 ✅ PR3 complete (Python quality improvements)
 ✅ 5-agent security analysis completed
-✅ Code quality issues documented
+✅ Infrastructure security issues documented (20 total)
 
-**Next Steps**: Start PR4 (React Quality) or PR5 (AWS Infrastructure - can run in parallel)
-**Alternative**: PR5 - AWS Infrastructure Security (higher priority P0)
+**Next Steps**: Start PR5 (AWS Infrastructure - Critical P0)
+**Alternative**: PR4 - TypeScript/React Quality (can run after PR5)
 
 ---
 
@@ -96,7 +98,10 @@ Refactor React codebase to improve maintainability: split useRacingGame god hook
 | PR2 | Frontend Security | 🟢 Complete | 100% | Medium | P0 | All 7 issues fixed, Zod validation added (commit 54d87c2, PR #5) |
 | PR3 | Python Code Quality | 🟢 Complete | 100% | High | P1 | All 3 sub-PRs complete ✅ State machine, 28 tests (commit 1af0cf3, PR #8) |
 | PR4 | React Quality | 🔴 Not Started | 0% | Medium | P2 | Split hooks, error boundaries |
-| PR5 | AWS Infrastructure | 🔴 Not Started | 0% | High | P0 | IAM scoping, encryption, WAF |
+| PR5 | AWS Infrastructure | 🟡 In Progress | 0% | High | P0 | 3 sub-PRs planned: 5.1 (IAM), 5.2 (KMS), 5.3 (Monitoring/WAF) - 2025-10-12 |
+| PR5.1 | IAM Scoping & Hardcoded Creds | ⚪ Not Started | 0% | High | P0 | Remove hardcoded account ID, scope all IAM wildcards, add MFA |
+| PR5.2 | Encryption (KMS) | ⚪ Not Started | 0% | Medium | P0 | KMS encryption for CloudWatch logs and ECR repositories |
+| PR5.3 | Monitoring & WAF | ⚪ Not Started | 0% | High | P0 | VPC Flow Logs, ALB access logs, AWS WAF with rate limiting |
 | PR6 | Final Evaluation | 🔴 Not Started | 0% | Low | P0 | Re-run 5-agent analysis |
 
 ### Status Legend
@@ -462,9 +467,633 @@ app/racing/
 
 ## PR5: AWS Infrastructure Security
 
-**Status**: 🔴 Not Started
-**Branch**: `security/aws-infrastructure`
-**Estimated Effort**: 3-4 days
+**Status**: 🟡 In Progress (2025-10-12)
+**Branch**: `security/aws-infrastructure` (created)
+**Estimated Effort**: 3-4 days (3 sub-PRs)
+**Dependencies**: None
+
+**Implementation Strategy**: Breaking into 3 atomic sub-PRs:
+- **Sub-PR 5.1**: Hardcoded Credentials & IAM Scoping ⚪ Not Started
+- **Sub-PR 5.2**: Encryption (KMS for CloudWatch/ECR) ⚪ Not Started
+- **Sub-PR 5.3**: Monitoring & Protection (VPC Flow, ALB Logs, WAF) ⚪ Not Started
+
+---
+
+### Sub-PR 5.1: Hardcoded Credentials & IAM Scoping
+
+**Status**: ⚪ Not Started
+**Branch**: `security/aws-infrastructure-5.1`
+**Estimated Effort**: 1-2 days
+**Goal**: Remove hardcoded account ID and scope all IAM wildcard permissions
+
+**Issues Addressed (5 critical)**:
+1. Hardcoded Account ID in deploy-app.sh
+2. Wildcard IAM - ECR (Resource: "*")
+3. Wildcard IAM - ECS (Resource: "*")
+4. Missing MFA for destructive operations
+5. Overly broad GitHub Actions OIDC permissions
+
+**Files to Modify**:
+- `infra/scripts/deploy-app.sh` - Remove hardcoded account ID
+- `infra/terraform/base/github-oidc.tf` - Scope all IAM wildcards
+- New: `infra/terraform/base/iam-mfa-policy.tf` - MFA deny policy
+
+**Implementation Details**:
+
+#### 1. Remove Hardcoded Account ID
+**Current** (deploy-app.sh:22):
+```bash
+AWS_ACCOUNT_ID="449870229058"
+```
+
+**Fix**:
+```bash
+AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+if [ -z "$AWS_ACCOUNT_ID" ]; then
+  echo "ERROR: Failed to retrieve AWS account ID"
+  exit 1
+fi
+```
+
+#### 2. Scope ECR IAM Permissions
+**Current** (github-oidc.tf:66-106):
+```hcl
+Resource = "*"
+```
+
+**Fix**:
+```hcl
+Resource = [
+  "arn:aws:ecr:${var.aws_region}:${data.aws_caller_identity.current.account_id}:repository/${var.project_name}-*"
+]
+```
+
+**Actions to scope**: ecr:GetAuthorizationToken remains "*", all others scoped to repositories
+
+#### 3. Scope ECS IAM Permissions
+**Current** (github-oidc.tf:109-420):
+```hcl
+Resource = "*"
+```
+
+**Fix with Resource Tags**:
+```hcl
+Resource = "*"  # Some ECS actions require this
+Condition = {
+  StringEquals = {
+    "aws:ResourceTag/Project" = var.project_name
+  }
+}
+```
+
+**Actions to scope**: CreateCluster, DeleteCluster, UpdateService, RegisterTaskDefinition, etc.
+
+#### 4. Add MFA Deny Policy
+**New File**: `iam-mfa-policy.tf`
+```hcl
+resource "aws_iam_policy" "mfa_deny" {
+  name        = "${var.project_name}-${var.environment}-mfa-required"
+  description = "Deny destructive operations without MFA"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Deny"
+      Action = [
+        "ecs:DeleteCluster",
+        "ecr:DeleteRepository",
+        "ecs:DeleteService",
+        "ec2:TerminateInstances"
+      ]
+      Resource = "*"
+      Condition = {
+        BoolIfExists = {
+          "aws:MultiFactorAuthPresent" = "false"
+        }
+      }
+    }]
+  })
+}
+```
+
+**Checklist**:
+- [ ] Create sub-branch `security/aws-infrastructure-5.1`
+- [ ] Update deploy-app.sh with dynamic account ID lookup
+- [ ] Add error handling for STS call failure
+- [ ] Test deploy script in dev environment
+- [ ] Add data source for current account ID in github-oidc.tf
+- [ ] Scope ECR permissions to project repositories
+- [ ] Document which ECR actions require "*"
+- [ ] Scope ECS permissions with resource tag conditions
+- [ ] Test that GitHub Actions can still deploy
+- [ ] Create iam-mfa-policy.tf
+- [ ] Attach MFA policy to GitHub Actions role
+- [ ] Document MFA bypass for CI/CD (uses OIDC, not user creds)
+- [ ] Run `make infra-plan SCOPE=base ENV=dev`
+- [ ] Review terraform plan for unintended changes
+- [ ] Run `make infra-apply SCOPE=base ENV=dev`
+- [ ] Verify GitHub Actions deployment still works
+- [ ] Run `make lint-all` - all checks pass
+- [ ] Create PR with detailed IAM policy changes
+- [ ] Update PROGRESS_TRACKER.md
+
+**Success Criteria**:
+- ✅ No hardcoded account IDs in any script
+- ✅ All ECR IAM permissions scoped to project repositories
+- ✅ All ECS IAM permissions scoped with resource tags
+- ✅ MFA required for all destructive operations
+- ✅ GitHub Actions deployments still work
+- ✅ Terraform plan shows only expected changes
+
+---
+
+### Sub-PR 5.2: Encryption (KMS for CloudWatch/ECR)
+
+**Status**: ⚪ Not Started
+**Branch**: `security/aws-infrastructure-5.2`
+**Estimated Effort**: 1 day
+**Goal**: Enable KMS encryption for all logs and ECR repositories
+**Dependencies**: Sub-PR 5.1 merged
+
+**Issues Addressed (2 high)**:
+1. CloudWatch Logs not encrypted with KMS
+2. ECR using AES256 instead of KMS encryption
+
+**Files to Modify**:
+- New: `infra/terraform/base/kms.tf` - KMS keys for logs and ECR
+- `infra/terraform/base/ecs.tf` - Add KMS to log groups
+- `infra/terraform/base/ecr.tf` - Switch to KMS encryption
+
+**Implementation Details**:
+
+#### 1. Create KMS Keys
+**New File**: `kms.tf`
+```hcl
+# KMS key for CloudWatch Logs
+resource "aws_kms_key" "logs" {
+  description             = "${var.project_name}-${var.environment}-logs"
+  deletion_window_in_days = 30
+  enable_key_rotation     = true
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "Enable IAM User Permissions"
+        Effect = "Allow"
+        Principal = {
+          AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"
+        }
+        Action   = "kms:*"
+        Resource = "*"
+      },
+      {
+        Sid    = "Allow CloudWatch Logs"
+        Effect = "Allow"
+        Principal = {
+          Service = "logs.${var.aws_region}.amazonaws.com"
+        }
+        Action = [
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:ReEncrypt*",
+          "kms:GenerateDataKey*",
+          "kms:CreateGrant",
+          "kms:DescribeKey"
+        ]
+        Resource = "*"
+        Condition = {
+          ArnLike = {
+            "kms:EncryptionContext:aws:logs:arn" = "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:*"
+          }
+        }
+      }
+    ]
+  })
+
+  tags = {
+    Name        = "${var.project_name}-${var.environment}-logs-key"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+
+resource "aws_kms_alias" "logs" {
+  name          = "alias/${var.project_name}-${var.environment}-logs"
+  target_key_id = aws_kms_key.logs.key_id
+}
+
+# KMS key for ECR
+resource "aws_kms_key" "ecr" {
+  description             = "${var.project_name}-${var.environment}-ecr"
+  deletion_window_in_days = 30
+  enable_key_rotation     = true
+
+  tags = {
+    Name        = "${var.project_name}-${var.environment}-ecr-key"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+
+resource "aws_kms_alias" "ecr" {
+  name          = "alias/${var.project_name}-${var.environment}-ecr"
+  target_key_id = aws_kms_key.ecr.key_id
+}
+```
+
+#### 2. Apply KMS to CloudWatch Log Groups
+**Update** (ecs.tf:52-65):
+```hcl
+resource "aws_cloudwatch_log_group" "app" {
+  name              = "/ecs/${var.project_name}-${var.environment}"
+  retention_in_days = var.log_retention_days
+  kms_key_id        = aws_kms_key.logs.arn  # ADD THIS LINE
+
+  tags = {
+    Name        = "${var.project_name}-${var.environment}-logs"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+```
+
+#### 3. Switch ECR to KMS Encryption
+**Update** (ecr.tf:18-20):
+```hcl
+encryption_configuration {
+  encryption_type = "KMS"
+  kms_key         = aws_kms_key.ecr.arn
+}
+```
+
+**Checklist**:
+- [ ] Create sub-branch `security/aws-infrastructure-5.2`
+- [ ] Create `kms.tf` with logs and ECR keys
+- [ ] Add KMS key rotation (best practice)
+- [ ] Add proper KMS key policies for CloudWatch
+- [ ] Add KMS key policies for ECR
+- [ ] Create KMS aliases for easier reference
+- [ ] Update `ecs.tf` log groups with kms_key_id
+- [ ] Update all CloudWatch log groups in base scope
+- [ ] Update `ecr.tf` to use KMS encryption
+- [ ] Test that existing images remain accessible
+- [ ] Run `make infra-plan SCOPE=base ENV=dev`
+- [ ] Review terraform plan for log group recreation
+- [ ] Plan for potential log group downtime (recreation)
+- [ ] Run `make infra-apply SCOPE=base ENV=dev`
+- [ ] Verify logs still flow to CloudWatch
+- [ ] Verify ECR push/pull still works
+- [ ] Check KMS key rotation is enabled
+- [ ] Run `make lint-all` - all checks pass
+- [ ] Create PR with KMS implementation
+- [ ] Update PROGRESS_TRACKER.md
+
+**Success Criteria**:
+- ✅ All CloudWatch log groups encrypted with KMS
+- ✅ All ECR repositories encrypted with KMS
+- ✅ KMS key rotation enabled for all keys
+- ✅ Logs continue flowing without interruption
+- ✅ ECR push/pull operations work correctly
+- ✅ KMS key policies follow least privilege
+
+**Important Notes**:
+- Applying KMS to existing log groups may require recreation
+- Coordinate with team before applying to production
+- Test thoroughly in dev environment first
+- ECR images remain accessible after encryption change
+
+---
+
+### Sub-PR 5.3: Monitoring & Protection (VPC Flow, ALB Logs, WAF)
+
+**Status**: ⚪ Not Started
+**Branch**: `security/aws-infrastructure-5.3`
+**Estimated Effort**: 1-2 days
+**Goal**: Enable comprehensive monitoring and deploy AWS WAF for DDoS protection
+**Dependencies**: Sub-PR 5.1 and 5.2 merged
+
+**Issues Addressed (3 high + 1 critical)**:
+1. No VPC Flow Logs (HIGH)
+2. ALB access logs disabled (CRITICAL)
+3. No AWS WAF (HIGH)
+4. No Secrets Manager integration (HIGH) - moved to separate PR or future work
+
+**Files to Modify**:
+- New: `infra/terraform/base/vpc-flow-logs.tf` - VPC Flow Logs
+- `infra/terraform/base/alb.tf` - Enable access logs
+- New: `infra/terraform/base/s3-logs.tf` - S3 bucket for ALB logs
+- New: `infra/terraform/base/waf.tf` - AWS WAF with rate limiting
+
+**Implementation Details**:
+
+#### 1. Enable VPC Flow Logs
+**New File**: `vpc-flow-logs.tf`
+```hcl
+resource "aws_cloudwatch_log_group" "vpc_flow_logs" {
+  name              = "/aws/vpc/${var.project_name}-${var.environment}"
+  retention_in_days = var.log_retention_days
+  kms_key_id        = aws_kms_key.logs.arn
+
+  tags = {
+    Name        = "${var.project_name}-${var.environment}-vpc-flow-logs"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+
+resource "aws_iam_role" "vpc_flow_logs" {
+  name = "${var.project_name}-${var.environment}-vpc-flow-logs"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        Service = "vpc-flow-logs.amazonaws.com"
+      }
+      Action = "sts:AssumeRole"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "vpc_flow_logs" {
+  name = "${var.project_name}-${var.environment}-vpc-flow-logs"
+  role = aws_iam_role.vpc_flow_logs.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents",
+        "logs:DescribeLogGroups",
+        "logs:DescribeLogStreams"
+      ]
+      Resource = "*"
+    }]
+  })
+}
+
+resource "aws_flow_log" "main" {
+  iam_role_arn    = aws_iam_role.vpc_flow_logs.arn
+  log_destination = aws_cloudwatch_log_group.vpc_flow_logs.arn
+  traffic_type    = "ALL"
+  vpc_id          = aws_vpc.main.id
+
+  tags = {
+    Name        = "${var.project_name}-${var.environment}-flow-log"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+```
+
+#### 2. Enable ALB Access Logs
+**New File**: `s3-logs.tf`
+```hcl
+data "aws_elb_service_account" "main" {}
+
+resource "aws_s3_bucket" "alb_logs" {
+  bucket = "${var.project_name}-${var.environment}-alb-logs-${data.aws_caller_identity.current.account_id}"
+
+  tags = {
+    Name        = "${var.project_name}-${var.environment}-alb-logs"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+
+resource "aws_s3_bucket_versioning" "alb_logs" {
+  bucket = aws_s3_bucket.alb_logs.id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "alb_logs" {
+  bucket = aws_s3_bucket.alb_logs.id
+
+  rule {
+    id     = "expire-old-logs"
+    status = "Enabled"
+
+    expiration {
+      days = var.log_retention_days
+    }
+  }
+}
+
+resource "aws_s3_bucket_public_access_block" "alb_logs" {
+  bucket = aws_s3_bucket.alb_logs.id
+
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_policy" "alb_logs" {
+  bucket = aws_s3_bucket.alb_logs.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        AWS = data.aws_elb_service_account.main.arn
+      }
+      Action   = "s3:PutObject"
+      Resource = "${aws_s3_bucket.alb_logs.arn}/*"
+    }]
+  })
+}
+```
+
+**Update** (alb.tf:16-24):
+```hcl
+resource "aws_lb" "main" {
+  # ... existing configuration ...
+
+  access_logs {
+    bucket  = aws_s3_bucket.alb_logs.id
+    enabled = true
+    prefix  = "alb"
+  }
+}
+```
+
+#### 3. Deploy AWS WAF
+**New File**: `waf.tf`
+```hcl
+resource "aws_wafv2_web_acl" "main" {
+  name  = "${var.project_name}-${var.environment}-waf"
+  scope = "REGIONAL"
+
+  default_action {
+    allow {}
+  }
+
+  # Rate limiting rule
+  rule {
+    name     = "rate-limit"
+    priority = 1
+
+    action {
+      block {}
+    }
+
+    statement {
+      rate_based_statement {
+        limit              = 2000
+        aggregate_key_type = "IP"
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "${var.project_name}-${var.environment}-rate-limit"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  # AWS Managed Rules - Core Rule Set
+  rule {
+    name     = "aws-managed-core-rules"
+    priority = 2
+
+    override_action {
+      none {}
+    }
+
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesCommonRuleSet"
+        vendor_name = "AWS"
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "${var.project_name}-${var.environment}-core-rules"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  # AWS Managed Rules - Known Bad Inputs
+  rule {
+    name     = "aws-managed-bad-inputs"
+    priority = 3
+
+    override_action {
+      none {}
+    }
+
+    statement {
+      managed_rule_group_statement {
+        name        = "AWSManagedRulesKnownBadInputsRuleSet"
+        vendor_name = "AWS"
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "${var.project_name}-${var.environment}-bad-inputs"
+      sampled_requests_enabled   = true
+    }
+  }
+
+  visibility_config {
+    cloudwatch_metrics_enabled = true
+    metric_name                = "${var.project_name}-${var.environment}-waf"
+    sampled_requests_enabled   = true
+  }
+
+  tags = {
+    Name        = "${var.project_name}-${var.environment}-waf"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+
+resource "aws_wafv2_web_acl_association" "main" {
+  resource_arn = aws_lb.main.arn
+  web_acl_arn  = aws_wafv2_web_acl.main.arn
+}
+
+# CloudWatch Log Group for WAF
+resource "aws_cloudwatch_log_group" "waf" {
+  name              = "/aws/wafv2/${var.project_name}-${var.environment}"
+  retention_in_days = var.log_retention_days
+  kms_key_id        = aws_kms_key.logs.arn
+
+  tags = {
+    Name        = "${var.project_name}-${var.environment}-waf-logs"
+    Environment = var.environment
+    Project     = var.project_name
+  }
+}
+
+resource "aws_wafv2_web_acl_logging_configuration" "main" {
+  resource_arn            = aws_wafv2_web_acl.main.arn
+  log_destination_configs = [aws_cloudwatch_log_group.waf.arn]
+}
+```
+
+**Checklist**:
+- [ ] Create sub-branch `security/aws-infrastructure-5.3`
+- [ ] Create `vpc-flow-logs.tf`
+- [ ] Add IAM role for VPC Flow Logs
+- [ ] Create CloudWatch log group for VPC flows
+- [ ] Enable VPC Flow Logs for main VPC
+- [ ] Create `s3-logs.tf` for ALB logs bucket
+- [ ] Configure S3 lifecycle policy (90 day retention)
+- [ ] Enable S3 bucket versioning
+- [ ] Block all public access to logs bucket
+- [ ] Add bucket policy for ELB service account
+- [ ] Update `alb.tf` to enable access logs
+- [ ] Test ALB logs flowing to S3
+- [ ] Create `waf.tf` with rate limiting
+- [ ] Add AWS Managed Core Rule Set
+- [ ] Add AWS Managed Known Bad Inputs
+- [ ] Configure rate limit (2000 req/5min per IP)
+- [ ] Associate WAF with ALB
+- [ ] Enable WAF logging to CloudWatch
+- [ ] Test WAF rate limiting with load test
+- [ ] Run `make infra-plan SCOPE=base ENV=dev`
+- [ ] Review terraform plan (expect new resources)
+- [ ] Run `make infra-apply SCOPE=base ENV=dev`
+- [ ] Verify VPC Flow Logs in CloudWatch
+- [ ] Verify ALB logs in S3
+- [ ] Verify WAF metrics in CloudWatch
+- [ ] Test rate limiting doesn't block normal traffic
+- [ ] Run `make lint-all` - all checks pass
+- [ ] Create PR with monitoring implementation
+- [ ] Update PROGRESS_TRACKER.md
+
+**Success Criteria**:
+- ✅ VPC Flow Logs enabled and flowing to CloudWatch
+- ✅ ALB access logs enabled and flowing to S3
+- ✅ S3 lifecycle policy auto-deletes old logs
+- ✅ AWS WAF deployed with rate limiting (2000 req/5min)
+- ✅ AWS Managed rule sets active
+- ✅ WAF logs flowing to CloudWatch
+- ✅ Normal traffic not blocked by WAF
+- ✅ Rate limiting blocks excessive requests
+
+**Testing WAF Rate Limiting**:
+```bash
+# Use Apache Bench to test rate limiting
+ab -n 3000 -c 100 https://your-alb-url.com/
+
+# Should see 429 responses after 2000 requests in 5 minutes
+# Check WAF metrics in CloudWatch for blocked requests
+```
+
+---
 
 ### Issues Addressed (20 total)
 
