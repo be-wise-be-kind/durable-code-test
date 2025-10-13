@@ -134,6 +134,48 @@ See `.ai/howto/create-roadmap-item.md` for detailed workflow instructions.
 
 ## Development Guidelines
 
+### Project-Specific Rules (CRITICAL)
+
+**Docker and Testing**:
+- ⚠️ **NEVER run tests locally** - Always use Docker or Make targets
+- ⚠️ **NEVER run npm install locally** - Always update package.json and rebuild Docker containers
+- ⚠️ All package installations must be done within Docker containers, not on the host system
+- ⚠️ All linting should be run through Docker or Make targets (not `npm run lint`, not direct linting commands)
+
+**Make Targets**:
+- ⚠️ Always use Make targets for operations (testing, linting, building)
+- ⚠️ Always prefer Makefile targets for Terraform operations
+- Run all linting via Make targets, don't call linting directly
+
+**Branch Protection**:
+- ⚠️ **NEVER create anything on the main branch** - Not a single file, not a single commit
+- Always create a feature branch first
+
+**Git Workflow**:
+- ⚠️ **NEVER bypass or skip pre-commit hooks** - They must be made to pass
+- When creating a PR, always check for uncommitted code - don't leave anything behind
+
+**Terraform State**:
+- ⚠️ **NEVER force unlock Terraform state without explicit user permission**
+- State locks protect against corruption and concurrent modifications
+
+**File Creation Philosophy**:
+- Do what has been asked; nothing more, nothing less
+- NEVER create files unless they're absolutely necessary for achieving your goal
+- ALWAYS prefer editing an existing file to creating a new one
+- NEVER proactively create documentation files (*.md) or README files unless explicitly requested
+
+**Linting Rule Enforcement - CRITICAL**:
+- ⚠️ **NEVER skip linting rules** using noqa, pylint: disable, type: ignore, or eslint-disable without explicit approval
+- ⚠️ **ALWAYS fix the underlying issue** instead of skipping the rule
+- ⚠️ **CRITICAL RULES that must NEVER be skipped**:
+  - Python: C901 (complexity), W0718 (broad exceptions), E501 (line length), S### (security), F401 (unused imports except __init__.py)
+  - TypeScript: no-explicit-any, react-hooks/exhaustive-deps, react-hooks/rules-of-hooks, no-console
+  - Infrastructure: terraform validate errors, shellcheck warnings
+- If a linting rule is firing, FIX the code - don't skip the rule
+- The enforcement.no-skip linting rule will automatically catch and block attempts to skip critical rules
+- See `.ai/docs/LINTING_ENFORCEMENT_STANDARDS.md` for complete guidance on fixing vs skipping
+
 ### Code Style
 
 **Backend (Python)**:
