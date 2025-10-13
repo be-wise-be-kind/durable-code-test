@@ -69,6 +69,7 @@ class TooManyMethodsRule(ASTLintRule):
             return [
                 self.create_violation_from_node(
                     context=context,
+                    node=node,
                     message=f"Class '{node.name}' has {method_count} methods (max: {max_methods})",
                     description="Classes with many methods often violate SRP by handling multiple responsibilities",
                     suggestion=f"Consider splitting '{node.name}' into smaller, focused classes",
@@ -161,6 +162,7 @@ class TooManyResponsibilitiesRule(ASTLintRule):
         return [
             self.create_violation_from_node(
                 context=context,
+                node=node,
                 message=f"Class '{node.name}' has {len(responsibility_groups)} responsibility groups",
                 description=f"Multiple responsibility groups detected: {groups_list}",
                 suggestion=f"Split '{node.name}' by responsibility: {groups_list}",

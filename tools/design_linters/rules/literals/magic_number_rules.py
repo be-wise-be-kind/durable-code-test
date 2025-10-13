@@ -434,6 +434,7 @@ class MagicComplexRule(ASTLintRule):
         return [
             self.create_violation_from_node(
                 context=context,
+                node=node,
                 message=message,
                 description=f"Replace complex number {node.value} with a named constant for better readability",
                 suggestion=suggestion,

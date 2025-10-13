@@ -70,11 +70,10 @@ class NoSkipRule(BaseLintRule):
     # Whitelist: Patterns that are allowed to be skipped
     WHITELIST_PATTERNS = {
         "python": [
-            r"__init__.py.*F401",  # Allow unused imports in __init__.py
-            r"test_.*",  # Allow skips in test files (but warn)
+            r"__init__.py:F401",  # Allow unused imports in __init__.py
         ],
         "typescript": [
-            r"\.test\.tsx?.*no-explicit-any",  # Allow any in test files
+            r"\.test\.tsx?:no-explicit-any",  # Allow any in test files
         ],
     }
 

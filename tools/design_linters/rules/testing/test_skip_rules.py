@@ -156,7 +156,7 @@ class TestFileDetector:
 
     def is_test_file(self, context: LintContext) -> bool:
         """Check if the current file is a test file."""
-        file_path = context.file_path.lower() if hasattr(context, "file_path") else ""
+        file_path = str(context.file_path).lower() if hasattr(context, "file_path") else ""
 
         for pattern in self.TEST_PATTERNS:
             if pattern in file_path:
@@ -299,6 +299,7 @@ class NoSkippedTestsRule(ASTLintRule):
 
                 violations.append(
                     self._violation_factory.create_violation(
+                        node=node,
                         context=context,
                         rule_id=self.rule_id,
                         message=message,
@@ -325,6 +326,7 @@ class NoSkippedTestsRule(ASTLintRule):
 
             violations.append(
                 self._violation_factory.create_violation(
+                    node=node,
                     context=context,
                     rule_id=self.rule_id,
                     message=message,

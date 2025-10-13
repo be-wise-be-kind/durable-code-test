@@ -25,10 +25,19 @@ _meta:
     when_to_read: "When you need detailed understanding of any feature, template usage, or implementation guidance"
   ai_agent_usage:
     step_1: "Read this YAML file first for quick navigation and overview"
-    step_2: "Consult layout.yaml for file placement rules BEFORE creating any files"
-    step_3: "Reference index_expanded.md for detailed information on specific topics"
-    step_4: "Use templates from .ai/templates/ for code generation"
-    step_5: "Follow standards from .ai/docs/ for compliance"
+    step_2: "Identify relevant documentation, howtos, and templates for your task"
+    step_3: "Read all applicable documents completely before proceeding"
+    step_4: "Inform the user which documents you are using to solve the problem"
+    step_5: "Consult layout.yaml for file placement rules BEFORE creating any files"
+    step_6: "Read FILE_HEADER_STANDARDS.md BEFORE writing any files"
+    step_7: "Use templates from .ai/templates/ for code generation"
+    step_8: "Follow standards from .ai/docs/ for compliance"
+    mandatory_workflow:
+      before_any_task: "MUST read index.yaml, identify resources, read documents, inform user"
+      before_creating_files: "MUST read FILE_HEADER_STANDARDS.md and write headers first"
+      before_fixing_linting: "MUST follow two-phase approach (Phase 1: basic, Phase 2: architectural)"
+      before_creating_roadmap: "MUST read create-roadmap-item.md and use three-document structure"
+      this_is_not_optional: "Skipping these steps leads to incomplete work and quality issues"
 
 quick_actions:
   check_file_placement:
@@ -291,9 +300,52 @@ standards:
     purpose: "AI development patterns and repository organization principles"
     enforcement: "Project structure, AI agent workflows"
 
+roadmaps:
+  _guide: ".ai/howtos/create-roadmap-item.md"
+  _workflow: "Roadmap-driven development with three-document structure"
+
+  structure:
+    planning: "roadmap/planning/ - New items (0% complete)"
+    in_progress: "roadmap/in_progress/ - Active items (1-99% complete)"
+    complete: "roadmap/complete/ - Finished items (100% complete)"
+
+  three_document_structure:
+    required:
+      - PROGRESS_TRACKER.md: "Primary handoff document with completion % tracking and commit hashes"
+      - PR_BREAKDOWN.md: "Detailed PR implementation steps (required for multi-PR features)"
+    optional:
+      - AI_CONTEXT.md: "Architectural context and design decisions"
+
+  templates:
+    progress_tracker: ".ai/templates/roadmap-progress-tracker.md.template"
+    pr_breakdown: ".ai/templates/roadmap-pr-breakdown.md.template"
+    ai_context: ".ai/templates/roadmap-ai-context.md.template"
+
+  lifecycle:
+    planning_phase: "Create roadmap with 0% completion in planning/"
+    in_progress_phase: "Move to in_progress/ when first PR starts (>0%)"
+    complete_phase: "Move to complete/ when all PRs done (100%)"
+    update_protocol: "After each PR: mark complete, add commit hash, update %, check directory move"
+
 howtos:
   _expanded_section: "index_expanded.md#howtos-guides"
   _usage_note: "Step-by-step guides for common development tasks"
+
+  create-roadmap-item.md:
+    purpose: "Create comprehensive roadmap items with progress tracking"
+    key_concepts: ["Three-document structure", "Commit hash tracking", "Directory lifecycle"]
+
+  how-to-fix-linting-errors.md:
+    purpose: "Phase 1: Fix mechanical linting violations (style, security, types)"
+    key_concepts: ["Auto-fix first", "Systematic approach", "Exit code 0 required"]
+
+  how-to-refactor-for-quality.md:
+    purpose: "Phase 2: Architectural refactoring (complexity, performance, organization)"
+    key_concepts: ["After Phase 1 complete", "Design decisions", "Component optimization"]
+
+  how-to-write-file-headers.md:
+    purpose: "Write comprehensive file headers before any code"
+    key_concepts: ["Mandatory workflow", "Atemporal language", "All file types"]
 
   run-tests.md:
     purpose: "Execute tests using Make targets and Docker"

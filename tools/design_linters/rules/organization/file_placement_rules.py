@@ -75,6 +75,11 @@ class LayoutRulesLoader:
         """Process loaded configuration data."""
         if "$schema" in data:
             del data["$schema"]
+
+        # Extract linter_rules if present (from layout.yaml structure)
+        if "linter_rules" in data:
+            data = data["linter_rules"]
+
         self.rules = data
         logger.info("Loaded layout rules from file", file_path=str(layout_path))
 
@@ -85,7 +90,41 @@ class LayoutRulesLoader:
     @staticmethod
     def get_default_rules() -> dict[str, Any]:
         """Get default layout rules if no config file exists."""
-        return {"dont": "use"}
+        return {
+            "paths": {
+                ".": {
+                    "allow": [
+                        "^[^/]+\\.md$",
+                        "^[^/]+\\.yml$",
+                        "^[^/]+\\.yaml$",
+                        "^[^/]+\\.json$",
+                        "^[^/]+\\.toml$",
+                        "^Makefile",
+                        "^Dockerfile",
+                        "^\\.gitignore$",
+                        "^\\.env",
+                        "^requirements.*\\.txt$",
+                        "^setup\\.py$",
+                        "^conftest\\.py$",
+                        "^manage\\.py$",
+                    ],
+                    "deny": [
+                        {"pattern": "^debug[_-].*\\.py$", "reason": "Debug files should not be in the root directory"},
+                        {
+                            "pattern": "^tmp[_-].*\\.py$",
+                            "reason": "Temporary files should not be in the root directory",
+                        },
+                        {
+                            "pattern": "^temp[_-].*\\.py$",
+                            "reason": "Temporary files should not be in the root directory",
+                        },
+                        {"pattern": "^test[_-].*\\.py$", "reason": "Test files should be in test/ directory"},
+                        {"pattern": "_test\\.py$", "reason": "Test files should be in test/ directory"},
+                        {"pattern": "_spec\\.py$", "reason": "Test files should be in test/ directory"},
+                    ],
+                }
+            }
+        }
 
 
 class PatternMatcher:
@@ -178,29 +217,34 @@ class DirectoryRuleChecker:
 
         violations = []
 
-        # Check for test files in root
-        if self._is_test_file_in_root():
-            violations.append(self._create_test_file_violation())
-            return violations
-
         # Find matching directory rule
         dir_rule, matched_path = self._find_matching_directory_rule()
         if not dir_rule:
             return violations
 
-        # Check deny patterns
+        # Check deny patterns first (catches debug, temp, test files with specific patterns)
         if "deny" in dir_rule:
             is_denied, reason = self.pattern_matcher.match_deny_patterns(self.current_path_str, dir_rule["deny"])
             if is_denied:
                 violations.append(self._create_deny_violation(matched_path, reason))
+                return violations
 
-        # Check allow patterns
-        if (
-            "allow" in dir_rule
-            and "deny" not in dir_rule
-            and not self.pattern_matcher.match_allow_patterns(self.current_path_str, dir_rule["allow"])
+        # Check for test files in root (catches test files not caught by deny patterns)
+        if self._is_test_file_in_root():
+            violations.append(self._create_test_file_violation())
+            return violations
+
+        # Check allow patterns - if file doesn't match, create appropriate violation
+        if "allow" in dir_rule and not self.pattern_matcher.match_allow_patterns(
+            self.current_path_str, dir_rule["allow"]
         ):
-            violations.append(self._create_allow_violation(matched_path))
+            # Special case: Python files in root get INFO severity
+            is_root_file = "/" not in self.current_path_str
+            is_python_file = self.current_path_str.endswith(".py")
+            if is_root_file and is_python_file:
+                violations.append(self._create_python_file_info(matched_path))
+            else:
+                violations.append(self._create_allow_violation(matched_path))
 
         return violations
 
@@ -208,7 +252,10 @@ class DirectoryRuleChecker:
         """Check if this is a test file in root directory."""
         if len(self.current_rel_path.parts) == 1:
             filename = self.current_rel_path.name.lower()
-            return filename.startswith("test_") or filename.endswith("_test.py") or "test" in filename
+            # Exclude conftest.py which is a special pytest file that's allowed in root
+            if filename == "conftest.py":
+                return False
+            return filename.startswith("test_") or filename.endswith("_test.py")
         return False
 
     def _create_test_file_violation(self) -> LintViolation:
@@ -231,20 +278,31 @@ class DirectoryRuleChecker:
         best_depth = -1
 
         for dir_path, rules in self.current_directories.items():
-            if self.current_path_str.startswith(dir_path) or (dir_path == "root" and "/" not in self.current_path_str):
-                depth = len(dir_path.split("/"))
-                if depth > best_depth:
+            # Handle root directory matching
+            is_root_file = "/" not in self.current_path_str
+            matches_root = (dir_path == "." or dir_path == "root") and is_root_file
+            matches_prefix = (
+                self.current_path_str.startswith(dir_path + "/") if dir_path not in (".", "root") else False
+            )
+
+            if matches_root or matches_prefix or self.current_path_str == dir_path:
+                depth = len(dir_path.split("/")) if dir_path not in (".", "root") else 0
+                if depth > best_depth or (matches_root and best_depth == -1):
                     best_match = rules
                     best_path = dir_path
-                    best_depth = depth
+                    best_depth = depth if depth > 0 else 0
 
         return best_match, best_path
 
     def _create_deny_violation(self, matched_path: str | None, reason: str | None) -> LintViolation:
         """Create violation for denied file."""
+        filename = self.current_rel_path.name
         message = f"File '{self.current_rel_path}' not allowed in {matched_path or 'this location'}"
         if reason:
             message = f"{message}: {reason}"
+
+        # Generate appropriate suggestion based on filename
+        suggestion = FileSuggestionGenerator.get_suggestion(filename, self.current_path_str)
 
         return LintViolation(
             rule_id=self.current_rule_id,
@@ -254,7 +312,7 @@ class DirectoryRuleChecker:
             line=1,
             column=0,
             file_path=str(self.current_rel_path),
-            suggestion=FileSuggestionGenerator.get_suggestion(self.current_rel_path.name, None),
+            suggestion=suggestion,
         )
 
     def _create_allow_violation(self, matched_path: str | None) -> LintViolation:
@@ -273,6 +331,19 @@ class DirectoryRuleChecker:
             column=0,
             file_path=str(self.current_rel_path),
             suggestion=suggestion,
+        )
+
+    def _create_python_file_info(self, matched_path: str | None) -> LintViolation:
+        """Create INFO violation for Python file in root directory."""
+        return LintViolation(
+            rule_id=self.current_rule_id,
+            message=f"Python file '{self.current_rel_path}' is in the root directory",
+            description="Consider if this file belongs in a more specific directory",
+            severity=Severity.INFO,
+            line=1,
+            column=0,
+            file_path=str(self.current_rel_path),
+            suggestion="Move to src/, lib/, or appropriate module directory if this is application code",
         )
 
 
@@ -301,11 +372,10 @@ class FilePlacementChecker:
         # Convert to string for pattern matching
         path_str = str(rel_path).replace("\\", "/")
 
-        # Check directory-specific rules first
-        if "directories" in self.layout_rules:
-            dir_violations = self.directory_checker.check_directory_rules(
-                path_str, rel_path, self.layout_rules["directories"], rule_id
-            )
+        # Check directory-specific rules first (support both "paths" and "directories" keys)
+        directories = self.layout_rules.get("directories") or self.layout_rules.get("paths")
+        if directories:
+            dir_violations = self.directory_checker.check_directory_rules(path_str, rel_path, directories, rule_id)
             violations.extend(dir_violations)
 
         # Check global patterns only if not already flagged by directory rules
@@ -324,7 +394,17 @@ class FileSuggestionGenerator:
     @staticmethod
     def get_suggestion(filename: str, pattern: str | None) -> str:
         """Get suggestion for where to move a file based on its type."""
-        if "test" in filename.lower():
+        filename_lower = filename.lower()
+
+        # Check for debug/temp files first (before test check)
+        if filename_lower.startswith("debug"):
+            return "Move to debug/ directory, or remove debug files if not needed"
+
+        if filename_lower.startswith(("temp", "tmp")):
+            return "Move to tmp/ directory, or remove temporary files if not needed"
+
+        # Then check for test files
+        if "test" in filename_lower:
             return "Move to test/ or tests/ directory"
 
         if filename.endswith((".ts", ".tsx", ".jsx")):
@@ -332,9 +412,6 @@ class FileSuggestionGenerator:
 
         if filename.endswith(".py"):
             return FileSuggestionGenerator._get_python_suggestion(pattern)
-
-        if filename.startswith("debug") or filename.startswith("temp"):
-            return "Move to debug/ or tmp/ directory, or remove if not needed"
 
         if filename.endswith(".log"):
             return "Move to logs/ directory or add to .gitignore"
@@ -389,7 +466,7 @@ class FileOrganizationRule(ASTLintRule):
     @property
     def rule_name(self) -> str:
         """Return the human-readable name for this rule."""
-        return "File Organization and Placement"
+        return "File Placement Check"
 
     @property
     def description(self) -> str:
@@ -399,7 +476,7 @@ class FileOrganizationRule(ASTLintRule):
     @property
     def severity(self) -> Severity:
         """Return the severity level of violations from this rule."""
-        return Severity.INFO
+        return Severity.WARNING
 
     @property
     def categories(self) -> set[str]:

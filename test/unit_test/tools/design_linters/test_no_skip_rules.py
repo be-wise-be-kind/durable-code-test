@@ -48,6 +48,12 @@ class MockContext(BaseLintContext):
             return "shell"
         return "unknown"
 
+    def get_context_description(self) -> str:
+        """Get human-readable context description."""
+        if self.file_path:
+            return f"file {self.file_path}"
+        return "unknown context"
+
 
 class TestNoSkipRulePython:
     """Test NoSkipRule for Python files."""

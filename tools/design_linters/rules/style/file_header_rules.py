@@ -102,19 +102,25 @@ class TemporalLanguageChecker:
 
     TEMPORAL_PATTERNS = {
         "date_stamps": r"\b\d{4}[-/]\d{1,2}[-/]\d{1,2}\b|\b\d{1,2}[-/]\d{1,2}[-/]\d{4}\b",
-        "created_updated": r"\b(created|updated|modified|changed)\s*(on|at|:)?\s*\d",
-        "state_changes": r"\b(was|were|had been|has been|have been|will be|would be)\b",
-        "temporal_qualifiers": r"\b(recently|currently|now|today|yesterday|tomorrow|soon|later)\b",
-        "future_references": r"\b(will|shall|going to|plan to|intend to|expect to)\b",
+        "created_updated": r"\b(?:created|updated|modified|changed)\s*(?:on|at|:)?\s*\d",
+        "replacement_reference": r"\b(?:replaces?|replacing)\s+(?:the\s+)?old\b",
+        "migration_reference": r"\b(?:migrated|migration)\s+(?:from|to)\b",
+        "previous_state_reference": r"\b(?:previously|was previously|formerly|used to be|changed from)\b",
+        "state_changes": r"\b(?:was|were|had been|has been|have been|will be|would be)\b",
+        "recent_change_qualifier": r"\b(?:recently|just)\s+(?:added|updated|changed|refactored)\b",
+        "current_state_qualifier": r"\b(?:currently|now)\s+(?:supports?|handles?|provides?|includes?)\b",
+        "temporal_qualifiers": r"\b(?:recently|currently|now|today|yesterday|tomorrow|soon|later|temporary|temporarily|for now|as of)\b",
+        "future_references": r"\b(?:will|shall|going to|plan to|intend to|expect to|planned|upcoming|to be|will be)\b",
     }
 
     def check_temporal_language_patterns(self, header_content: str) -> list[dict[str, str]]:
         """Check header for temporal language patterns."""
         temporal_issues = []
         for pattern_type, pattern in self.TEMPORAL_PATTERNS.items():
-            matches = re.findall(pattern, header_content, re.IGNORECASE)
+            matches = re.finditer(pattern, header_content, re.IGNORECASE)
             for match in matches:
-                temporal_issues.append({"type": pattern_type, "text": match})
+                # Use match.group(0) to get the full matched text
+                temporal_issues.append({"type": pattern_type, "text": match.group(0)})
         return temporal_issues
 
     def get_temporal_suggestion(self, pattern_type: str, matched_text: str) -> str:
@@ -126,6 +132,18 @@ class TemporalLanguageChecker:
             "created_updated": (
                 f"Remove temporal metadata '{matched_text}'. Creation/modification info belongs in version control."
             ),
+            "replacement_reference": (
+                f"Remove replacement reference '{matched_text}'. "
+                "Describe what the module does, not what it replaced. Historical info belongs in git."
+            ),
+            "migration_reference": (
+                f"Remove migration reference '{matched_text}'. "
+                "Describe current functionality, not migration history. Track migrations in git or issues."
+            ),
+            "previous_state_reference": (
+                f"Remove previous state reference '{matched_text}'. "
+                "Documentation should describe current behavior, not past states. Use git history for changes."
+            ),
             "state_changes": (
                 f"Replace past/future tense '{matched_text}' with present tense. "
                 "Documentation should describe current state."
@@ -133,6 +151,14 @@ class TemporalLanguageChecker:
             "temporal_qualifiers": (
                 f"Remove temporal qualifier '{matched_text}'. "
                 "Documentation should be timeless and describe current behavior."
+            ),
+            "recent_change_qualifier": (
+                f"Remove recent change qualifier '{matched_text}'. "
+                "Describe functionality without temporal context. Track changes in git history."
+            ),
+            "current_state_qualifier": (
+                f"Remove current state qualifier '{matched_text}'. "
+                "Documentation should be timeless. If it's in the code, it's current."
             ),
             "future_references": (
                 f"Remove future reference '{matched_text}'. "
@@ -146,17 +172,89 @@ class HeaderTemplateProvider:
     """Provides header templates for different file types."""
 
     TEMPLATES = {
-        ".py": '"""\nPurpose: [Single line describing why this file exists]\nScope: [What this file covers/handles]\nOverview: [Comprehensive 3-5 sentence description of what this file does,\n    how it fits into the larger system, and any important behaviors or patterns\n    it implements. This helps developers understand the file without reading code.]\nDependencies: [Key imports and external dependencies]\nExports: [Main classes/functions/constants exported]\nInterfaces: [Key interfaces this implements or provides]\nImplementation: [High-level approach or algorithm used]\n"""',
-        ".ts": "/**\n * Purpose: [Single line describing why this file exists]\n * Scope: [What this file covers/handles]\n * Overview: [Comprehensive 3-5 sentence description]\n * Dependencies: [Key imports and external dependencies]\n * Exports: [Main exports from this module]\n * Interfaces: [Key interfaces defined or implemented]\n * Implementation: [High-level approach]\n */",
-        ".tsx": "/**\n * Purpose: [React component purpose]\n * Scope: [Component responsibility/domain]\n * Overview: [Component behavior and usage]\n * Props: [Key props accepted]\n * State: [State management approach]\n * Dependencies: [Key imports]\n * Implementation: [Rendering approach]\n */",
-        ".js": "/**\n * Purpose: [Why this file exists]\n * Scope: [What this file handles]\n * Overview: [Detailed description]\n * Dependencies: [Key imports]\n * Exports: [Module exports]\n * Implementation: [Approach used]\n */",
-        ".jsx": "/**\n * Purpose: [React component purpose]\n * Scope: [Component domain]\n * Overview: [Component description]\n * Props: [Component props]\n * State: [State management]\n * Dependencies: [Key imports]\n */",
-        ".css": "/**\n * Purpose: [Styling purpose]\n * Scope: [What components/pages these styles apply to]\n * Overview: [Design system usage and patterns]\n * Dependencies: [CSS imports/variables used]\n */",
-        ".sh": "#!/usr/bin/env bash\n# Purpose: [Script purpose]\n# Scope: [What this script handles]\n# Overview: [Detailed description]\n# Dependencies: [Required tools/scripts]\n# Usage: [How to run this script]",
-        ".md": "<!-- Purpose: [Document purpose] -->\n<!-- Scope: [What this covers] -->\n<!-- Overview: [Detailed description] -->",
-        ".html": "<!-- Purpose: [Page/component purpose] -->\n<!-- Scope: [What this handles] -->\n<!-- Overview: [Detailed description] -->",
-        ".yaml": "# Purpose: [Config purpose]\n# Scope: [What this configures]\n# Overview: [Detailed description]",
-        ".yml": "# Purpose: [Config purpose]\n# Scope: [What this configures]\n# Overview: [Detailed description]",
+        ".py": (
+            '"""\n'
+            "Purpose: [Single line describing why this file exists]\n"
+            "Scope: [What this file covers/handles]\n"
+            "Overview: [Comprehensive 3-5 sentence description of what this file does,\n"
+            "    how it fits into the larger system, and any important behaviors or patterns\n"
+            "    it implements. This helps developers understand the file without reading code.]\n"
+            "Dependencies: [Key imports and external dependencies]\n"
+            "Exports: [Main classes/functions/constants exported]\n"
+            "Interfaces: [Key interfaces this implements or provides]\n"
+            "Implementation: [High-level approach or algorithm used]\n"
+            '"""'
+        ),
+        ".ts": (
+            "/**\n"
+            " * Purpose: [Single line describing why this file exists]\n"
+            " * Scope: [What this file covers/handles]\n"
+            " * Overview: [Comprehensive 3-5 sentence description]\n"
+            " * Dependencies: [Key imports and external dependencies]\n"
+            " * Exports: [Main exports from this module]\n"
+            " * Interfaces: [Key interfaces defined or implemented]\n"
+            " * Implementation: [High-level approach]\n"
+            " */"
+        ),
+        ".tsx": (
+            "/**\n"
+            " * Purpose: [React component purpose]\n"
+            " * Scope: [Component responsibility/domain]\n"
+            " * Overview: [Component behavior and usage]\n"
+            " * Props: [Key props accepted]\n"
+            " * State: [State management approach]\n"
+            " * Dependencies: [Key imports]\n"
+            " * Implementation: [Rendering approach]\n"
+            " */"
+        ),
+        ".js": (
+            "/**\n"
+            " * Purpose: [Why this file exists]\n"
+            " * Scope: [What this file handles]\n"
+            " * Overview: [Detailed description]\n"
+            " * Dependencies: [Key imports]\n"
+            " * Exports: [Module exports]\n"
+            " * Implementation: [Approach used]\n"
+            " */"
+        ),
+        ".jsx": (
+            "/**\n"
+            " * Purpose: [React component purpose]\n"
+            " * Scope: [Component domain]\n"
+            " * Overview: [Component description]\n"
+            " * Props: [Component props]\n"
+            " * State: [State management]\n"
+            " * Dependencies: [Key imports]\n"
+            " */"
+        ),
+        ".css": (
+            "/**\n"
+            " * Purpose: [Styling purpose]\n"
+            " * Scope: [What components/pages these styles apply to]\n"
+            " * Overview: [Design system usage and patterns]\n"
+            " * Dependencies: [CSS imports/variables used]\n"
+            " */"
+        ),
+        ".sh": (
+            "#!/usr/bin/env bash\n"
+            "# Purpose: [Script purpose]\n"
+            "# Scope: [What this script handles]\n"
+            "# Overview: [Detailed description]\n"
+            "# Dependencies: [Required tools/scripts]\n"
+            "# Usage: [How to run this script]"
+        ),
+        ".md": (
+            "<!-- Purpose: [Document purpose] -->\n"
+            "<!-- Scope: [What this covers] -->\n"
+            "<!-- Overview: [Detailed description] -->"
+        ),
+        ".html": (
+            "<!-- Purpose: [Page/component purpose] -->\n"
+            "<!-- Scope: [What this handles] -->\n"
+            "<!-- Overview: [Detailed description] -->"
+        ),
+        ".yaml": ("# Purpose: [Config purpose]\n# Scope: [What this configures]\n# Overview: [Detailed description]"),
+        ".yml": ("# Purpose: [Config purpose]\n# Scope: [What this configures]\n# Overview: [Detailed description]"),
     }
 
     def get_template(self, file_ext: str) -> str:
@@ -228,6 +326,10 @@ class HeaderParser:
     def _clean_header_line(self, line: str) -> str:
         """Remove comment markers from header line."""
         line = line.strip()
+        # Don't strip ** from markdown fields
+        if line.startswith("**"):
+            return line
+        # Strip single comment markers
         for prefix in ["*", "#", "//"]:
             if line.startswith(prefix):
                 line = line[len(prefix) :].strip()
@@ -263,7 +365,7 @@ class FileSkipChecker:
         r"third_party",
     ]
 
-    def should_skip_file(self, file_path: Path) -> bool:
+    def should_skip_file(self, file_path: Path, skip_test_files: bool = False) -> bool:
         """Check if file should be skipped from header checking."""
         path_str = str(file_path).replace("\\", "/")
 
@@ -272,8 +374,8 @@ class FileSkipChecker:
             return True
 
         # Skip test files if configured
-        if self._is_test_file(path_str):
-            return False  # Actually check test files by default
+        if skip_test_files and self._is_test_file(path_str):
+            return True
 
         # Check skip patterns
         return self._matches_skip_patterns(path_str)
@@ -325,6 +427,23 @@ class HeaderExtractor:
         header_pattern = self.HEADER_PATTERNS.get(file_ext)
         if not header_pattern:
             return None
+
+        # For markdown files, extract metadata section before first ---
+        if file_ext == ".md":
+            lines = file_content.split("\n")
+            header_lines = []
+            in_header = False
+            for line in lines:
+                # Start collecting after first line (title)
+                if line.startswith("#"):
+                    in_header = True
+                    continue
+                # Stop at separator
+                if line.strip() == "---":
+                    break
+                if in_header:
+                    header_lines.append(line)
+            return "\n".join(header_lines)
 
         start_pattern, end_pattern = header_pattern
         header_match = re.search(start_pattern, file_content, re.MULTILINE)
@@ -442,7 +561,7 @@ class HeaderViolationChecker:
                     line=1,
                     column=0,
                     severity=Severity.WARNING,
-                    message=f"Code file missing recommended fields: {self._format_missing_fields(missing_recommended)}",
+                    message=f"Missing recommended header field: {self._format_missing_fields(missing_recommended)}",
                     description="Recommended documentation fields improve code maintainability",
                     suggestion="Consider adding recommended documentation fields",
                 )
@@ -517,8 +636,13 @@ class HeaderViolationChecker:
         # Map other pattern types to descriptive names
         pattern_descriptions = {
             "date_stamps": "date stamp",
+            "replacement_reference": "replacement reference",
+            "migration_reference": "migration reference",
+            "previous_state_reference": "previous state reference",
             "state_changes": "state change language",
             "temporal_qualifiers": "temporal qualifier",
+            "recent_change_qualifier": "recent change qualifier",
+            "current_state_qualifier": "current state qualifier",
             "future_references": "future reference",
         }
         return pattern_descriptions.get(pattern_type, "temporal language")
@@ -606,7 +730,7 @@ class FileHeaderRule(ASTLintRule):
         file_path = Path(context.file_path)
 
         # Skip files that should not be checked
-        if self._skip_checker.should_skip_file(file_path):
+        if self._skip_checker.should_skip_file(file_path, self.skip_test_files):
             return []
 
         # Check if file type is supported

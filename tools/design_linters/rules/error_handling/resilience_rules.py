@@ -10,10 +10,14 @@ Overview: Comprehensive collection of AST-based linting rules that enforce prope
     structure, and recommend resilience patterns for external service interactions. Each rule
     provides specific guidance for improving error handling practices and building more robust
     applications that gracefully handle failures and provide appropriate logging and recovery.
-Dependencies: ast module for AST traversal, design_linters framework interfaces for rule implementation
-Exports: NoBroadExceptionsRule, RequireRetryLogicRule, StructuredExceptionsRule, RequireErrorLoggingRule, CircuitBreakerUsageRule
-Interfaces: ASTLintRule interface implementations with check methods for AST node analysis
-Implementation: AST-based rule implementations using node traversal and pattern matching for error handling validation
+Dependencies: ast module for AST traversal, design_linters framework interfaces for rule
+    implementation
+Exports: NoBroadExceptionsRule, RequireRetryLogicRule, StructuredExceptionsRule,
+    RequireErrorLoggingRule, CircuitBreakerUsageRule
+Interfaces: ASTLintRule interface implementations with check methods for AST node
+    analysis
+Implementation: AST-based rule implementations using node traversal and pattern matching
+    for error handling validation
 """
 
 import ast
