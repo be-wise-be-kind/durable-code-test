@@ -1,17 +1,17 @@
 # GitHub Merge Workflow with Make Targets
 
 ## Purpose
-This guide provides AI agents and developers with comprehensive instructions for using Make targets to interact with GitHub during PR creation, monitoring, and merging workflows.
+This guide provides AI agents and developers with comprehensive instructions for using Just targets to interact with GitHub during PR creation, monitoring, and merging workflows.
 
 ## Quick Reference
 
 ### Essential Commands
 ```bash
-make gh-watch-checks    # Dashboard monitor for CI/CD checks
-make gh-pr-status       # Quick PR status overview
-make gh-pr-create       # Create PR with template
-make gh-pr-merge        # Auto-merge after checks pass
-make gh-check-details   # Show detailed failure logs
+just gh-watch-checks    # Dashboard monitor for CI/CD checks
+just gh-pr-status       # Quick PR status overview
+just gh-pr-create       # Create PR with template
+just gh-pr-merge        # Auto-merge after checks pass
+just gh-check-details   # Show detailed failure logs
 ```
 
 ## Dashboard Monitor (`gh-watch-checks`)
@@ -32,7 +32,7 @@ The `gh-watch-checks` target provides a non-scrolling, dashboard-style monitor f
 ### Usage
 ```bash
 # Start monitoring current PR
-make gh-watch-checks
+just gh-watch-checks
 
 # Dashboard will show:
 # - PR information (number, title, branch, author)
@@ -60,10 +60,10 @@ git commit -m "feat: Add new feature"
 ### Step 2: Run Local Quality Checks
 ```bash
 # Run comprehensive linting
-make lint-all
+just lint-all
 
 # Run all tests
-make test
+just test
 
 # Fix any issues before creating PR
 ```
@@ -71,7 +71,7 @@ make test
 ### Step 3: Create Pull Request
 ```bash
 # Push branch and create PR with template
-make gh-pr-create
+just gh-pr-create
 
 # This will:
 # 1. Push current branch to origin
@@ -82,7 +82,7 @@ make gh-pr-create
 ### Step 4: Monitor CI/CD Checks
 ```bash
 # Start the dashboard monitor
-make gh-watch-checks
+just gh-watch-checks
 
 # Dashboard shows:
 ╔════════════════════════════════════════════════════════════════╗
@@ -113,7 +113,7 @@ make gh-watch-checks
 ### Step 5: Handle Check Failures
 ```bash
 # If any checks fail, get detailed logs
-make gh-check-details
+just gh-check-details
 
 # This shows:
 # - List of failed checks
@@ -126,13 +126,13 @@ git commit -m "fix: Resolve CI failures"
 git push
 
 # Resume monitoring
-make gh-watch-checks
+just gh-watch-checks
 ```
 
 ### Step 6: Merge PR
 ```bash
 # Once all checks pass, merge the PR
-make gh-pr-merge
+just gh-pr-merge
 
 # This will:
 # 1. Verify all checks passed
@@ -157,21 +157,21 @@ gh run watch <run-id>
 
 #### New Workflow (Dashboard)
 ```bash
-# New method using Make targets
-make gh-watch-checks  # Real-time dashboard monitoring
-make gh-check-details # Detailed failure analysis
-make gh-pr-merge      # Automated merge when ready
+# New method using Just targets
+just gh-watch-checks  # Real-time dashboard monitoring
+just gh-check-details # Detailed failure analysis
+just gh-pr-merge      # Automated merge when ready
 ```
 
 ### Updated `/done` Command Flow
 
-1. **Pre-commit checks**: `make lint-all` and `make test`
+1. **Pre-commit checks**: `just lint-all` and `just test`
 2. **Create commit**: Standard git commit with Claude signature
 3. **Push changes**: `git push -u origin <branch>`
-4. **Create PR**: `make gh-pr-create` (if no PR exists)
-5. **Monitor checks**: `make gh-watch-checks` (dashboard mode)
-6. **Handle failures**: `make gh-check-details` for debugging
-7. **Auto-merge**: `make gh-pr-merge` when all checks pass
+4. **Create PR**: `just gh-pr-create` (if no PR exists)
+5. **Monitor checks**: `just gh-watch-checks` (dashboard mode)
+6. **Handle failures**: `just gh-check-details` for debugging
+7. **Auto-merge**: `just gh-pr-merge` when all checks pass
 
 ### Example `/done` Execution
 ```bash
@@ -181,9 +181,9 @@ make gh-pr-merge      # Automated merge when ready
 1. Run quality checks locally
 2. Commit and push changes
 3. Create/update PR
-4. Launch dashboard monitor with: make gh-watch-checks
+4. Launch dashboard monitor with: just gh-watch-checks
 5. Wait for all checks to pass
-6. Optionally auto-merge with: make gh-pr-merge
+6. Optionally auto-merge with: just gh-pr-merge
 ```
 
 ## Troubleshooting CI/CD Failures
@@ -193,11 +193,11 @@ make gh-pr-merge      # Automated merge when ready
 #### 1. Linting Failures
 ```bash
 # Check specific linting errors
-make gh-check-details
+just gh-check-details
 
 # Fix locally
-make lint-fix
-make lint-all
+just lint-fix
+just lint-all
 
 # Commit and push fixes
 git add . && git commit -m "style: Fix linting issues" && git push
@@ -206,14 +206,14 @@ git add . && git commit -m "style: Fix linting issues" && git push
 #### 2. Test Failures
 ```bash
 # View failure details
-make gh-check-details
+just gh-check-details
 
 # Run tests locally to reproduce
-make test
+just test
 
 # Fix tests and verify
-make test-unit  # Just unit tests
-make test-all   # All tests
+just test-unit  # Just unit tests
+just test-all   # All tests
 
 # Push fixes
 git add . && git commit -m "fix: Resolve test failures" && git push
@@ -222,14 +222,14 @@ git add . && git commit -m "fix: Resolve test failures" && git push
 #### 3. Build Failures
 ```bash
 # Check build logs
-make gh-check-details
+just gh-check-details
 
 # Test build locally
-make build
+just build
 
 # Fix and verify
-# ... make necessary changes ...
-make build
+# ... just necessary changes ...
+just build
 
 # Push fixes
 git add . && git commit -m "fix: Resolve build issues" && git push
@@ -250,7 +250,7 @@ git rebase --continue
 git push --force-with-lease
 
 # Resume monitoring
-make gh-watch-checks
+just gh-watch-checks
 ```
 
 ## Advanced Usage
@@ -258,58 +258,58 @@ make gh-watch-checks
 ### Custom Check Intervals
 ```bash
 # Modify refresh rate (default: 5 seconds)
-GH_CHECK_INTERVAL=10 make gh-watch-checks
+GH_CHECK_INTERVAL=10 just gh-watch-checks
 ```
 
 ### Specific Workflow Triggers
 ```bash
 # Manually trigger a specific workflow
-make gh-workflow-run WORKFLOW=test
+just gh-workflow-run WORKFLOW=test
 
 # List recent runs
-make gh-run-list
+just gh-run-list
 ```
 
 ### PR Review Commands
 ```bash
 # Approve PR
-make gh-pr-approve
+just gh-pr-approve
 
 # Add review comment
-make gh-pr-review COMMENT="Looks good, just one suggestion..."
+just gh-pr-review COMMENT="Looks good, just one suggestion..."
 ```
 
 ### Scripting and Automation
 ```bash
 # Get raw JSON for scripting
-make gh-pr-checks-raw | jq '.[] | select(.conclusion == "failure")'
+just gh-pr-checks-raw | jq '.[] | select(.conclusion == "failure")'
 
 # Check if all tests passed
-if make gh-pr-checks-raw | jq -e 'all(.conclusion == "success")'; then
+if just gh-pr-checks-raw | jq -e 'all(.conclusion == "success")'; then
     echo "All checks passed!"
-    make gh-pr-merge
+    just gh-pr-merge
 fi
 ```
 
 ## Best Practices
 
 ### 1. Always Monitor Checks
-- Use `make gh-watch-checks` immediately after pushing changes
+- Use `just gh-watch-checks` immediately after pushing changes
 - Keep dashboard open during PR review process
 - Watch for intermittent failures that may need retry
 
 ### 2. Fix Failures Promptly
-- Use `make gh-check-details` to understand failures
+- Use `just gh-check-details` to understand failures
 - Fix issues locally before pushing
-- Run relevant checks locally first (`make lint-all`, `make test`)
+- Run relevant checks locally first (`just lint-all`, `just test`)
 
 ### 3. Clean Commit History
-- Use squash merge (`make gh-pr-merge` does this automatically)
+- Use squash merge (`just gh-pr-merge` does this automatically)
 - Write clear commit messages
 - Group related changes together
 
 ### 4. Automate When Possible
-- Let `make gh-pr-merge` handle the merge process
+- Let `just gh-pr-merge` handle the merge process
 - Use dashboard monitor instead of manual polling
 - Integrate with `/done` command for full automation
 
@@ -358,11 +358,11 @@ If using custom workflows, ensure they:
 
 ## Summary
 
-The GitHub merge workflow with Make targets provides:
-1. **Simplified Commands**: Easy-to-remember Make targets
+The GitHub merge workflow with Just targets provides:
+1. **Simplified Commands**: Easy-to-remember Just targets
 2. **Visual Monitoring**: Dashboard-style check monitoring
 3. **Automated Workflows**: From PR creation to merge
 4. **Better Debugging**: Detailed failure logs on demand
 5. **Integration**: Seamless `/done` command support
 
-Use `make gh-help` for quick reference of all available GitHub targets.
+Use `just gh-help` for quick reference of all available GitHub targets.

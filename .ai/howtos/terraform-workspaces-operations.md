@@ -5,8 +5,8 @@ Overview: This guide provides comprehensive instructions for using the workspace
     system that divides resources into base (persistent) and runtime (ephemeral) workspaces. It covers
     all operational aspects including deployment commands, cost optimization workflows, troubleshooting,
     and best practices for daily infrastructure management. The guide is updated for the final workspace
-    implementation with parameter-driven make commands and automated orchestration scripts.
-Dependencies: Requires configured Terraform workspaces, AWS credentials, and updated make targets
+    implementation with parameter-driven just commands and automated orchestration scripts.
+Dependencies: Requires configured Terraform workspaces, AWS credentials, and updated just targets
 Exports: Complete operational procedures and commands for workspace-separated infrastructure
 Interfaces: Used by developers and operators managing infrastructure deployments
 Implementation: Production-ready deployment workflows using SCOPE parameter system
@@ -28,22 +28,22 @@ This separation enables significant cost optimization by allowing runtime resour
 ### Common Operations
 ```bash
 # Deploy everything from scratch
-make infra-up SCOPE=all ENV=dev
+just infra-up SCOPE=all ENV=dev
 
 # Deploy only runtime (assumes base exists)
-make infra-up SCOPE=runtime ENV=dev
+just infra-up SCOPE=runtime ENV=dev
 
 # Nightly cost savings - destroy runtime only
-make infra-down SCOPE=runtime ENV=dev
+just infra-down SCOPE=runtime ENV=dev
 
 # Morning restore - recreate runtime
-make infra-up SCOPE=runtime ENV=dev
+just infra-up SCOPE=runtime ENV=dev
 
 # Deploy application after infrastructure is ready
-make deploy ENV=dev
+just deploy ENV=dev
 
 # Check infrastructure status
-make infra-status ENV=dev
+just infra-status ENV=dev
 ```
 
 ## Detailed Command Reference
@@ -53,7 +53,7 @@ make infra-status ENV=dev
 #### Deploy All Infrastructure
 ```bash
 # Creates both base and runtime infrastructure in proper order
-make infra-up SCOPE=all ENV=dev
+just infra-up SCOPE=all ENV=dev
 ```
 This command:
 1. Deploys base infrastructure first (VPC, NAT, ECR, etc.)
@@ -63,7 +63,7 @@ This command:
 #### Deploy Base Infrastructure Only
 ```bash
 # Creates only persistent, expensive resources
-make infra-up SCOPE=base ENV=dev
+just infra-up SCOPE=base ENV=dev
 ```
 Use when:
 - Setting up a new environment for the first time
@@ -73,7 +73,7 @@ Use when:
 #### Deploy Runtime Infrastructure Only
 ```bash
 # Creates only ephemeral, quick-to-recreate resources
-make infra-up SCOPE=runtime ENV=dev
+just infra-up SCOPE=runtime ENV=dev
 ```
 Use when:
 - Base infrastructure already exists
@@ -85,7 +85,7 @@ Use when:
 #### Destroy Runtime Only (Recommended for Cost Savings)
 ```bash
 # Destroys ECS services, ALB listeners, etc. while preserving base
-make infra-down SCOPE=runtime ENV=dev
+just infra-down SCOPE=runtime ENV=dev
 ```
 This is the **recommended daily shutdown** command that:
 - Preserves expensive NAT Gateways and certificates
@@ -95,7 +95,7 @@ This is the **recommended daily shutdown** command that:
 #### Destroy All Infrastructure (Full Teardown)
 ```bash
 # DANGEROUS: Destroys everything including expensive base resources
-CONFIRM=destroy-base make infra-down SCOPE=all ENV=dev
+CONFIRM=destroy-base just infra-down SCOPE=all ENV=dev
 ```
 **Warning**: This destroys NAT Gateways (~$1.08/day) and other expensive resources that take time to recreate.
 
@@ -103,10 +103,10 @@ CONFIRM=destroy-base make infra-down SCOPE=all ENV=dev
 Direct base destruction is prohibited for safety:
 ```bash
 # This will FAIL intentionally
-make infra-down SCOPE=base ENV=dev
+just infra-down SCOPE=base ENV=dev
 
 # To destroy base, use the all scope with confirmation
-CONFIRM=destroy-base make infra-down SCOPE=all ENV=dev
+CONFIRM=destroy-base just infra-down SCOPE=all ENV=dev
 ```
 
 ### Status and Monitoring
@@ -114,7 +114,7 @@ CONFIRM=destroy-base make infra-down SCOPE=all ENV=dev
 #### Check Infrastructure Status
 ```bash
 # Shows deployment status of both workspaces
-make infra-status ENV=dev
+just infra-status ENV=dev
 ```
 Output shows:
 - Which workspaces are deployed
@@ -124,9 +124,9 @@ Output shows:
 #### Plan Infrastructure Changes
 ```bash
 # Plan changes for specific scope
-make infra-plan SCOPE=runtime ENV=dev
-make infra-plan SCOPE=base ENV=dev
-make infra-plan SCOPE=all ENV=dev
+just infra-plan SCOPE=runtime ENV=dev
+just infra-plan SCOPE=base ENV=dev
+just infra-plan SCOPE=all ENV=dev
 ```
 
 ## Cost Optimization Workflows
@@ -136,7 +136,7 @@ make infra-plan SCOPE=all ENV=dev
 #### End of Workday Shutdown
 ```bash
 # Save ~60% on compute costs
-make infra-down SCOPE=runtime ENV=dev
+just infra-down SCOPE=runtime ENV=dev
 ```
 This preserves:
 - ✅ VPC and networking (~$1.08/day for NAT)
@@ -147,21 +147,21 @@ This preserves:
 #### Start of Workday Restore
 ```bash
 # Restore service in ~5 minutes
-make infra-up SCOPE=runtime ENV=dev
+just infra-up SCOPE=runtime ENV=dev
 
 # Deploy latest application version
-make deploy ENV=dev
+just deploy ENV=dev
 ```
 
 ### Weekend/Extended Shutdown
 For longer periods (weekends, holidays):
 ```bash
 # Friday evening - complete shutdown
-CONFIRM=destroy-base make infra-down SCOPE=all ENV=dev
+CONFIRM=destroy-base just infra-down SCOPE=all ENV=dev
 
 # Monday morning - full restoration
-make infra-up SCOPE=all ENV=dev
-make deploy ENV=dev
+just infra-up SCOPE=all ENV=dev
+just deploy ENV=dev
 ```
 **Note**: This saves maximum cost but requires ~10 minutes for NAT Gateway recreation.
 
@@ -176,48 +176,48 @@ The infrastructure includes automated workflows:
 ### New Environment Setup
 ```bash
 # 1. Deploy all infrastructure
-make infra-up SCOPE=all ENV=dev
+just infra-up SCOPE=all ENV=dev
 
 # 2. Deploy application
-make deploy ENV=dev
+just deploy ENV=dev
 
 # 3. Verify deployment
-make infra-status ENV=dev
+just infra-status ENV=dev
 ```
 
 ### Daily Development Workflow
 ```bash
 # Morning: Restore runtime (if automated shutdown occurred)
-make infra-up SCOPE=runtime ENV=dev
+just infra-up SCOPE=runtime ENV=dev
 
 # Deploy your changes
-make deploy ENV=dev
+just deploy ENV=dev
 
 # Evening: Optional manual shutdown for cost savings
-make infra-down SCOPE=runtime ENV=dev
+just infra-down SCOPE=runtime ENV=dev
 ```
 
 ### Hotfix Deployment
 ```bash
 # Ensure runtime is up
-make infra-status ENV=dev
+just infra-status ENV=dev
 
 # If runtime is down, restore it
-make infra-up SCOPE=runtime ENV=dev
+just infra-up SCOPE=runtime ENV=dev
 
 # Deploy the hotfix
-make deploy ENV=dev
+just deploy ENV=dev
 ```
 
 ### Staging/Production Deployment
 ```bash
 # Staging deployment
-make infra-up SCOPE=all ENV=staging
-make deploy ENV=staging
+just infra-up SCOPE=all ENV=staging
+just deploy ENV=staging
 
 # Production deployment (after staging validation)
-make infra-up SCOPE=all ENV=prod
-make deploy ENV=prod
+just infra-up SCOPE=all ENV=prod
+just deploy ENV=prod
 ```
 
 ## Integration with Application Deployment
@@ -226,20 +226,20 @@ make deploy ENV=prod
 Always verify infrastructure status before deploying:
 ```bash
 # Check if runtime infrastructure is ready
-make infra-status ENV=dev
+just infra-status ENV=dev
 
 # If runtime is down, restore it first
-if ! make infra-check ENV=dev; then
+if ! just infra-check ENV=dev; then
     echo "Restoring runtime infrastructure..."
-    make infra-up SCOPE=runtime ENV=dev
+    just infra-up SCOPE=runtime ENV=dev
 fi
 
 # Now deploy application
-make deploy ENV=dev
+just deploy ENV=dev
 ```
 
 ### Application Deployment Process
-The `make deploy` command automatically:
+The `just deploy` command automatically:
 1. Checks if runtime infrastructure exists
 2. Builds and pushes container images to ECR
 3. Updates ECS task definitions
@@ -251,16 +251,16 @@ The `make deploy` command automatically:
 ### Multiple Environments
 ```bash
 # Development environment
-make infra-up SCOPE=all ENV=dev
-make deploy ENV=dev
+just infra-up SCOPE=all ENV=dev
+just deploy ENV=dev
 
 # Staging environment
-make infra-up SCOPE=all ENV=staging
-make deploy ENV=staging
+just infra-up SCOPE=all ENV=staging
+just deploy ENV=staging
 
 # Production environment
-make infra-up SCOPE=all ENV=prod
-make deploy ENV=prod
+just infra-up SCOPE=all ENV=prod
+just deploy ENV=prod
 ```
 
 ### Environment-Specific Considerations
@@ -336,13 +336,13 @@ See the comprehensive [Terraform Workspaces Troubleshooting Guide](.ai/troublesh
 ### Common Issues
 ```bash
 # Runtime deployment fails - check if base exists
-make infra-status ENV=dev
+just infra-status ENV=dev
 
 # Application deployment fails - restore runtime
-make infra-up SCOPE=runtime ENV=dev
+just infra-up SCOPE=runtime ENV=dev
 
 # State corruption - refresh and retry
-make infra-refresh ENV=dev
+just infra-refresh ENV=dev
 ```
 
 ## Cost Impact Summary

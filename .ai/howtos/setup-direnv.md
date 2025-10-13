@@ -262,7 +262,7 @@ docker-compose up  # Uses vars from .env
 ### Make Targets
 Make commands have access to environment:
 ```bash
-make deploy  # Can use $GITHUB_TOKEN
+just deploy  # Can use $GITHUB_TOKEN
 ```
 
 ## Advanced Configuration
@@ -292,7 +292,7 @@ Add project-specific functions to `.envrc`:
 ```bash
 # Custom project commands
 project_test() {
-  make test-all
+  just test-all
 }
 export -f project_test
 ```

@@ -59,7 +59,7 @@ else
     FAILED_CHECKS+=("Single Responsibility Principle")
 fi
 
-# Check 3: Print Statement Linter (from Makefile)
+# Check 3: Print Statement Linter (from justfile)
 if [ -f "tools/design_linters/print_statement_linter.py" ]; then
     run_check "Print Statement Check" "python tools/design_linters/print_statement_linter.py --path . --recursive --no-skip-tests"
 else
@@ -75,7 +75,7 @@ else
     FAILED_CHECKS+=("Magic Number Detection")
 fi
 
-# Check 5: File Placement Linter (from Makefile.design)
+# Check 5: File Placement Linter (from justfile.design)
 if [ -f "tools/design_linters/file_placement_linter.py" ]; then
     run_check "File Placement Check" "python tools/design_linters/file_placement_linter.py"
 else
@@ -83,7 +83,7 @@ else
     FAILED_CHECKS+=("File Placement Check")
 fi
 
-# Check 6: Header Linter (from Makefile.design)
+# Check 6: Header Linter (from justfile.design)
 if [ -f "tools/design_linters/header_linter.py" ]; then
     run_check "Header Standards Check" "python tools/design_linters/header_linter.py"
 else

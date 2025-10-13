@@ -10,13 +10,13 @@
     controlled Docker containers. Provides standardized execution patterns and prevents local system
     configuration dependencies that can cause inconsistent behavior.
 
-**Dependencies**: Docker engine, docker-compose, container images, Makefile targets
+**Dependencies**: Docker engine, docker-compose, container images, justfile targets
 
 **Exports**: Docker execution patterns, container-based development workflows, environment standards
 
 **Related**: Makefile, docker-compose.yml, development tooling, testing framework
 
-**Implementation**: Make targets with docker exec commands, containerized script execution, no local tool dependencies
+**Implementation**: Just targets with docker exec commands, containerized script execution, no local tool dependencies
 
 ---
 
@@ -86,9 +86,9 @@ docker exec durable-code-frontend-dev /app/scripts/lint-watch-dashboard.sh
 ## Make Target Integration
 
 ### Make Target Pattern
-All scripts should be accessible via Make targets for consistency:
+All scripts should be accessible via Just targets for consistency:
 
-```makefile
+```justfile
 # Basic pattern
 script-name: ## Description of what the script does
 	@docker exec container-name command /app/scripts/script-name.ext
@@ -132,7 +132,7 @@ When documenting workflows, always include the Docker execution pattern:
 
 ```markdown
 ### Development Workflow
-1. Start development environment: `make dev`
+1. Start development environment: `just dev`
 2. Basic verification: `docker exec durable-code-frontend-dev node /app/scripts/check-page-content.js`
 3. Debug issues: `docker exec durable-code-frontend-dev node /app/scripts/test-rendered-content.js`
 4. Continuous monitoring: `docker exec durable-code-frontend-dev node /app/scripts/simple-check.js --watch`
@@ -177,11 +177,11 @@ Scripts MUST NOT require:
 ### Container Not Running
 ```bash
 # Check container status
-make status
+just status
 docker ps
 
 # Start containers if needed
-make dev
+just dev
 
 # Then run script
 docker exec durable-code-frontend-dev node /app/scripts/script.js
@@ -221,7 +221,7 @@ docker exec durable-code-frontend-dev cat /app/scripts/script.js
    ```
 
 4. **Update Make Targets**:
-   ```makefile
+   ```justfile
    # Update Makefile to use Docker execution
    target-name:
    	@docker exec container-name command /app/scripts/script.ext
@@ -234,14 +234,14 @@ docker exec durable-code-frontend-dev cat /app/scripts/script.js
 - [ ] No scripts in root directory
 - [ ] No scripts in frontend/scripts/
 - [ ] All documentation shows Docker execution
-- [ ] Make targets use Docker execution
+- [ ] Just targets use Docker execution
 - [ ] No references to local execution patterns
 
 ### Documentation Review Checklist
 - [ ] All command examples use `docker exec`
 - [ ] No examples show `node scripts/` (local execution)
 - [ ] Container paths use `/app/scripts/` format
-- [ ] Make targets documented as preferred method
+- [ ] Just targets documented as preferred method
 - [ ] Error handling includes container status checks
 
 ## Container Best Practices

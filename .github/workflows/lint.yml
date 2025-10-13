@@ -6,10 +6,10 @@
 #     Container Registry (GHCR) to cache pre-built linting images and only rebuilds when Dockerfiles
 #     or dependency files change. Runs multiple linting tools including Ruff, ESLint, custom SOLID
 #     principle validators, and design pattern linters in isolated containers.
-# Dependencies: Docker BuildKit, GHCR registry cache, make targets, docker-compose
+# Dependencies: Docker BuildKit, GHCR registry cache, just task runner, docker-compose
 # Exports: Linting execution status, code quality reports, and comprehensive quality summaries
 # Environment: GitHub Actions CI/CD pipeline with GHCR-based image caching for linting containers
-# Related: .docker/dockerfiles/linting/, .docker/compose/lint.yml, Makefile.lint
+# Related: .docker/dockerfiles/linting/, .docker/compose/lint.yml, justfile
 # Implementation: Uses GHCR registry cache with conditional rebuilds based on file change detection
 
 name: Linting
@@ -41,6 +41,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 2  # Need previous commit to detect changes
+
+      # Install Just task runner
+      - name: Install Just
+        uses: extractions/setup-just@v2
 
       # Set up Docker Buildx for advanced caching features
       - name: Set up Docker Buildx
@@ -209,9 +213,9 @@ jobs:
           # Verify containers are running
           docker ps | grep -E "durable-code-(python|js)-linter" || echo "Containers may be starting..."
 
-      # Run linting using existing make target
+      # Run linting using just task runner
       - name: Run comprehensive linting
-        run: make lint-all
+        run: just lint
 
       # Stop linting containers after use
       - name: Stop linting containers
@@ -230,7 +234,7 @@ jobs:
         if: always()
         run: |
           echo "## 🔍 Linting Summary" >> $GITHUB_STEP_SUMMARY
-          echo "All linting checks completed using dedicated linting containers via \`make lint-all\`" >> $GITHUB_STEP_SUMMARY
+          echo "All linting checks completed using dedicated linting containers via \`just lint\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🐳 Dedicated Linting Containers Used:" >> $GITHUB_STEP_SUMMARY
           echo "- **Python Linter Container**: \`durable-code-python-linter\`" >> $GITHUB_STEP_SUMMARY

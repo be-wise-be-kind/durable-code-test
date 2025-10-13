@@ -11,7 +11,7 @@
 ## When to Use This Guide
 
 Use this guide when:
-- ✅ `make lint-all` shows violations
+- ✅ `just lint-all` shows violations
 - ✅ Pre-commit hooks fail
 - ✅ You're starting work on a feature
 - ✅ PR checks are failing
@@ -36,16 +36,16 @@ Use this guide when:
 
 **Command to Check**:
 ```bash
-make lint-all
+just lint-all
 ```
 
 **How to Fix**:
 ```bash
 # Auto-fix most formatting issues
-make lint-fix
+just lint-fix
 
 # Then check for remaining issues
-make lint-all
+just lint-all
 ```
 
 ### 2. Import Organization
@@ -64,10 +64,10 @@ make lint-all
 **How to Fix**:
 ```bash
 # Python: Let Ruff auto-organize
-make lint-fix
+just lint-fix
 
 # TypeScript: Let Prettier + ESLint fix
-make lint-fix
+just lint-fix
 ```
 
 **Manual Fixes Required**:
@@ -114,10 +114,10 @@ const processData = (data: string): string => data.toUpperCase();
 **Check Types**:
 ```bash
 # Python
-make lint-all  # Includes MyPy
+just lint-all  # Includes MyPy
 
 # TypeScript
-make lint-all  # Includes TypeScript compiler
+just lint-all  # Includes TypeScript compiler
 ```
 
 ### 4. Security Issues
@@ -154,7 +154,7 @@ cursor.execute(query, (user_id,))
 
 **Check Security**:
 ```bash
-make lint-all  # Includes security scanning
+just lint-all  # Includes security scanning
 ```
 
 ### 5. Code Quality Basics
@@ -249,7 +249,7 @@ useEffect(() => {
 
 ```bash
 # Run all linting
-make lint-all > lint-output.txt 2>&1
+just lint-all > lint-output.txt 2>&1
 
 # Review output
 cat lint-output.txt
@@ -259,10 +259,10 @@ cat lint-output.txt
 
 ```bash
 # Auto-fix formatting and simple issues
-make lint-fix
+just lint-fix
 
 # Check what's left
-make lint-all
+just lint-all
 ```
 
 ### Step 3: Fix By Category
@@ -280,17 +280,17 @@ Work through violations in this order:
 After each fix:
 ```bash
 # Check linting
-make lint-all
+just lint-all
 
 # Run tests to ensure nothing broke
-make test
+just test
 ```
 
 ### Step 5: Commit When Clean
 
 Only commit when:
-- ✅ `make lint-all` exits with code 0
-- ✅ `make test` exits with code 0
+- ✅ `just lint-all` exits with code 0
+- ✅ `just test` exits with code 0
 - ✅ All Phase 1 issues resolved
 
 ```bash
@@ -307,7 +307,7 @@ git commit -m "fix: Resolve Phase 1 linting violations"
 **Solution**:
 ```bash
 # Let tooling fix it
-make lint-fix
+just lint-fix
 
 # Review what's left - likely unused imports
 # Remove them manually
@@ -390,10 +390,10 @@ useEffect(() => {
 **Solution**:
 ```bash
 # Ensure you're running same checks as CI
-make lint-all
+just lint-all
 
 # Check exit code explicitly
-make lint-all && echo "PASS" || echo "FAIL"
+just lint-all && echo "PASS" || echo "FAIL"
 ```
 
 ### Issue: Auto-fix breaks code
@@ -403,7 +403,7 @@ make lint-all && echo "PASS" || echo "FAIL"
 **Solution**:
 ```bash
 # Run tests immediately after auto-fix
-make lint-fix && make test
+just lint-fix && just test
 
 # If tests fail, review the changes
 git diff
@@ -425,7 +425,7 @@ git checkout -- .
 Move to Phase 2 (architectural refactoring) when:
 
 ✅ All of these are true:
-- `make lint-all` exits with code 0
+- `just lint-all` exits with code 0
 - All auto-fixable issues resolved
 - All type hints added
 - All security issues fixed
@@ -459,8 +459,8 @@ Phase 1 is complete when:
 
 ```bash
 # These commands all exit with code 0
-make lint-all
-make test
+just lint-all
+just test
 
 # And you see output like:
 # "All checks passed"
@@ -468,7 +468,7 @@ make test
 # "All tests passed"
 ```
 
-**Remember**: Phase 1 is about mechanical fixes. If you need to make architectural decisions, that's Phase 2.
+**Remember**: Phase 1 is about mechanical fixes. If you need to just architectural decisions, that's Phase 2.
 
 ---
 

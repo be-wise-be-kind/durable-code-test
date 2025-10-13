@@ -1,6 +1,6 @@
 # How to Manage Infrastructure
 
-**Purpose**: Provide step-by-step instructions for managing AWS infrastructure using Docker-based Terraform Make targets
+**Purpose**: Provide step-by-step instructions for managing AWS infrastructure using Docker-based Terraform Just targets
 **Scope**: Infrastructure deployment, state management, cost control, and troubleshooting procedures
 
 ---
@@ -41,10 +41,10 @@ Before starting, ensure you have:
 
 ```bash
 # Check default profile
-make infra-check-aws
+just infra-check-aws
 
 # Check specific profile
-AWS_PROFILE=production make infra-check-aws
+AWS_PROFILE=production just infra-check-aws
 ```
 
 Expected output:
@@ -64,7 +64,7 @@ Expected output:
 Create S3 bucket and DynamoDB table for state management:
 
 ```bash
-make infra-backend-setup
+just infra-backend-setup
 ```
 
 This creates:
@@ -74,7 +74,7 @@ This creates:
 ### Step 3: Initialize Terraform
 
 ```bash
-make infra-init
+just infra-init
 ```
 
 Note: This happens automatically on first use of any command, but can be run explicitly.
@@ -87,39 +87,39 @@ Always preview changes before applying:
 
 ```bash
 # See what will change
-make infra-plan
+just infra-plan
 
 # With specific profile
-AWS_PROFILE=staging make infra-plan
+AWS_PROFILE=staging just infra-plan
 ```
 
 ### Applying Changes
 
 ```bash
 # Interactive - will ask for confirmation
-make infra-up
+just infra-up
 
 # Non-interactive - for CI/CD
-AUTO=true make infra-up
+AUTO=true just infra-up
 
 # With specific profile
-AWS_PROFILE=production make infra-up
+AWS_PROFILE=production just infra-up
 ```
 
 ### Checking Current State
 
 ```bash
 # List all resources
-make infra-state-list
+just infra-state-list
 
 # Show specific resource
-RESOURCE=aws_instance.web make infra-state-show
+RESOURCE=aws_instance.web just infra-state-show
 
 # Show outputs
-make infra-output
+just infra-output
 
 # Show outputs as JSON (for scripts)
-FORMAT=json make infra-output
+FORMAT=json just infra-output
 ```
 
 ## Environment Management
@@ -128,29 +128,29 @@ FORMAT=json make infra-output
 
 ```bash
 # Development
-AWS_PROFILE=dev make infra-plan
+AWS_PROFILE=dev just infra-plan
 
 # Staging
-AWS_PROFILE=staging make infra-plan
+AWS_PROFILE=staging just infra-plan
 
 # Production
-AWS_PROFILE=production make infra-plan
+AWS_PROFILE=production just infra-plan
 ```
 
 ### Using Workspaces
 
 ```bash
 # List workspaces
-make infra-workspace-list
+just infra-workspace-list
 
 # Create new workspace
-WORKSPACE=staging make infra-workspace-new
+WORKSPACE=staging just infra-workspace-new
 
 # Switch workspace
-WORKSPACE=production make infra-workspace-select
+WORKSPACE=production just infra-workspace-select
 
 # Apply in current workspace
-make infra-up
+just infra-up
 ```
 
 ## Cost Management
@@ -159,17 +159,17 @@ make infra-up
 
 ```bash
 # Interactive destroy
-make infra-down
+just infra-down
 
 # Non-interactive (careful!)
-AUTO=true make infra-down
+AUTO=true just infra-down
 ```
 
 ### Check Costs Before Applying
 
 ```bash
 # Requires Infracost API key
-INFRACOST_API_KEY=your_key make infra-cost
+INFRACOST_API_KEY=your_key just infra-cost
 ```
 
 ## Maintenance Tasks
@@ -178,13 +178,13 @@ INFRACOST_API_KEY=your_key make infra-cost
 
 ```bash
 # Auto-format all .tf files
-make infra-fmt
+just infra-fmt
 
 # Validate configuration
-make infra-validate
+just infra-validate
 
 # Both format and validate
-make infra-check
+just infra-check
 ```
 
 ### Refresh State
@@ -192,14 +192,14 @@ make infra-check
 Sync state with actual infrastructure:
 
 ```bash
-make infra-refresh
+just infra-refresh
 ```
 
 ### Import Existing Resources
 
 ```bash
 # Import an existing AWS resource
-RESOURCE=aws_instance.web ID=i-1234567890 make infra-import
+RESOURCE=aws_instance.web ID=i-1234567890 just infra-import
 ```
 
 ## Troubleshooting
@@ -210,21 +210,21 @@ If you see "Backend initialization required":
 
 ```bash
 # Option 1: Reinitialize (keeps state)
-make infra-reinit
+just infra-reinit
 
 # Option 2: Clean everything and start fresh
-make infra-clean-cache
-make infra-init
+just infra-clean-cache
+just infra-init
 ```
 
 ### AWS Credentials Not Working
 
 ```bash
 # Check which profile is being used
-make infra-check-aws
+just infra-check-aws
 
 # Try a different profile
-AWS_PROFILE=another-profile make infra-check-aws
+AWS_PROFILE=another-profile just infra-check-aws
 
 # Check credentials file
 cat ~/.aws/credentials
@@ -236,21 +236,21 @@ Someone else might be running Terraform:
 
 ```bash
 # Check who has the lock
-make infra-state-list
+just infra-state-list
 
 # Wait and retry
 sleep 30
-make infra-plan
+just infra-plan
 ```
 
 ### Docker Volume Issues
 
 ```bash
 # Remove cached .terraform directory
-make infra-clean-cache
+just infra-clean-cache
 
 # Reinitialize
-make infra-init
+just infra-init
 ```
 
 ## Advanced Usage
@@ -260,7 +260,7 @@ make infra-init
 Test expressions and explore state:
 
 ```bash
-make infra-console
+just infra-console
 
 # In console:
 > var.environment
@@ -273,7 +273,7 @@ make infra-console
 Visualize resource dependencies:
 
 ```bash
-make infra-graph
+just infra-graph
 # Creates infrastructure-graph.png
 ```
 
@@ -282,7 +282,7 @@ make infra-graph
 Initialize and apply in one command:
 
 ```bash
-make infra-up
+just infra-up
 ```
 
 ### Using Environment Variables
@@ -293,8 +293,8 @@ export AWS_PROFILE=staging
 export AWS_REGION=eu-west-1
 
 # Now commands use these defaults
-make infra-plan
-make infra-up
+just infra-plan
+just infra-up
 ```
 
 ## CI/CD Integration
@@ -304,28 +304,28 @@ make infra-up
 ```yaml
 - name: Deploy Infrastructure
   run: |
-    AWS_PROFILE=production AUTO=true make infra-up
+    AWS_PROFILE=production AUTO=true just infra-up
 ```
 
 ### Jenkins Example
 
 ```groovy
-sh 'AWS_PROFILE=production AUTO=true make infra-up'
+sh 'AWS_PROFILE=production AUTO=true just infra-up'
 ```
 
 ## Best Practices
 
 1. **Always plan before applying**
    ```bash
-   make infra-plan
+   just infra-plan
    # Review changes
-   make infra-up
+   just infra-up
    ```
 
 2. **Use workspaces for environments**
    ```bash
-   WORKSPACE=staging make infra-workspace-select
-   make infra-up
+   WORKSPACE=staging just infra-workspace-select
+   just infra-up
    ```
 
 3. **Tag resources appropriately**
@@ -336,7 +336,7 @@ sh 'AWS_PROFILE=production AUTO=true make infra-up'
 4. **Destroy unused infrastructure**
    ```bash
    # Dev environment after work
-   AWS_PROFILE=dev make infra-down
+   AWS_PROFILE=dev just infra-down
    ```
 
 5. **Keep state secure**
@@ -350,20 +350,20 @@ sh 'AWS_PROFILE=production AUTO=true make infra-up'
 
 ```bash
 # Check credentials
-make infra-check-aws
+just infra-check-aws
 
 # See current state
-make infra-state-list
+just infra-state-list
 
 # Plan any pending changes
-make infra-plan
+just infra-plan
 ```
 
 ### End of Day Cleanup
 
 ```bash
 # Destroy dev environment to save costs
-AWS_PROFILE=dev AUTO=true make infra-down
+AWS_PROFILE=dev AUTO=true just infra-down
 ```
 
 ### Deploy New Feature
@@ -373,24 +373,24 @@ AWS_PROFILE=dev AUTO=true make infra-down
 git checkout feature/new-service
 
 # Plan changes
-make infra-plan
+just infra-plan
 
 # Apply if looks good
-make infra-up
+just infra-up
 
 # Check outputs
-make infra-output
+just infra-output
 ```
 
 ### Emergency Rollback
 
 ```bash
 # Quick destroy if something goes wrong
-AUTO=true make infra-down
+AUTO=true just infra-down
 
 # Or revert to previous state
 git checkout main
-make infra-up
+just infra-up
 ```
 
 ## Domain Registration

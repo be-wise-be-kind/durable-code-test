@@ -4,7 +4,7 @@ Scope: Practical usage instructions and operational procedures for deployment sc
 Overview: Step-by-step guide for using the conditional deployment system to manage base and runtime
     infrastructure resources. Covers common operations, cost optimization workflows, troubleshooting,
     and best practices for daily infrastructure management with different deployment scopes.
-Dependencies: Requires configured Terraform environment and access to make targets
+Dependencies: Requires configured Terraform environment and access to just targets
 Exports: Operational procedures and commands for infrastructure deployment management
 Interfaces: Used by developers and operators managing infrastructure deployments
 Implementation: Production-ready deployment workflows using SCOPE parameter
@@ -44,27 +44,27 @@ Deploy everything - both base and runtime resources.
 
 ```bash
 # Deploy only base infrastructure
-make infra-up SCOPE=base
+just infra-up SCOPE=base
 
 # Deploy only runtime infrastructure (assumes base exists)
-make infra-up SCOPE=runtime
+just infra-up SCOPE=runtime
 
 # Deploy everything (default)
-make infra-up
-make infra-up SCOPE=all
+just infra-up
+just infra-up SCOPE=all
 ```
 
 ### Destroy Infrastructure
 
 ```bash
 # Destroy only runtime (preserves base)
-make infra-down SCOPE=runtime
+just infra-down SCOPE=runtime
 
 # Destroy only base (requires confirmation)
-make infra-down SCOPE=base CONFIRM=destroy-base
+just infra-down SCOPE=base CONFIRM=destroy-base
 
 # Destroy everything (requires confirmation)
-make infra-down SCOPE=all CONFIRM=destroy-all
+just infra-down SCOPE=all CONFIRM=destroy-all
 ```
 
 ### Plan Changes
@@ -73,13 +73,13 @@ Always plan before applying to understand what will be changed:
 
 ```bash
 # Plan base resources only
-make infra-plan SCOPE=base
+just infra-plan SCOPE=base
 
 # Plan runtime resources only
-make infra-plan SCOPE=runtime
+just infra-plan SCOPE=runtime
 
 # Plan all resources
-make infra-plan SCOPE=all
+just infra-plan SCOPE=all
 ```
 
 ## Cost Optimization Strategy
@@ -88,13 +88,13 @@ make infra-plan SCOPE=all
 
 1. **End of Day - Shutdown Runtime**:
    ```bash
-   make infra-down SCOPE=runtime
+   just infra-down SCOPE=runtime
    ```
    Destroys ECS services, listeners, etc. while preserving NAT Gateway and certificates.
 
 2. **Start of Day - Startup Runtime**:
    ```bash
-   make infra-up SCOPE=runtime
+   just infra-up SCOPE=runtime
    ```
    Recreates all runtime resources in ~5 minutes.
 
@@ -114,12 +114,12 @@ If you have existing infrastructure created before the conditional deployment fe
 
 2. **Plan with `SCOPE=all`** to see the changes:
    ```bash
-   make infra-plan SCOPE=all
+   just infra-plan SCOPE=all
    ```
 
 3. **Apply with `SCOPE=all`** to update resource indexing:
    ```bash
-   make infra-up SCOPE=all
+   just infra-up SCOPE=all
    ```
 
 The resources will be updated in place to use the new indexing scheme.
@@ -135,20 +135,20 @@ This means you're trying to reference a resource that doesn't exist in the curre
 Runtime resources depend on base resources.
 ```bash
 # Ensure base infrastructure is deployed first
-make infra-up SCOPE=base
+just infra-up SCOPE=base
 ```
 
 ### State Issues
 If you encounter state inconsistencies:
 ```bash
 # Refresh the state
-make infra-refresh
+just infra-refresh
 
 # Check current resources
-make infra-state-list
+just infra-state-list
 
 # As last resort, reinitialize
-make infra-reinit
+just infra-reinit
 ```
 
 ## Best Practices

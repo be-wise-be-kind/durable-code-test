@@ -6,7 +6,7 @@ Overview: This runbook provides comprehensive cost optimization strategies lever
     procedures, cost monitoring techniques, and emergency cost reduction measures. The guide includes
     specific cost breakdowns, savings calculations, and operational procedures for maximizing cost
     efficiency while maintaining service availability and development productivity.
-Dependencies: Terraform workspaces, GitHub Actions, AWS cost monitoring, make targets
+Dependencies: Terraform workspaces, GitHub Actions, AWS cost monitoring, just targets
 Exports: Cost optimization procedures, monitoring commands, emergency protocols
 Environment: Applies to dev, staging, and production environments with different strategies
 Implementation: Automated and manual cost optimization workflows
@@ -50,13 +50,13 @@ The infrastructure includes automated workflows for cost optimization:
 
 #### Nightly Runtime Teardown
 - **Schedule**: 8 PM PST (weekdays only)
-- **Action**: `make infra-down SCOPE=runtime ENV=dev`
+- **Action**: `just infra-down SCOPE=runtime ENV=dev`
 - **Savings**: ~$1.50/day (~$30/month)
 - **Restoration**: Automatic at 8 AM PST
 
 #### Weekend Extended Shutdown
 - **Schedule**: Friday 8 PM PST
-- **Action**: `make infra-down SCOPE=all ENV=dev` (with confirmation)
+- **Action**: `just infra-down SCOPE=all ENV=dev` (with confirmation)
 - **Savings**: ~$3.50/day (~$7/weekend)
 - **Restoration**: Monday 8 AM PST
 
@@ -81,15 +81,15 @@ gh workflow run morning-startup --field environment=dev
 ```bash
 # Step 1: Verify no active development
 echo "Checking for active sessions..."
-make infra-status ENV=dev
+just infra-status ENV=dev
 
 # Step 2: Safe runtime shutdown
 echo "Shutting down runtime infrastructure..."
-make infra-down SCOPE=runtime ENV=dev
+just infra-down SCOPE=runtime ENV=dev
 
 # Step 3: Verify shutdown success
 echo "Verifying shutdown..."
-make infra-status ENV=dev
+just infra-status ENV=dev
 # Should show: Base=UP, Runtime=DOWN
 ```
 
@@ -97,15 +97,15 @@ make infra-status ENV=dev
 ```bash
 # Step 1: Restore runtime infrastructure
 echo "Restoring runtime infrastructure..."
-make infra-up SCOPE=runtime ENV=dev
+just infra-up SCOPE=runtime ENV=dev
 
 # Step 2: Deploy latest application version
 echo "Deploying application..."
-make deploy ENV=dev
+just deploy ENV=dev
 
 # Step 3: Verify service health
 echo "Verifying deployment..."
-make infra-status ENV=dev
+just infra-status ENV=dev
 curl -f http://your-app-url/health || echo "Application not ready yet"
 ```
 
@@ -121,10 +121,10 @@ echo "📢 NOTICE: Starting weekend infrastructure shutdown"
 
 # Step 2: Destroy all infrastructure
 echo "Destroying all infrastructure..."
-CONFIRM=destroy-base make infra-down SCOPE=all ENV=dev
+CONFIRM=destroy-base just infra-down SCOPE=all ENV=dev
 
 # Step 3: Verify complete shutdown
-make infra-status ENV=dev
+just infra-status ENV=dev
 # Should show: Base=DOWN, Runtime=DOWN
 
 echo "✅ Weekend shutdown complete. Savings: ~$7"
@@ -137,15 +137,15 @@ echo "=== Weekend Restoration Procedure ==="
 
 # Step 1: Restore all infrastructure
 echo "Restoring complete infrastructure..."
-make infra-up SCOPE=all ENV=dev
+just infra-up SCOPE=all ENV=dev
 
 # Step 2: Deploy application
 echo "Deploying application..."
-make deploy ENV=dev
+just deploy ENV=dev
 
 # Step 3: Verify full service
 echo "Verifying complete restoration..."
-make infra-status ENV=dev
+just infra-status ENV=dev
 curl -f http://your-app-url/health
 
 echo "✅ Weekend restoration complete. Service ready."
@@ -159,13 +159,13 @@ echo "✅ Weekend restoration complete. Service ready."
 echo "🚨 EMERGENCY COST REDUCTION PROTOCOL"
 
 # Shutdown development
-CONFIRM=destroy-base make infra-down SCOPE=all ENV=dev
+CONFIRM=destroy-base just infra-down SCOPE=all ENV=dev
 
 # Shutdown staging (if safe)
-CONFIRM=destroy-base make infra-down SCOPE=all ENV=staging
+CONFIRM=destroy-base just infra-down SCOPE=all ENV=staging
 
 # Production: Runtime only (if absolutely necessary)
-# make infra-down SCOPE=runtime ENV=prod  # ⚠️ USE WITH EXTREME CAUTION
+# just infra-down SCOPE=runtime ENV=prod  # ⚠️ USE WITH EXTREME CAUTION
 
 echo "✅ Emergency shutdown complete"
 ```
@@ -173,12 +173,12 @@ echo "✅ Emergency shutdown complete"
 ### Gradual Cost Reduction
 ```bash
 # Step 1: Runtime only shutdown (preserves quick restoration)
-make infra-down SCOPE=runtime ENV=dev
-make infra-down SCOPE=runtime ENV=staging
+just infra-down SCOPE=runtime ENV=dev
+just infra-down SCOPE=runtime ENV=staging
 
 # Step 2: If more savings needed, full shutdown
-CONFIRM=destroy-base make infra-down SCOPE=all ENV=dev
-CONFIRM=destroy-base make infra-down SCOPE=all ENV=staging
+CONFIRM=destroy-base just infra-down SCOPE=all ENV=dev
+CONFIRM=destroy-base just infra-down SCOPE=all ENV=staging
 
 # Step 3: Monitor cost impact
 echo "Monitor AWS Cost Explorer for 24-48 hours"
@@ -189,9 +189,9 @@ echo "Monitor AWS Cost Explorer for 24-48 hours"
 ### Daily Cost Monitoring
 ```bash
 # Check infrastructure status
-make infra-status ENV=dev
-make infra-status ENV=staging
-make infra-status ENV=prod
+just infra-status ENV=dev
+just infra-status ENV=staging
+just infra-status ENV=prod
 
 # Verify automation working
 gh run list --workflow=nightly-teardown --limit=5
@@ -238,8 +238,8 @@ echo "- Monthly Savings: ~$145 (46%)"
 # - Holiday shutdown: Complete teardown during holidays
 
 # Commands for dev optimization
-make infra-down SCOPE=runtime ENV=dev     # Nightly
-CONFIRM=destroy-base make infra-down SCOPE=all ENV=dev  # Weekend/Holiday
+just infra-down SCOPE=runtime ENV=dev     # Nightly
+CONFIRM=destroy-base just infra-down SCOPE=all ENV=dev  # Weekend/Holiday
 ```
 
 ### Staging Environment
@@ -250,7 +250,7 @@ CONFIRM=destroy-base make infra-down SCOPE=all ENV=dev  # Weekend/Holiday
 # - Weekend runtime shutdown only
 
 # Commands for staging optimization
-make infra-down SCOPE=runtime ENV=staging  # Off-hours only
+just infra-down SCOPE=runtime ENV=staging  # Off-hours only
 # Keep base infrastructure always up for quick testing
 ```
 
@@ -262,7 +262,7 @@ make infra-down SCOPE=runtime ENV=staging  # Off-hours only
 # - Focus on right-sizing rather than shutdown
 
 # Production cost optimization (rare)
-# make infra-down SCOPE=runtime ENV=prod  # ONLY during planned maintenance
+# just infra-down SCOPE=runtime ENV=prod  # ONLY during planned maintenance
 ```
 
 ## Automation Configuration
@@ -323,12 +323,12 @@ gh workflow enable morning-startup
 gh run list --workflow=nightly-teardown --status=failure
 
 # Verify infrastructure status
-make infra-status ENV=dev
-make infra-status ENV=staging
+just infra-status ENV=dev
+just infra-status ENV=staging
 
 # Emergency shutdown if needed
-make infra-down SCOPE=runtime ENV=dev
-make infra-down SCOPE=runtime ENV=staging
+just infra-down SCOPE=runtime ENV=dev
+just infra-down SCOPE=runtime ENV=staging
 ```
 
 ### Automation Failures
@@ -337,8 +337,8 @@ make infra-down SCOPE=runtime ENV=staging
 gh run view --log [run-id]
 
 # Manual recovery
-make infra-down SCOPE=runtime ENV=dev  # If shutdown failed
-make infra-up SCOPE=runtime ENV=dev    # If startup failed
+just infra-down SCOPE=runtime ENV=dev  # If shutdown failed
+just infra-up SCOPE=runtime ENV=dev    # If startup failed
 
 # Verify AWS credentials
 aws sts get-caller-identity
@@ -347,7 +347,7 @@ aws sts get-caller-identity
 ### Cost Optimization Not Working
 ```bash
 # Verify workspace separation working
-make infra-status ENV=dev
+just infra-status ENV=dev
 
 # Check AWS resource tags
 aws ec2 describe-instances --filters "Name=tag:Environment,Values=dev"

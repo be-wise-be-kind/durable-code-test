@@ -137,15 +137,15 @@ See `.ai/howto/create-roadmap-item.md` for detailed workflow instructions.
 ### Project-Specific Rules (CRITICAL)
 
 **Docker and Testing**:
-- ⚠️ **NEVER run tests locally** - Always use Docker or Make targets
+- ⚠️ **NEVER run tests locally** - Always use Docker or Just targets
 - ⚠️ **NEVER run npm install locally** - Always update package.json and rebuild Docker containers
 - ⚠️ All package installations must be done within Docker containers, not on the host system
-- ⚠️ All linting should be run through Docker or Make targets (not `npm run lint`, not direct linting commands)
+- ⚠️ All linting should be run through Docker or Just targets (not `npm run lint`, not direct linting commands)
 
 **Make Targets**:
-- ⚠️ Always use Make targets for operations (testing, linting, building)
-- ⚠️ Always prefer Makefile targets for Terraform operations
-- Run all linting via Make targets, don't call linting directly
+- ⚠️ Always use Just targets for operations (testing, linting, building)
+- ⚠️ Always prefer justfile targets for Terraform operations
+- Run all linting via Just targets, don't call linting directly
 
 **Branch Protection**:
 - ⚠️ **NEVER create anything on the main branch** - Not a single file, not a single commit
@@ -240,61 +240,61 @@ See `.ai/docs/FILE_HEADER_STANDARDS.md` for complete templates and examples.
 ### Development
 ```bash
 # Start development environment
-make dev
+just dev
 
 # Check status
-make status
+just status
 
 # View logs
-make logs
+just logs
 ```
 
 ### Testing
 ```bash
 # Run all tests
-make test
+just test
 
 # Run unit tests only
-make test-unit
+just test-unit
 
 # Run with coverage
-make test-coverage
+just test-coverage
 ```
 
 ### Linting
 ```bash
 # Run all linting (backend + frontend + custom)
-make lint-all
+just lint-all
 
 # Fix auto-fixable issues
-make lint-fix
+just lint-fix
 
 # Run custom design linters
-make lint-custom
+just lint-custom
 ```
 
 ### Building
 ```bash
 # Build Docker containers
-make build
+just build
 
 # Build for production
-make build-prod
+just build-prod
 ```
 
 ### Infrastructure
 ```bash
 # Check AWS credentials
-make infra-check-aws
+just infra-check-aws
 
 # Plan infrastructure changes
-make infra-plan
+just infra-plan
 
 # Apply infrastructure changes
-make infra-apply
+just infra-apply
 
 # Destroy infrastructure
-make infra-destroy
+just infra-destroy
 ```
 
 ## Git Workflow
@@ -322,8 +322,8 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `infra`
 - `infra/*` - Infrastructure changes
 
 ### Before Committing
-- [ ] All tests pass (`make test` exits with code 0)
-- [ ] Code is linted (`make lint-all` exits with code 0)
+- [ ] All tests pass (`just test` exits with code 0)
+- [ ] Code is linted (`just lint-all` exits with code 0)
 - [ ] **All files have proper headers per `.ai/docs/FILE_HEADER_STANDARDS.md`**
 - [ ] Documentation updated
 - [ ] No secrets committed (pre-commit hooks check this)
@@ -337,7 +337,7 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `infra`
 
 **NEVER claim linting is clean unless ALL of these are true:**
 
-1. ✅ `make lint-all` exits with **code 0** - not 1, not 2, exactly 0
+1. ✅ `just lint-all` exits with **code 0** - not 1, not 2, exactly 0
 2. ✅ **ZERO test failures** - failing tests mean the feature is broken
 3. ✅ **No pre-commit hook failures** - if hooks fail, you must fix before committing
 4. ✅ **All TypeScript checks pass** - no `any` types, no missing dependencies in hooks
@@ -358,19 +358,19 @@ Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `infra`
 3. ❌ **"The exit code is non-zero but the output looks okay"**
    - Exit code 0 is the ONLY acceptable result
    - Visual inspection of output is NOT a substitute for checking exit codes
-   - Use `make lint-all && echo "SUCCESS" || echo "FAILED"` to verify
+   - Use `just lint-all && echo "SUCCESS" || echo "FAILED"` to verify
 
 **Correct Validation Process:**
 ```bash
 # Step 1: Run full linting (must exit with code 0)
-make lint-all
+just lint-all
 if [ $? -ne 0 ]; then
     echo "FAILED - must fix all issues"
     exit 1
 fi
 
 # Step 2: Run tests (must exit with code 0)
-make test
+just test
 if [ $? -ne 0 ]; then
     echo "FAILED - must fix all tests"
     exit 1
@@ -443,7 +443,7 @@ You MUST:
 5. Wait for approval
 
 **The Bottom Line:**
-If `make lint-all` exits with non-zero code or if tests fail - **your code is not ready to commit**. Period. No excuses, no rationalizations, no "but this was pre-existing" - fix it before committing.
+If `just lint-all` exits with non-zero code or if tests fail - **your code is not ready to commit**. Period. No excuses, no rationalizations, no "but this was pre-existing" - fix it before committing.
 
 ---
 
@@ -453,7 +453,7 @@ If `make lint-all` exits with non-zero code or if tests fail - **your code is no
 
 Enter systematic linting mode when:
 
-1. **`make lint-all` shows violations** - Any non-zero exit code requires fixing
+1. **`just lint-all` shows violations** - Any non-zero exit code requires fixing
 2. **Pre-commit hooks fail** - Hooks are your first quality gate
 3. **PR checks fail** - CI/CD caught issues you missed locally
 4. **Working on existing code with issues** - You touched it, you own it
@@ -478,18 +478,18 @@ Enter systematic linting mode when:
 - Unused imports/variables
 
 **Success Criteria**:
-- `make lint-all` exits with code 0
+- `just lint-all` exits with code 0
 - All tests pass
 - No security violations
 
 **Process**:
 ```bash
 # Run basic linting
-make lint-all
+just lint-all
 
 # Fix violations following the howto guide
 # Validate after each fix
-make test  # Ensure nothing broke
+just test  # Ensure nothing broke
 ```
 
 #### Phase 2: Architectural Refactoring (Design Decisions)
@@ -512,20 +512,20 @@ make test  # Ensure nothing broke
 **Process**:
 ```bash
 # Run architectural linting
-make lint-custom
+just lint-custom
 
 # Analyze violations together (don't fix sequentially)
 # Follow decision tree in howto guide
 # Refactor with architectural goals in mind
-make test  # Ensure nothing broke
+just test  # Ensure nothing broke
 ```
 
 ### Critical Rule: Never Commit Until BOTH Phases Pass
 
 ```bash
 # Final validation before commit
-make lint-all   # Must exit with code 0
-make test       # Must exit with code 0
+just lint-all   # Must exit with code 0
+just test       # Must exit with code 0
 
 # Only then:
 git commit -m "fix: Resolve all quality issues"
@@ -551,7 +551,7 @@ git commit -m "fix: Resolve all quality issues"
 4. Implement feature following code style guidelines
 5. Add tests
 6. Update documentation
-7. Run quality checks: `make lint-all && make test`
+7. Run quality checks: `just lint-all && just test`
 8. Submit PR
 
 ### Adding a Web Tab
@@ -564,8 +564,8 @@ See `.ai/howto/add-api-endpoint.md` and use `.ai/templates/fastapi-endpoint.py.t
 See `.ai/howto/create-custom-linter.md` and use `.ai/templates/linting-rule.py.template`
 
 ### Debugging
-1. Check logs: `make logs`
-2. Run tests with verbose output: `make test`
+1. Check logs: `just logs`
+2. Run tests with verbose output: `just test`
 3. Use browser DevTools for frontend issues
 4. Check `.ai/howto/complete-debugging-guide.md` for systematic approach
 

@@ -4,9 +4,9 @@
 # Overview: Interactive terminal dashboard that continuously monitors code quality by running linting checks every 30 seconds.
 #           Displays real-time status with visual indicators, statistics, error summaries, and system notifications.
 #           Provides a comprehensive overview of linting health with pass/fail rates and detailed error reporting.
-# Dependencies: make (for lint-all target), find, wc, grep, bash terminal with color support, optional notification tools (osascript/notify-send/powershell)
+# Dependencies: just (for lint-all target), find, wc, grep, bash terminal with color support, optional notification tools (osascript/notify-send/powershell)
 # Usage: ./scripts/lint-watch-dashboard.sh (runs in foreground with interactive dashboard)
-# Interfaces: Uses 'make lint-all' command and provides visual dashboard with status indicators
+# Interfaces: Uses 'just lint-all' command and provides visual dashboard with status indicators
 # Implementation: Uses ANSI escape codes for terminal control, cursor positioning, and color output with notification system integration
 
 # Dashboard-style file watcher for linting
@@ -130,7 +130,7 @@ draw_dashboard() {
     echo
     draw_line
     echo -e "${GRAY}Press Ctrl+C to stop watching${NC}"
-    echo -e "${GRAY}Running 'make lint-all' every 30 seconds...${NC}"
+    echo -e "${GRAY}Running 'just lint-all' every 30 seconds...${NC}"
 }
 
 # Function to send notifications
@@ -164,7 +164,7 @@ run_lint() {
     draw_dashboard
 
     # Capture lint output
-    lint_output=$(make lint-all 2>&1)
+    lint_output=$(just lint-all 2>&1)
     lint_exit_code=$?
 
     # Extract only error messages (lines that look like errors)

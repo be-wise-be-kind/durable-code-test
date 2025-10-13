@@ -142,12 +142,12 @@ check_workspace "base"
 # Check runtime workspace
 check_workspace "runtime"
 
-# Show related Make targets
-print_message "$CYAN" "Related Make targets for $ENV environment:"
-echo "  make infra-up-base ENV=$ENV      # Deploy base infrastructure"
-echo "  make infra-up-runtime ENV=$ENV   # Deploy runtime infrastructure"
-echo "  make infra-down-runtime ENV=$ENV # Destroy runtime infrastructure"
-echo "  make infra-status ENV=$ENV        # Show this status"
+# Show related Just targets
+print_message "$CYAN" "Related Just targets for $ENV environment:"
+echo "  just infra-up-base ENV=$ENV      # Deploy base infrastructure"
+echo "  just infra-up-runtime ENV=$ENV   # Deploy runtime infrastructure"
+echo "  just infra-down-runtime ENV=$ENV # Destroy runtime infrastructure"
+echo "  just infra-status ENV=$ENV        # Show this status"
 echo ""
 
 # Check for any running resources (if state exists)

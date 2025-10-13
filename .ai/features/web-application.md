@@ -254,10 +254,10 @@ Interactive oscilloscope demonstration showcasing real-time data streaming capab
 
 **Location**: `Makefile`
 
-- `make dev`: Start development environment
-- `make build`: Build production images
-- `make test`: Run comprehensive test suites
-- `make launch`: Build and start with browser opening
+- `just dev`: Start development environment
+- `just build`: Build production images
+- `just test`: Run comprehensive test suites
+- `just launch`: Build and start with browser opening
 
 ### Configuration Management
 
@@ -350,15 +350,15 @@ poetry install
 poetry run uvicorn app.main:app --reload
 
 # Full stack with Docker
-make dev
+just dev
 ```
 
 ### Production Deployment
 
 ```bash
 # Build and deploy
-make build
-make start
+just build
+just start
 
 # Health check
 curl http://localhost:8000/health

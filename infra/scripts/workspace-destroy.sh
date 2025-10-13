@@ -129,8 +129,8 @@ echo -e "${CYAN}Destruction complete!${NC}"
 # Provide helpful next steps
 if [[ "$SCOPE" == "runtime" ]]; then
     echo -e "${YELLOW}Base infrastructure remains deployed.${NC}"
-    echo -e "${YELLOW}To redeploy runtime: make infra-up SCOPE=runtime ENV=${ENV}${NC}"
+    echo -e "${YELLOW}To redeploy runtime: just infra-up SCOPE=runtime ENV=${ENV}${NC}"
 else
     echo -e "${YELLOW}All infrastructure has been destroyed.${NC}"
-    echo -e "${YELLOW}To redeploy: make infra-up SCOPE=all ENV=${ENV}${NC}"
+    echo -e "${YELLOW}To redeploy: just infra-up SCOPE=all ENV=${ENV}${NC}"
 fi
