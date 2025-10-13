@@ -52,6 +52,7 @@ resource "aws_ecs_cluster_capacity_providers" "main" {
 resource "aws_cloudwatch_log_group" "backend" {
   name              = "/ecs/${var.project_name}-${local.environment}/backend"
   retention_in_days = lookup(var.log_retention_days, var.environment, 7)
+  kms_key_id        = data.terraform_remote_state.base.outputs.kms_logs_key_arn
 
   tags = merge(
     local.common_tags,
@@ -67,6 +68,7 @@ resource "aws_cloudwatch_log_group" "backend" {
 resource "aws_cloudwatch_log_group" "frontend" {
   name              = "/ecs/${var.project_name}-${local.environment}/frontend"
   retention_in_days = lookup(var.log_retention_days, var.environment, 7)
+  kms_key_id        = data.terraform_remote_state.base.outputs.kms_logs_key_arn
 
   tags = merge(
     local.common_tags,

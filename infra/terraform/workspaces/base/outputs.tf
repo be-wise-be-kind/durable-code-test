@@ -155,6 +155,37 @@ output "base_resource_tags" {
   }
 }
 
+# KMS Key Outputs
+output "kms_logs_key_id" {
+  description = "KMS key ID for CloudWatch Logs encryption"
+  value       = aws_kms_key.logs.key_id
+}
+
+output "kms_logs_key_arn" {
+  description = "KMS key ARN for CloudWatch Logs encryption"
+  value       = aws_kms_key.logs.arn
+}
+
+output "kms_logs_alias_name" {
+  description = "KMS alias name for CloudWatch Logs key"
+  value       = aws_kms_alias.logs.name
+}
+
+output "kms_ecr_key_id" {
+  description = "KMS key ID for ECR encryption"
+  value       = aws_kms_key.ecr.key_id
+}
+
+output "kms_ecr_key_arn" {
+  description = "KMS key ARN for ECR encryption"
+  value       = aws_kms_key.ecr.arn
+}
+
+output "kms_ecr_alias_name" {
+  description = "KMS alias name for ECR key"
+  value       = aws_kms_alias.ecr.name
+}
+
 # Environment and Configuration Info
 output "environment" {
   description = "Environment name"
