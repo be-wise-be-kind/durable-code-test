@@ -19,6 +19,24 @@ resource "aws_route53_zone" "main" {
   )
 }
 
+# Delegation record in apex zone (creates NS record pointing to subdomain zone)
+resource "aws_route53_record" "zone_delegation" {
+  count = var.domain_name != "" && var.create_route53_zone && var.apex_zone_id != "" ? 1 : 0
+
+  zone_id = var.apex_zone_id
+  name    = var.domain_name
+  type    = "NS"
+  ttl     = 300
+
+  records = aws_route53_zone.main[0].name_servers
+
+  lifecycle {
+    create_before_destroy = true # Update delegation before deleting old record if zone recreated
+  }
+
+  depends_on = [aws_route53_zone.main]
+}
+
 # ACM Certificate for the primary domain (only when domain is configured)
 resource "aws_acm_certificate" "main" {
   count = var.domain_name != "" && var.create_route53_zone ? 1 : 0

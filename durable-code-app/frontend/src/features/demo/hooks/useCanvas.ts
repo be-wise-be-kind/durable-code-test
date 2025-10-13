@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useEffect, useRef } from 'react';
+import { logger } from '../../../utils/logger';
 
 interface UseCanvasOptions {
   width?: number;
@@ -52,7 +53,7 @@ export function useCanvas(
     try {
       drawFunctionRef.current(ctx, canvas);
     } catch (error) {
-      console.error('Error in canvas draw function:', error);
+      logger.error('Error in canvas draw function:', error);
     }
 
     animationIdRef.current = requestAnimationFrame(animate);
@@ -96,7 +97,7 @@ export function useCanvas(
       try {
         drawFunctionRef.current(ctx, canvas);
       } catch (error) {
-        console.error('Error in canvas draw function:', error);
+        logger.error('Error in canvas draw function:', error);
       }
     }
 
@@ -117,7 +118,7 @@ export function useCanvas(
     try {
       drawFunctionRef.current(ctx, canvas);
     } catch (error) {
-      console.error('Error in canvas draw function:', error);
+      logger.error('Error in canvas draw function:', error);
     }
   }, [drawFunction]);
 

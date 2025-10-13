@@ -10,6 +10,8 @@
  * Implementation: Event-driven monitoring with automatic reporting and alerting
  */
 
+import { logger } from '../../utils/logger';
+
 export interface PerformanceMetrics {
   fps: number;
   renderTime: number;
@@ -283,7 +285,7 @@ export class PerformanceMonitor {
       try {
         handler(alert);
       } catch (error) {
-        console.error('Error in performance alert handler:', error);
+        logger.error('Error in performance alert handler:', error);
       }
     });
   }

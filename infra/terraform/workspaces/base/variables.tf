@@ -89,11 +89,28 @@ variable "create_route53_zone" {
   default     = false
 }
 
+variable "apex_zone_id" {
+  description = "Route53 hosted zone ID for the apex domain (e.g., durableaicoding.net) where delegation records should be created"
+  type        = string
+  default     = ""
+}
+
 # Security Variables (for base security groups)
 variable "enable_waf" {
   description = "Enable AWS WAF for additional security (increases cost)"
   type        = bool
   default     = false
+}
+
+# Logging Configuration
+variable "log_retention_days" {
+  description = "CloudWatch log retention in days by environment"
+  type        = map(number)
+  default = {
+    dev     = 7
+    staging = 14
+    prod    = 30
+  }
 }
 
 # Tags

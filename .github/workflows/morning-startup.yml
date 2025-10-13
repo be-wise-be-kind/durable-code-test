@@ -2,9 +2,9 @@ name: Morning Infrastructure Startup
 
 on:
   schedule:
-    # 8 AM PST = 3 PM UTC (during PST) / 4 PM UTC (during PDT)
+    # 9 AM PST = 5 PM UTC (during PST) / 4 PM UTC (during PDT)
     # Run Monday-Friday only to restore infrastructure for work day
-    - cron: '0 15 * * 1-5'  # Monday-Friday 3 PM UTC (8 AM PST)
+    - cron: '0 16 * * 1-5'  # Monday-Friday 4 PM UTC (9 AM PDT) - Weekday startup
   workflow_dispatch:
     inputs:
       environment:
@@ -38,6 +38,7 @@ jobs:
   startup:
     runs-on: ubuntu-latest
     permissions:
+      id-token: write
       contents: read
       actions: read
 
@@ -51,8 +52,8 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: GitHub-Actions-Startup-${{ github.run_id }}
           aws-region: us-west-2
 
       - name: Verify AWS credentials
@@ -64,13 +65,13 @@ jobs:
       - name: Check infrastructure status (before)
         run: |
           echo "📊 Infrastructure status before startup:"
-          make infra-status ENV=${{ inputs.environment || 'dev' }} || echo "Status check completed"
+          make infra-status ENV=${{ inputs.environment || 'dev' }} AWS_PROFILE="" || echo "Status check completed"
 
       - name: Plan infrastructure startup
         if: ${{ inputs.dry_run == true }}
         run: |
           echo "🔍 Planning infrastructure startup (dry run)..."
-          make infra-plan SCOPE=${{ inputs.scope || 'runtime' }} ENV=${{ inputs.environment || 'dev' }}
+          make infra-plan SCOPE=${{ inputs.scope || 'runtime' }} ENV=${{ inputs.environment || 'dev' }} AWS_PROFILE=""
 
       - name: Execute infrastructure startup
         if: ${{ inputs.dry_run != true }}
@@ -80,7 +81,8 @@ jobs:
           SCOPE="${{ inputs.scope || 'runtime' }}"
 
           echo "⏰ Infrastructure startup initiated at $(date)"
-          make infra-up SCOPE="$SCOPE" ENV="$ENV"
+          # In CI, don't use AWS_PROFILE - OIDC sets environment variables directly
+          make infra-up SCOPE="$SCOPE" ENV="$ENV" AUTO=true AWS_PROFILE=""
 
       - name: Wait for infrastructure readiness
         if: ${{ inputs.dry_run != true }}
@@ -91,7 +93,7 @@ jobs:
           # Wait up to 10 minutes for infrastructure to be ready
           for i in {1..30}; do
             echo "  Attempt $i/30: Checking infrastructure readiness..."
-            if make infra-check ENV="$ENV" 2>/dev/null; then
+            if make infra-check ENV="$ENV" AWS_PROFILE="" 2>/dev/null; then
               echo "✅ Infrastructure is ready!"
               break
             fi
@@ -99,7 +101,7 @@ jobs:
             if [[ $i -eq 30 ]]; then
               echo "⚠️ Infrastructure readiness timeout after 10 minutes"
               echo "📊 Current status:"
-              make infra-status ENV="$ENV" || true
+              make infra-status ENV="$ENV" AWS_PROFILE="" || true
               exit 1
             fi
 
@@ -121,23 +123,31 @@ jobs:
           echo "🏥 Verifying application health..."
           ENV="${{ inputs.environment || 'dev' }}"
 
-          # Wait up to 5 minutes for application to be healthy
-          for i in {1..15}; do
-            echo "  Health check attempt $i/15..."
+          # Get ALB DNS name from infrastructure status
+          ALB_DNS=$(make infra-output ENV="$ENV" AWS_PROFILE="" | grep alb_dns_name | cut -d'"' -f4 || echo "")
 
-            # Get ALB DNS name from infrastructure status
-            ALB_DNS=$(make infra-output ENV="$ENV" | grep alb_dns_name | cut -d'"' -f4 || echo "")
+          if [[ -z "$ALB_DNS" ]]; then
+            echo "⚠️ Could not retrieve ALB DNS name"
+            echo "📊 Skipping health check - check ECS console for deployment status"
+            exit 0
+          fi
 
-            if [[ -n "$ALB_DNS" ]]; then
-              if curl -f --max-time 10 "http://$ALB_DNS/health" >/dev/null 2>&1; then
-                echo "✅ Application is healthy!"
-                break
-              fi
+          echo "📍 ALB DNS: $ALB_DNS"
+          echo "🔍 Testing health endpoint: http://$ALB_DNS/health"
+
+          # Wait up to 3 minutes for application to be healthy
+          for i in {1..9}; do
+            echo "  Health check attempt $i/9..."
+
+            if curl -f --max-time 10 "http://$ALB_DNS/health" >/dev/null 2>&1; then
+              echo "✅ Application is healthy!"
+              exit 0
             fi
 
-            if [[ $i -eq 15 ]]; then
-              echo "⚠️ Application health check timeout after 5 minutes"
+            if [[ $i -eq 9 ]]; then
+              echo "⚠️ Application health check timeout after 3 minutes"
               echo "📊 This is normal for first startup - application may still be initializing"
+              echo "💡 Check ECS service status for deployment progress"
             fi
 
             sleep 20
@@ -147,7 +157,7 @@ jobs:
         if: ${{ inputs.dry_run != true }}
         run: |
           echo "📊 Final infrastructure status:"
-          make infra-status ENV=${{ inputs.environment || 'dev' }} || echo "Status check completed"
+          make infra-status ENV=${{ inputs.environment || 'dev' }} AWS_PROFILE="" || echo "Status check completed"
 
       - name: Post startup summary
         if: always()
@@ -162,7 +172,7 @@ jobs:
 
           ENV="${{ inputs.environment || 'dev' }}"
           if [[ "${{ job.status }}" == "success" && "${{ inputs.dry_run }}" != "true" ]]; then
-            ALB_DNS=$(make infra-output ENV="$ENV" | grep alb_dns_name | cut -d'"' -f4 || echo "")
+            ALB_DNS=$(make infra-output ENV="$ENV" AWS_PROFILE="" | grep alb_dns_name | cut -d'"' -f4 || echo "")
             if [[ -n "$ALB_DNS" ]]; then
               echo "🌐 Application URLs:"
               echo "  - Frontend: http://$ALB_DNS"

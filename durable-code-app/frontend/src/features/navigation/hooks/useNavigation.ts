@@ -10,6 +10,7 @@
 import { useCallback, useEffect } from 'react';
 import { useNavigationStore } from '../../../store/navigationStore';
 import type { TabName } from '../types/navigation.types';
+import { logger } from '../../../utils/logger';
 
 export function useNavigation() {
   const { activeTab, setActiveTab, isNavigating } = useNavigationStore();
@@ -76,7 +77,7 @@ export function useNavigation() {
   const handleTabChange = useCallback(
     (tab: TabName) => {
       if (isNavigating) {
-        console.warn('Navigation in progress, ignoring request');
+        logger.warn('Navigation in progress, ignoring request');
         return;
       }
       setActiveTab(tab);

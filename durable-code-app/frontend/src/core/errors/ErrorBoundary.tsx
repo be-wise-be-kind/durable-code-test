@@ -17,6 +17,7 @@ import type {
 } from './ErrorBoundary.types';
 import { ErrorFallback } from './ErrorFallback';
 import { errorLogger } from './ErrorLogger';
+import { logger } from '../../utils/logger';
 
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   private resetTimeoutId: NodeJS.Timeout | null = null;
@@ -38,7 +39,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
-    console.error('[ErrorBoundary] Caught error:', error);
+    logger.error('[ErrorBoundary] Caught error:', error);
     // Update state so the next render shows the fallback UI
     return {
       hasError: true,

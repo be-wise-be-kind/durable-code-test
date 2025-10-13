@@ -29,8 +29,11 @@ interface DemoState {
   reset: () => void;
 }
 
+// Conditionally apply devtools middleware only in development
+const middleware = import.meta.env.DEV ? devtools : <T>(f: T) => f;
+
 export const useDemoStore = create<DemoState>()(
-  devtools(
+  middleware(
     (set) => ({
       // Initial state
       isConnected: false,

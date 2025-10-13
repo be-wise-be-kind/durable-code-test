@@ -45,7 +45,7 @@ quick_actions:
     purpose: "Verify correct location for any file type"
     note: "MUST be checked before creating or moving files"
   generate_code:
-    guide: ".ai/howto/code-authoring-workflow.md"
+    guide: ".ai/howtos/code-authoring-workflow.md"
     process: "1. Check layout.yaml 2. Select template 3. Read template details in index_expanded.md 4. Follow code creation guide"
   ask_questions:
     command: "/ask [your question]"
@@ -301,7 +301,7 @@ standards:
     enforcement: "Project structure, AI agent workflows"
 
 roadmaps:
-  _guide: ".ai/howto/create-roadmap-item.md"
+  _guide: ".ai/howtos/create-roadmap-item.md"
   _workflow: "Roadmap-driven development with three-document structure"
 
   structure:
@@ -327,8 +327,8 @@ roadmaps:
     complete_phase: "Move to complete/ when all PRs done (100%)"
     update_protocol: "After each PR: mark complete, add commit hash, update %, check directory move"
 
-howto:
-  _expanded_section: "index_expanded.md#howto-guides"
+howtos:
+  _expanded_section: "index_expanded.md#howtos-guides"
   _usage_note: "Step-by-step guides for common development tasks"
 
   create-roadmap-item.md:
@@ -451,7 +451,7 @@ common_workflows:
       - "Use react-websocket-singleton.ts.template for singleton"
       - "Use react-websocket-hook.ts.template for React hook"
       - "Follow implement-websocket-react.md guide"
-    details_in: ".ai/howto/implement-websocket-react.md"
+    details_in: ".ai/howtos/implement-websocket-react.md"
 
   fix_text_accessibility:
     steps:
@@ -468,7 +468,7 @@ common_workflows:
       - "Add to main.tsx, AppShell.tsx, and component level"
       - "Test with scripts/check-page-content.js"
       - "Verify with page content tools"
-    details_in: ".ai/howto/implement-error-boundaries.md"
+    details_in: ".ai/howtos/implement-error-boundaries.md"
 
   implement_backend_error_handling:
     steps:
@@ -478,7 +478,7 @@ common_workflows:
       - "Use backend-retry-logic.py.template for retry decorators"
       - "Enable W0718 in pylint"
       - "Test error responses"
-    details_in: ".ai/howto/implement-backend-error-handling.md"
+    details_in: ".ai/howtos/implement-backend-error-handling.md"
 
   test_page_functionality:
     steps:
@@ -486,7 +486,7 @@ common_workflows:
       - "Use scripts/test-rendered-content.js for complete testing"
       - "Use scripts/simple-check.js --watch for continuous monitoring"
       - "Debug with docker exec durable-code-frontend-dev node /app/scripts/test-rendered-content.js"
-    details_in: ".ai/howto/test-page-content.md"
+    details_in: ".ai/howtos/test-page-content.md"
 
   optimize_performance:
     steps:
@@ -523,7 +523,7 @@ common_workflows:
       - "Plan changes with make infra-plan"
       - "Apply infrastructure with make infra-apply"
       - "Monitor costs and destroy when not needed"
-    details_in: ".ai/howto/manage-infrastructure.md"
+    details_in: ".ai/howtos/manage-infrastructure.md"
 
   manage_terraform_workspaces:
     steps:
@@ -545,4 +545,4 @@ common_workflows:
       - "/done command auto-moves based on %"
       - "Move to complete/ at 100%"
       - "Run /reconcile roadmap to validate organization"
-    details_in: ".ai/howto/create-roadmap-item.md"
+    details_in: ".ai/howtos/create-roadmap-item.md"

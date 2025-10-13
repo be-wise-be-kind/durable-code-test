@@ -29,7 +29,6 @@ export function BuildingTab(): ReactElement {
         'AI-powered slash commands for instant code creation including /new-code, /solid, /fix, and /ask',
       linkText: 'View Commands',
       linkHref: '/commands?return=Building',
-      badge: { text: 'Essential', variant: 'essential' as const },
     },
     {
       icon: <FaCogs />,
@@ -38,7 +37,6 @@ export function BuildingTab(): ReactElement {
         'Smart generation system that creates React components, FastAPI endpoints, tests, and more with proper architecture',
       linkText: 'View Capabilities',
       linkHref: '/new-code?return=Building',
-      badge: { text: 'Active', variant: 'active' as const },
     },
     {
       icon: <FaRobot />,
@@ -47,7 +45,6 @@ export function BuildingTab(): ReactElement {
         'Advanced AI slash commands with context awareness, template generation, and intelligent code analysis',
       linkText: 'View AI Commands',
       linkHref: '/ai-commands?return=Building',
-      badge: { text: 'Technical', variant: 'technical' as const },
     },
     {
       icon: <FaFileCode />,
@@ -56,7 +53,6 @@ export function BuildingTab(): ReactElement {
         'Pre-built templates in .ai/templates for React components, API endpoints, tests, and documentation',
       linkText: 'View Templates',
       linkHref: '/templates?return=Building',
-      badge: { text: 'Technical', variant: 'technical' as const },
     },
     {
       icon: <FaRocket />,
@@ -65,7 +61,6 @@ export function BuildingTab(): ReactElement {
         'Step-by-step guides in .ai/howto for development workflows, debugging, and best practices',
       linkText: 'View Guides',
       linkHref: '/howto?return=Building',
-      badge: { text: 'Active', variant: 'active' as const },
     },
     {
       icon: <FaClipboardCheck />,
@@ -74,7 +69,6 @@ export function BuildingTab(): ReactElement {
         'Comprehensive standards guide for code quality, architecture patterns, and AI development workflows',
       linkText: 'Standards Guide',
       linkHref: '/standards?return=Building',
-      badge: { text: 'Essential', variant: 'essential' as const },
     },
   ];
 

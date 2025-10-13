@@ -26,7 +26,8 @@ from typing import Any
 
 from loguru import logger
 
-from .interfaces import LintRule, RuleRegistry
+from tools.design_linters.framework.base_interfaces import BaseLintRule
+from tools.design_linters.framework.interfaces import LintRule, RuleRegistry
 
 
 class DefaultRuleRegistry(RuleRegistry):
@@ -190,8 +191,8 @@ class RuleDiscoveryService:
         """Check if an object is a valid rule class."""
         return (
             inspect.isclass(obj)
-            and issubclass(obj, LintRule)
-            and obj is not LintRule  # Don't instantiate the base class
+            and (issubclass(obj, LintRule) or issubclass(obj, BaseLintRule))
+            and obj not in (LintRule, BaseLintRule)  # Don't instantiate the base classes
             and not inspect.isabstract(obj)
         )  # Don't instantiate abstract classes
 

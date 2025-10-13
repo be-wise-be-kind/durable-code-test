@@ -13,6 +13,7 @@ import type {
   ErrorRecoveryAction,
   ErrorLogger as IErrorLogger,
 } from './ErrorBoundary.types';
+import { logger } from '../../utils/logger';
 
 /**
  * Error log entry structure
@@ -126,22 +127,22 @@ export class ErrorLogger implements IErrorLogger {
     // Console logging
     if (this.logToConsole) {
       const style = this.getConsoleStyle(entry.level);
-      console.error(
+      logger.error(
         `[${entry.level.toUpperCase()}] ${new Date(entry.timestamp).toISOString()}`,
         style,
       );
-      console.error('Message:', entry.message);
+      logger.error('Message:', entry.message);
 
       if (entry.error) {
-        console.error('Error:', entry.error);
+        logger.error('Error:', entry.error);
       }
 
       if (entry.errorInfo) {
-        console.error('Error Info:', entry.errorInfo);
+        logger.error('Error Info:', entry.errorInfo);
       }
 
       if (entry.context) {
-        console.error('Context:', entry.context);
+        logger.error('Context:', entry.context);
       }
     }
 

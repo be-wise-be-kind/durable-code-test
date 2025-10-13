@@ -211,8 +211,8 @@ Launch specialized agents in parallel, each focused on a specific documentation 
 5. Standardize headers per FILE_HEADER_STANDARDS.md
 6. Update any outdated feature references
 
-##### Agent 3: Howto Reconciliation
-**Scope**: `.ai/howto/` directory
+##### Agent 3: Howtos Reconciliation
+**Scope**: `.ai/howtos/` directory
 **Tasks**:
 1. Review all how-to guides for accuracy
 2. Verify commands and code examples still work

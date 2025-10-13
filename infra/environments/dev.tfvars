@@ -22,7 +22,8 @@ aws_region  = "us-west-2"
 
 # Domain Configuration
 domain_name         = "dev.durableaicoding.net"
-create_route53_zone = true  # Create hosted zone for dev subdomain
+create_route53_zone = true                       # Create hosted zone for dev subdomain
+apex_zone_id        = "Z02118692WI9DL3JWAT68"    # durableaicoding.net zone for delegation records
 
 # Cost Optimization Settings
 enable_auto_shutdown = true

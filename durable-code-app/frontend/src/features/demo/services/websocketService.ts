@@ -11,6 +11,7 @@
 
 import type { OscilloscopeData, WebSocketCommand } from '../types/oscilloscope.types';
 import { WEBSOCKET_CONFIG } from '../constants/oscilloscope.constants';
+import { logger } from '../../../utils/logger';
 
 type EventCallback<T = unknown> = (data: T) => void;
 
@@ -261,7 +262,7 @@ export class WebSocketService {
         try {
           callback(data);
         } catch (error) {
-          console.error(`Error in event listener for ${event}:`, error);
+          logger.error(`Error in event listener for ${event}:`, error);
         }
       });
     }

@@ -30,6 +30,30 @@ lerna-debug.log*
 .env
 .env.local
 .env.*.local
+.env.development.local
+.env.test.local
+.env.staging.local
+.env.production.local
+*.env
+*.env.local
+
+# Environment file backups (prevent accidental commits of backups)
+.env.backup
+.env.bak
+.env.old
+.env.save
+.env.*.backup
+.env.*.bak
+.env.tmp
+.env.temp
+.env.*.tmp
+
+# Security scan reports (may contain found secrets)
+gitleaks-report.json
+gitleaks-report.csv
+.gitleaks-report.json
+secrets-scan-report.*
+credential-scan-report.*
 
 # IDE
 .vscode/

@@ -10,6 +10,7 @@
 
 import type { ReactElement } from 'react';
 import styles from './FeatureCard.module.css';
+import { logger } from '../../../utils/logger';
 
 export interface FeatureCardProps {
   icon: ReactElement;
@@ -17,21 +18,25 @@ export interface FeatureCardProps {
   description: string;
   linkText: string;
   linkHref?: string;
-  badge?: {
-    text: string;
-    variant:
-      | 'essential'
-      | 'active'
-      | 'strategic'
-      | 'technical'
-      | 'quality'
-      | 'visual'
-      | 'timeline'
-      | 'neutral';
-  };
   onClick?: () => void;
   className?: string;
 }
+
+/**
+ * Validates that a URL is safe to navigate to
+ * Only allows http: and https: protocols to prevent XSS attacks
+ */
+const isValidUrl = (url: string): boolean => {
+  try {
+    const parsed = new URL(url, window.location.origin);
+    if (!['http:', 'https:'].includes(parsed.protocol)) {
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 export function FeatureCard({
   icon,
@@ -39,7 +44,6 @@ export function FeatureCard({
   description,
   linkText,
   linkHref,
-  badge,
   onClick,
   className = '',
 }: FeatureCardProps): ReactElement {
@@ -47,7 +51,11 @@ export function FeatureCard({
     if (onClick) {
       onClick();
     } else if (linkHref) {
-      window.location.href = linkHref;
+      if (isValidUrl(linkHref)) {
+        window.location.href = linkHref;
+      } else {
+        logger.error('Invalid or unsafe URL prevented:', linkHref);
+      }
     }
   };
 
@@ -67,9 +75,6 @@ export function FeatureCard({
         <button className={styles.cardLink} onClick={handleClick} type="button">
           {linkText} →
         </button>
-      )}
-      {badge && (
-        <div className={`${styles.badge} ${styles[badge.variant]}`}>{badge.text}</div>
       )}
     </div>
   );

@@ -136,13 +136,20 @@ check-terraform-init:
 infra-init: ## Initialize Terraform (download providers, configure backend)
 	@echo "$(CYAN)Initializing Terraform...$(NC)"
 	@echo "$(YELLOW)Scope: $(SCOPE)$(NC)"
-	@if [ "$(SCOPE)" = "all" ]; then \
+	@if [ "$(SCOPE)" = "bootstrap" ]; then \
+		$(MAKE) TERRAFORM_DIR=$(TERRAFORM_BASE_DIR)/workspaces/bootstrap _do-init; \
+	elif [ "$(SCOPE)" = "base" ]; then \
+		$(MAKE) TERRAFORM_DIR=$(TERRAFORM_BASE_DIR)/workspaces/base _do-init; \
+	elif [ "$(SCOPE)" = "runtime" ]; then \
+		$(MAKE) TERRAFORM_DIR=$(TERRAFORM_BASE_DIR)/workspaces/runtime _do-init; \
+	elif [ "$(SCOPE)" = "all" ]; then \
 		echo "$(BLUE)--- Initializing base workspace ---$(NC)"; \
 		$(MAKE) TERRAFORM_DIR=$(TERRAFORM_BASE_DIR)/workspaces/base _do-init; \
 		echo "$(GREEN)--- Initializing runtime workspace ---$(NC)"; \
 		$(MAKE) TERRAFORM_DIR=$(TERRAFORM_BASE_DIR)/workspaces/runtime _do-init; \
 	else \
-		$(MAKE) _do-init; \
+		echo "$(RED)Error: Invalid SCOPE '$(SCOPE)'. Must be bootstrap, base, runtime, or all$(NC)"; \
+		exit 1; \
 	fi
 	@echo "$(GREEN)✓ Terraform initialized!$(NC)"
 
@@ -152,7 +159,9 @@ _do-init:
 	@echo "$(YELLOW)Using AWS Profile: $(AWS_PROFILE)$(NC)"
 	@echo "$(YELLOW)Working directory: $(TERRAFORM_DIR)$(NC)"
 	@# Determine backend config file based on workspace directory
-	@if echo "$(TERRAFORM_DIR)" | grep -q "/base$$"; then \
+	@if echo "$(TERRAFORM_DIR)" | grep -q "/bootstrap$$"; then \
+		BACKEND_CONFIG="/backend-config/bootstrap-$(ENV).hcl"; \
+	elif echo "$(TERRAFORM_DIR)" | grep -q "/base$$"; then \
 		BACKEND_CONFIG="/backend-config/base-$(ENV).hcl"; \
 	elif echo "$(TERRAFORM_DIR)" | grep -q "/runtime$$"; then \
 		BACKEND_CONFIG="/backend-config/runtime-$(ENV).hcl"; \
@@ -223,6 +232,14 @@ infra-plan: ## Show what changes will be made (dry run, respects SCOPE parameter
 	@echo "$(GREEN)✓ Plan complete!$(NC)"
 
 _do-plan: check-terraform-init
+	@# Determine workspace name from TERRAFORM_DIR (base or runtime)
+	@WORKSPACE_SCOPE=$$(basename "$(TERRAFORM_DIR)"); \
+	WORKSPACE_NAME="$$WORKSPACE_SCOPE-$(ENV)"; \
+	echo "$(CYAN)Selecting workspace: $$WORKSPACE_NAME$(NC)"; \
+	$(TERRAFORM_DOCKER_RUN) workspace select "$$WORKSPACE_NAME" 2>/dev/null || { \
+		echo "$(YELLOW)Workspace $$WORKSPACE_NAME does not exist, creating...$(NC)"; \
+		$(TERRAFORM_DOCKER_RUN) workspace new "$$WORKSPACE_NAME"; \
+	}
 	@$(TERRAFORM_DOCKER_RUN) plan -var-file=/environments/$(ENV).tfvars
 
 
@@ -242,6 +259,14 @@ infra-refresh: ## Update state file with real infrastructure
 	@echo "$(GREEN)✓ State refreshed!$(NC)"
 
 _do-refresh: check-terraform-init
+	@# Determine workspace name from TERRAFORM_DIR (base or runtime)
+	@WORKSPACE_SCOPE=$$(basename "$(TERRAFORM_DIR)"); \
+	WORKSPACE_NAME="$$WORKSPACE_SCOPE-$(ENV)"; \
+	echo "$(CYAN)Selecting workspace: $$WORKSPACE_NAME$(NC)"; \
+	$(TERRAFORM_DOCKER_RUN) workspace select "$$WORKSPACE_NAME" 2>/dev/null || { \
+		echo "$(YELLOW)Workspace $$WORKSPACE_NAME does not exist, creating...$(NC)"; \
+		$(TERRAFORM_DOCKER_RUN) workspace new "$$WORKSPACE_NAME"; \
+	}
 	@$(TERRAFORM_DOCKER_RUN) refresh -var-file=/environments/$(ENV).tfvars
 
 infra-output: ## Show outputs from Terraform state (use FORMAT=json for JSON output)
@@ -257,6 +282,14 @@ infra-output: ## Show outputs from Terraform state (use FORMAT=json for JSON out
 	fi
 
 _do-output: check-terraform-init
+	@# Determine workspace name from TERRAFORM_DIR (base or runtime)
+	@WORKSPACE_SCOPE=$$(basename "$(TERRAFORM_DIR)"); \
+	WORKSPACE_NAME="$$WORKSPACE_SCOPE-$(ENV)"; \
+	echo "$(CYAN)Selecting workspace: $$WORKSPACE_NAME$(NC)"; \
+	$(TERRAFORM_DOCKER_RUN) workspace select "$$WORKSPACE_NAME" 2>/dev/null || { \
+		echo "$(YELLOW)⚠️  Workspace $$WORKSPACE_NAME does not exist$(NC)"; \
+		exit 1; \
+	}
 	@if [ "$(FORMAT)" = "json" ]; then \
 		$(TERRAFORM_DOCKER_RUN) output -json; \
 	else \
@@ -338,31 +371,42 @@ infra-cost: ## Estimate monthly costs (requires Infracost)
 infra-check: infra-fmt infra-validate ## Format and validate configuration
 
 
-infra-up: ## Deploy infrastructure (use AUTO=true for auto-approve, SCOPE=runtime|base|all)
+infra-up: ## Deploy infrastructure (use AUTO=true for auto-approve, SCOPE=bootstrap|runtime|base|all)
 	@echo "$(CYAN)Deploying infrastructure...$(NC)"
 	@echo "$(YELLOW)Environment: $(ENV)$(NC)"
 	@echo "$(YELLOW)AWS Profile: $(AWS_PROFILE)$(NC)"
 	@echo "$(YELLOW)AWS Region: $(AWS_REGION)$(NC)"
 	@echo "$(YELLOW)Deployment Scope: $(SCOPE)$(NC)"
-	@if [ "$(SCOPE)" = "runtime" ]; then \
+	@if [ "$(SCOPE)" = "bootstrap" ]; then \
+		echo "$(MAGENTA)Deploying bootstrap resources (GitHub OIDC, IAM role)$(NC)"; \
+		$(MAKE) TERRAFORM_DIR=$(TERRAFORM_BASE_DIR)/workspaces/bootstrap _do-apply AUTO="$(AUTO)"; \
+	elif [ "$(SCOPE)" = "runtime" ]; then \
 		echo "$(GREEN)Deploying runtime resources only (ECS, ALB listeners, etc.)$(NC)"; \
 		$(MAKE) TERRAFORM_DIR=$(TERRAFORM_BASE_DIR)/workspaces/runtime _do-apply AUTO="$(AUTO)"; \
 	elif [ "$(SCOPE)" = "base" ]; then \
 		echo "$(BLUE)Deploying base resources only (VPC, NAT, ECR, Route53)$(NC)"; \
 		$(MAKE) TERRAFORM_DIR=$(TERRAFORM_BASE_DIR)/workspaces/base _do-apply AUTO="$(AUTO)"; \
 	elif [ "$(SCOPE)" = "all" ]; then \
-		echo "$(YELLOW)Deploying all resources$(NC)"; \
+		echo "$(YELLOW)Deploying all resources (base + runtime, excludes bootstrap)$(NC)"; \
 		echo "$(BLUE)--- Deploying base infrastructure first ---$(NC)"; \
 		$(MAKE) TERRAFORM_DIR=$(TERRAFORM_BASE_DIR)/workspaces/base _do-apply AUTO="$(AUTO)" || exit 1; \
 		echo "$(GREEN)--- Deploying runtime infrastructure ---$(NC)"; \
 		$(MAKE) TERRAFORM_DIR=$(TERRAFORM_BASE_DIR)/workspaces/runtime _do-apply AUTO="$(AUTO)"; \
 	else \
-		echo "$(RED)Error: Invalid SCOPE '$(SCOPE)'. Must be base, runtime, or all$(NC)"; \
+		echo "$(RED)Error: Invalid SCOPE '$(SCOPE)'. Must be bootstrap, base, runtime, or all$(NC)"; \
 		exit 1; \
 	fi
 	@echo "$(GREEN)✓ Infrastructure deployed successfully!$(NC)"
 
 _do-apply: check-terraform-init
+	@# Determine workspace name from TERRAFORM_DIR (base or runtime)
+	@WORKSPACE_SCOPE=$$(basename "$(TERRAFORM_DIR)"); \
+	WORKSPACE_NAME="$$WORKSPACE_SCOPE-$(ENV)"; \
+	echo "$(CYAN)Selecting workspace: $$WORKSPACE_NAME$(NC)"; \
+	$(TERRAFORM_DOCKER_RUN) workspace select "$$WORKSPACE_NAME" 2>/dev/null || { \
+		echo "$(YELLOW)Workspace $$WORKSPACE_NAME does not exist, creating...$(NC)"; \
+		$(TERRAFORM_DOCKER_RUN) workspace new "$$WORKSPACE_NAME"; \
+	}
 	@if [ "$(AUTO)" = "true" ]; then \
 		echo "$(YELLOW)Auto-approve mode enabled$(NC)"; \
 		$(TERRAFORM_DOCKER_RUN) apply -var-file=/environments/$(ENV).tfvars -auto-approve; \
@@ -373,11 +417,23 @@ _do-apply: check-terraform-init
 		$(TERRAFORM_DOCKER_RUN_IT) apply -var-file=/environments/$(ENV).tfvars; \
 	fi
 
-infra-down: ## Destroy infrastructure (use AUTO=true for auto-approve, SCOPE=runtime|base|all)
-	@if [ "$(SCOPE)" = "all" ]; then \
+infra-down: ## Destroy infrastructure (use AUTO=true for auto-approve, SCOPE=bootstrap|runtime|base|all)
+	@if [ "$(SCOPE)" = "bootstrap" ]; then \
+		echo "$(RED)╔════════════════════════════════════════════════════════════╗$(NC)"; \
+		echo "$(RED)║  🚨 DANGER: Destroying BOOTSTRAP infrastructure! 🚨       ║$(NC)"; \
+		echo "$(RED)║     This will break GitHub Actions authentication!        ║$(NC)"; \
+		echo "$(RED)║                                                            ║$(NC)"; \
+		echo "$(RED)║  To proceed, you must set CONFIRM=destroy-bootstrap       ║$(NC)"; \
+		echo "$(RED)╚════════════════════════════════════════════════════════════╝$(NC)"; \
+		if [ "$(CONFIRM)" != "destroy-bootstrap" ]; then \
+			echo "$(RED)ERROR: Bootstrap infrastructure is PROTECTED.$(NC)"; \
+			echo "$(RED)Run: make infra-down SCOPE=bootstrap CONFIRM=destroy-bootstrap$(NC)"; \
+			exit 1; \
+		fi; \
+	elif [ "$(SCOPE)" = "all" ]; then \
 		echo "$(RED)╔════════════════════════════════════════════════════════════╗$(NC)"; \
 		echo "$(RED)║  ⚠️  WARNING: This will DESTROY ALL infrastructure! ⚠️     ║$(NC)"; \
-		echo "$(RED)║                                                            ║$(NC)"; \
+		echo "$(RED)║     (excludes bootstrap - GitHub auth preserved)          ║$(NC)"; \
 		echo "$(RED)║  To proceed, you must set CONFIRM=destroy-all             ║$(NC)"; \
 		echo "$(RED)╚════════════════════════════════════════════════════════════╝$(NC)"; \
 		if [ "$(CONFIRM)" != "destroy-all" ]; then \
@@ -407,7 +463,9 @@ infra-down: ## Destroy infrastructure (use AUTO=true for auto-approve, SCOPE=run
 	@echo "$(YELLOW)AWS Profile: $(AWS_PROFILE)$(NC)"
 	@echo "$(YELLOW)AWS Region: $(AWS_REGION)$(NC)"
 	@echo "$(YELLOW)Destroy Scope: $(SCOPE)$(NC)"
-	@if [ "$(SCOPE)" = "runtime" ]; then \
+	@if [ "$(SCOPE)" = "bootstrap" ]; then \
+		$(MAKE) TERRAFORM_DIR=$(TERRAFORM_BASE_DIR)/workspaces/bootstrap _do-destroy AUTO="$(AUTO)"; \
+	elif [ "$(SCOPE)" = "runtime" ]; then \
 		$(MAKE) TERRAFORM_DIR=$(TERRAFORM_BASE_DIR)/workspaces/runtime _do-destroy AUTO="$(AUTO)"; \
 	elif [ "$(SCOPE)" = "base" ]; then \
 		$(MAKE) TERRAFORM_DIR=$(TERRAFORM_BASE_DIR)/workspaces/base _do-destroy AUTO="$(AUTO)"; \
@@ -416,13 +474,22 @@ infra-down: ## Destroy infrastructure (use AUTO=true for auto-approve, SCOPE=run
 		$(MAKE) TERRAFORM_DIR=$(TERRAFORM_BASE_DIR)/workspaces/runtime _do-destroy AUTO="$(AUTO)" || exit 1; \
 		echo "$(BLUE)--- Destroying base infrastructure ---$(NC)"; \
 		$(MAKE) TERRAFORM_DIR=$(TERRAFORM_BASE_DIR)/workspaces/base _do-destroy AUTO="$(AUTO)"; \
+		echo "$(MAGENTA)--- Bootstrap infrastructure preserved (GitHub auth) ---$(NC)"; \
 	else \
-		echo "$(RED)Error: Invalid SCOPE '$(SCOPE)'. Must be runtime, base, or all$(NC)"; \
+		echo "$(RED)Error: Invalid SCOPE '$(SCOPE)'. Must be bootstrap, runtime, base, or all$(NC)"; \
 		exit 1; \
 	fi
 	@echo "$(GREEN)✓ Infrastructure destroyed!$(NC)"
 
 _do-destroy: check-terraform-init
+	@# Determine workspace name from TERRAFORM_DIR (base or runtime)
+	@WORKSPACE_SCOPE=$$(basename "$(TERRAFORM_DIR)"); \
+	WORKSPACE_NAME="$$WORKSPACE_SCOPE-$(ENV)"; \
+	echo "$(CYAN)Selecting workspace: $$WORKSPACE_NAME$(NC)"; \
+	$(TERRAFORM_DOCKER_RUN) workspace select "$$WORKSPACE_NAME" 2>/dev/null || { \
+		echo "$(YELLOW)⚠️  Workspace $$WORKSPACE_NAME does not exist - nothing to destroy$(NC)"; \
+		exit 0; \
+	}
 	@if [ "$(AUTO)" = "true" ]; then \
 		echo "$(RED)Auto-approve mode enabled - destroying immediately!$(NC)"; \
 		$(TERRAFORM_DOCKER_RUN) destroy -var-file=/environments/$(ENV).tfvars -auto-approve; \

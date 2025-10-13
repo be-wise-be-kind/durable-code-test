@@ -13,7 +13,7 @@
 #
 ################################################################################
 
-.PHONY: lint-all lint-fix lint-custom lint-categories lint-start lint-stop lint-python lint-js lint-design
+.PHONY: lint-all lint-fix lint-custom lint-categories lint-start lint-stop lint-python lint-js lint-design lint-enforcement
 
 # Detect which docker compose command to use (for CI compatibility)
 DOCKER_COMPOSE := $(shell which docker-compose 2>/dev/null || echo "docker compose")
@@ -165,3 +165,15 @@ lint-categories: lint-ensure-containers ## List all custom rule categories with 
 	@echo "$(CYAN)║                 Custom Rule Categories                    ║$(NC)"
 	@echo "$(CYAN)╚════════════════════════════════════════════════════════════╝$(NC)"
 	@docker exec durable-code-python-linter-$(BRANCH_NAME) bash -c "cd /workspace && PYTHONPATH=/workspace/tools python -m design_linters --list-categories"
+
+# Run enforcement linting on specified files (only Python/TS/TF files, skips shell scripts)
+lint-enforcement: lint-ensure-containers ## Run enforcement linting on files (usage: make lint-enforcement FILES="file1 file2")
+	@if [ -z "$(FILES)" ]; then \
+		echo "$(RED)Error: FILES variable is required$(NC)"; \
+		echo "$(YELLOW)Usage: make lint-enforcement FILES=\"file1 file2\"$(NC)"; \
+		exit 1; \
+	fi
+	@filtered_files=$$(echo "$(FILES)" | tr ' ' '\n' | grep -E '\.(py|ts|tsx|tf)$$' | tr '\n' ' '); \
+	if [ -n "$$filtered_files" ]; then \
+		docker exec durable-code-python-linter-$(BRANCH_NAME) bash -c "cd /workspace && PYTHONPATH=/workspace/tools python -m design_linters --categories enforcement --format text --fail-on-error $$filtered_files"; \
+	fi

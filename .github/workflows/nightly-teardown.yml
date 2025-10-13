@@ -2,9 +2,9 @@ name: Nightly Infrastructure Teardown
 
 on:
   schedule:
-    # 8 PM PST = 3 AM UTC (during PST) / 4 AM UTC (during PDT)
-    # Run Monday-Friday only for cost optimization
-    - cron: '0 3 * * 2-6'  # Tuesday-Saturday 3 AM UTC (Monday-Friday 8 PM PST)
+    # 9 PM PST = 5 AM UTC (during PST) / 4 AM UTC (during PDT)
+    # Run Friday-Sunday to keep infrastructure down on weekends
+    - cron: '0 4 * * 6'  # Saturday 4 AM UTC (Friday 9 PM PDT) - Weekend starts
   workflow_dispatch:
     inputs:
       environment:
@@ -33,6 +33,7 @@ jobs:
   teardown:
     runs-on: ubuntu-latest
     permissions:
+      id-token: write
       contents: read
       actions: read
 
@@ -46,8 +47,8 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: GitHub-Actions-Teardown-${{ github.run_id }}
           aws-region: us-west-2
 
       - name: Verify AWS credentials
@@ -59,13 +60,15 @@ jobs:
       - name: Check infrastructure status (before)
         run: |
           echo "📊 Infrastructure status before teardown:"
-          make infra-status ENV=${{ inputs.environment || 'dev' }} || echo "Status check failed - continuing with teardown"
+          make infra-status ENV=${{ inputs.environment || 'dev' }} AWS_PROFILE="" || echo "Status check failed - continuing with teardown"
 
       - name: Plan infrastructure teardown
         if: ${{ inputs.dry_run == true }}
         run: |
           echo "🔍 Planning infrastructure teardown (dry run)..."
-          make infra-plan-destroy SCOPE=${{ inputs.scope || 'runtime' }} ENV=${{ inputs.environment || 'dev' }}
+          echo "Note: Terraform destroy does not support separate plan output."
+          echo "Showing current state instead:"
+          make infra-status ENV=${{ inputs.environment || 'dev' }} AWS_PROFILE=""
 
       - name: Execute infrastructure teardown
         if: ${{ inputs.dry_run != true }}
@@ -74,19 +77,23 @@ jobs:
           ENV="${{ inputs.environment || 'dev' }}"
           SCOPE="${{ inputs.scope || 'runtime' }}"
 
+          # In CI, don't use AWS_PROFILE - OIDC sets environment variables directly
           # Add confirmation for base/all scope destruction
-          if [[ "$SCOPE" == "all" ]] || [[ "$SCOPE" == "base" ]]; then
-            echo "⚠️ Destroying base infrastructure requires confirmation"
-            export CONFIRM=destroy-base
+          if [[ "$SCOPE" == "all" ]]; then
+            echo "⚠️ Destroying all infrastructure"
+            make infra-down SCOPE="$SCOPE" ENV="$ENV" AUTO=true CONFIRM=destroy-all AWS_PROFILE=""
+          elif [[ "$SCOPE" == "base" ]]; then
+            echo "⚠️ Destroying base infrastructure"
+            make infra-down SCOPE="$SCOPE" ENV="$ENV" AUTO=true CONFIRM=destroy-base AWS_PROFILE=""
+          else
+            make infra-down SCOPE="$SCOPE" ENV="$ENV" AUTO=true AWS_PROFILE=""
           fi
-
-          make infra-down SCOPE="$SCOPE" ENV="$ENV"
 
       - name: Check infrastructure status (after)
         if: ${{ inputs.dry_run != true }}
         run: |
           echo "📊 Infrastructure status after teardown:"
-          make infra-status ENV=${{ inputs.environment || 'dev' }} || echo "Status check completed"
+          make infra-status ENV=${{ inputs.environment || 'dev' }} AWS_PROFILE="" || echo "Status check completed"
 
       - name: Calculate cost savings
         if: ${{ inputs.dry_run != true }}

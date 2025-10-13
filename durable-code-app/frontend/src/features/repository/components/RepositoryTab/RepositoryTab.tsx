@@ -65,22 +65,6 @@ export function RepositoryTab(): ReactElement {
     }
   }, []);
 
-  // Badge mapping function
-  const getBadgeForItem = useCallback((item: RepositoryItem) => {
-    switch (item.badge) {
-      case 'Foundation':
-        return { text: 'Essential', variant: 'essential' as const };
-      case 'Critical':
-        return { text: 'Active', variant: 'active' as const };
-      case 'Essential':
-        return { text: 'Quality', variant: 'quality' as const };
-      case 'Important':
-        return { text: 'Technical', variant: 'technical' as const };
-      default:
-        return { text: 'Strategic', variant: 'strategic' as const };
-    }
-  }, []);
-
   // Event handler for card clicks
   const handleItemClick = useCallback((item: RepositoryItem) => {
     if (item.popup) {
@@ -95,10 +79,9 @@ export function RepositoryTab(): ReactElement {
       title: item.title,
       description: item.popup?.solution.title || 'Repository feature information',
       linkText: 'Click to explore',
-      badge: getBadgeForItem(item),
       onClick: () => handleItemClick(item),
     }));
-  }, [repositoryItems, getIconForItem, getBadgeForItem, handleItemClick]);
+  }, [repositoryItems, getIconForItem, handleItemClick]);
 
   // Find selected item for popup
   const selectedRepoItem = useMemo(() => {

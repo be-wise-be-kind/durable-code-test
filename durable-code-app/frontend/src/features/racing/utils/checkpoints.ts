@@ -8,6 +8,7 @@
  */
 
 import type { Point2D } from '../types/racing.types';
+import { logger } from '../../../utils/logger';
 
 interface CheckpointCrossing {
   timestamp: number;
@@ -150,8 +151,7 @@ export class CheckpointManager {
         isValidLap = true;
         this.validLapCount += 1;
         this.isArmed = false; // Disarm after crossing, must leave area again
-        // eslint-disable-next-line no-console
-        console.log(`✅ Lap ${this.validLapCount} completed!`);
+        logger.debug(`✅ Lap ${this.validLapCount} completed!`);
       }
 
       // Record this crossing

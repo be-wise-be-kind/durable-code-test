@@ -22,7 +22,6 @@ export function MaintenanceTab(): ReactElement {
         'Comprehensive .ai/index.md designed for AI agents with 12 templates, 5 features, 8 guides, and 4 standards',
       linkText: 'View AI Index',
       linkHref: '/.ai/index.md',
-      badge: { text: 'Essential', variant: 'essential' as const },
     },
     {
       icon: <FaBook />,
@@ -31,7 +30,6 @@ export function MaintenanceTab(): ReactElement {
         'Complete .ai/features/ documentation including design linters, web application, development tooling, and Claude integration',
       linkText: 'Browse Features',
       linkHref: '/.ai/features/',
-      badge: { text: 'Technical', variant: 'technical' as const },
     },
     {
       icon: <FaCode />,
@@ -40,7 +38,6 @@ export function MaintenanceTab(): ReactElement {
         'AI-ready templates in .ai/templates/ for React components, FastAPI endpoints, linting rules, and test suites',
       linkText: 'View Templates',
       linkHref: '/.ai/templates/',
-      badge: { text: 'Active', variant: 'active' as const },
     },
     {
       icon: <FaFileAlt />,
@@ -49,7 +46,6 @@ export function MaintenanceTab(): ReactElement {
         'Comprehensive standards documentation including file headers, CSS layout stability, and branch protection',
       linkText: 'Read Standards',
       linkHref: '/.ai/docs/STANDARDS.md',
-      badge: { text: 'Quality', variant: 'quality' as const },
     },
     {
       icon: <FaCog />,
@@ -58,7 +54,6 @@ export function MaintenanceTab(): ReactElement {
         'Step-by-step guides for running tests, linting, setup, deployment, and debugging in .ai/howto/',
       linkText: 'View Guides',
       linkHref: '/.ai/howto/',
-      badge: { text: 'Technical', variant: 'technical' as const },
     },
     {
       icon: <FaSync />,
@@ -66,7 +61,6 @@ export function MaintenanceTab(): ReactElement {
       description:
         'AI-powered generation of README files, changelogs, API docs, and code indexes with make commands',
       linkText: 'Generate Docs',
-      badge: { text: 'Visual', variant: 'visual' as const },
     },
   ];
 

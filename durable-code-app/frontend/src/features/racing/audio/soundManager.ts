@@ -7,6 +7,8 @@
  * Implementation: Procedural audio synthesis for engine and collision sounds
  */
 
+import { logger } from '../../../utils/logger';
+
 /**
  * Sound manager for racing game audio effects using synthesized audio
  */
@@ -39,7 +41,7 @@ export class SoundManager {
       // Setup synthesized audio
       this.setupEngineSound();
     } catch (error) {
-      console.warn('Web Audio API not supported:', error);
+      logger.warn('Web Audio API not supported:', error);
     }
   }
 
@@ -119,7 +121,7 @@ export class SoundManager {
 
       this.isEngineRunning = true;
     } catch (error) {
-      console.warn('Failed to start engine sound:', error);
+      logger.warn('Failed to start engine sound:', error);
     }
   }
 
@@ -150,7 +152,7 @@ export class SoundManager {
         }, 200);
       }
     } catch (error) {
-      console.warn('Failed to stop engine sound:', error);
+      logger.warn('Failed to stop engine sound:', error);
     }
 
     this.isEngineRunning = false;
@@ -250,7 +252,7 @@ export class SoundManager {
       noise.start(now);
       noise.stop(now + duration);
     } catch (error) {
-      console.warn('Failed to play collision sound:', error);
+      logger.warn('Failed to play collision sound:', error);
     }
   }
 

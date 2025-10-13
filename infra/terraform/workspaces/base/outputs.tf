@@ -128,6 +128,22 @@ output "acm_certificate_status" {
 
 # VPC Endpoint outputs moved to runtime workspace
 
+# VPC Flow Logs Outputs
+output "vpc_flow_log_id" {
+  description = "VPC Flow Log ID"
+  value       = aws_flow_log.main.id
+}
+
+output "vpc_flow_log_group_name" {
+  description = "CloudWatch Log Group name for VPC Flow Logs"
+  value       = aws_cloudwatch_log_group.vpc_flow_logs.name
+}
+
+output "vpc_flow_log_group_arn" {
+  description = "CloudWatch Log Group ARN for VPC Flow Logs"
+  value       = aws_cloudwatch_log_group.vpc_flow_logs.arn
+}
+
 # Resource Tags (for data source filtering)
 output "base_resource_tags" {
   description = "Tags applied to base resources for filtering"
@@ -137,6 +153,37 @@ output "base_resource_tags" {
     Scope       = "base"
     Project     = var.project_name
   }
+}
+
+# KMS Key Outputs
+output "kms_logs_key_id" {
+  description = "KMS key ID for CloudWatch Logs encryption"
+  value       = aws_kms_key.logs.key_id
+}
+
+output "kms_logs_key_arn" {
+  description = "KMS key ARN for CloudWatch Logs encryption"
+  value       = aws_kms_key.logs.arn
+}
+
+output "kms_logs_alias_name" {
+  description = "KMS alias name for CloudWatch Logs key"
+  value       = aws_kms_alias.logs.name
+}
+
+output "kms_ecr_key_id" {
+  description = "KMS key ID for ECR encryption"
+  value       = aws_kms_key.ecr.key_id
+}
+
+output "kms_ecr_key_arn" {
+  description = "KMS key ARN for ECR encryption"
+  value       = aws_kms_key.ecr.arn
+}
+
+output "kms_ecr_alias_name" {
+  description = "KMS alias name for ECR key"
+  value       = aws_kms_alias.ecr.name
 }
 
 # Environment and Configuration Info
