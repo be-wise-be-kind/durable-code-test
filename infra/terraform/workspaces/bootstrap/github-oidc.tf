@@ -71,9 +71,19 @@ resource "aws_iam_role_policy" "github_actions_ecr" {
     Version = "2012-10-17"
     Statement = [
       {
+        Sid    = "ECRAuthorizationToken"
         Effect = "Allow"
         Action = [
-          "ecr:GetAuthorizationToken",
+          "ecr:GetAuthorizationToken"
+        ]
+        # GetAuthorizationToken requires wildcard resource (AWS limitation)
+        # This action does not support resource-level permissions
+        Resource = "*"
+      },
+      {
+        Sid    = "ECRRepositoryAccess"
+        Effect = "Allow"
+        Action = [
           "ecr:BatchCheckLayerAvailability",
           "ecr:GetDownloadUrlForLayer",
           "ecr:BatchGetImage",
@@ -99,7 +109,10 @@ resource "aws_iam_role_policy" "github_actions_ecr" {
           "ecr:GetRepositoryPolicy",
           "ecr:DeleteRepositoryPolicy"
         ]
-        Resource = "*"
+        # Scope to project repositories only (least privilege)
+        Resource = [
+          "arn:aws:ecr:${var.aws_region}:${data.aws_caller_identity.current.account_id}:repository/${var.product_domain}-*"
+        ]
       }
     ]
   })
@@ -114,36 +127,82 @@ resource "aws_iam_role_policy" "github_actions_ecs" {
     Version = "2012-10-17"
     Statement = [
       {
+        Sid    = "ECSActionsRequiringWildcard"
         Effect = "Allow"
         Action = [
-          "ecs:CreateCluster",
-          "ecs:DeleteCluster",
           "ecs:RegisterTaskDefinition",
           "ecs:DeregisterTaskDefinition",
           "ecs:DescribeTaskDefinition",
+          "ecs:ListTaskDefinitionFamilies",
+          "ecs:DeleteTaskDefinitions",
+          "ecs:CreateCluster"
+        ]
+        # These actions do not support resource-level permissions (AWS limitation)
+        Resource = "*"
+      },
+      {
+        Sid    = "ECSClusterOperations"
+        Effect = "Allow"
+        Action = [
+          "ecs:DeleteCluster",
+          "ecs:DescribeClusters",
+          "ecs:UpdateCluster",
+          "ecs:UpdateClusterSettings",
+          "ecs:PutClusterCapacityProviders"
+        ]
+        # Scope to project clusters only
+        Resource = [
+          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:cluster/${var.product_domain}-*"
+        ]
+      },
+      {
+        Sid    = "ECSServiceOperations"
+        Effect = "Allow"
+        Action = [
           "ecs:CreateService",
           "ecs:UpdateService",
           "ecs:DeleteService",
           "ecs:DescribeServices",
-          "ecs:DescribeClusters",
-          "ecs:ListTasks",
-          "ecs:DescribeTasks",
-          "ecs:PutClusterCapacityProviders",
-          "ecs:TagResource",
-          "ecs:UntagResource",
-          "ecs:UpdateCluster",
-          "ecs:UpdateClusterSettings",
-          "ecs:ListTaskDefinitionFamilies",
-          "ecs:DeleteTaskDefinitions",
           "ecs:UpdateServicePrimaryTaskSet"
         ]
-        Resource = "*"
+        # Scope to project services only (format: cluster/service)
+        Resource = [
+          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:service/${var.product_domain}-*/*"
+        ]
       },
       {
+        Sid    = "ECSTaskOperations"
+        Effect = "Allow"
+        Action = [
+          "ecs:ListTasks",
+          "ecs:DescribeTasks"
+        ]
+        # Scope to project tasks only
+        Resource = [
+          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:task/${var.product_domain}-*/*"
+        ]
+      },
+      {
+        Sid    = "ECSTagging"
+        Effect = "Allow"
+        Action = [
+          "ecs:TagResource",
+          "ecs:UntagResource"
+        ]
+        # Allow tagging of project resources
+        Resource = [
+          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:cluster/${var.product_domain}-*",
+          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:service/${var.product_domain}-*/*",
+          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:task/${var.product_domain}-*/*"
+        ]
+      },
+      {
+        Sid    = "IAMPassRole"
         Effect = "Allow"
         Action = [
           "iam:PassRole"
         ]
+        # Scope to specific task execution and task roles
         Resource = [
           "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.product_domain}-${local.environment}-ecs-task-execution",
           "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.product_domain}-${local.environment}-ecs-task"
