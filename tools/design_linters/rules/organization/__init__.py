@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """
-Purpose: Organization and structure rules for the design linter framework
-Scope: Rules that enforce proper file organization and project structure
-Overview: This module contains rules that ensure files are properly organized
-    within the project structure, preventing common mistakes in file placement.
-Dependencies: Framework interfaces
-Exports: FileOrganizationRule and other organization-related rules
-Interfaces: All rules implement the framework's rule interfaces
-Implementation: Path and structure-based analysis rules
+Purpose: Organization and structure rules (now replaced by thailint)
+Scope: Empty placeholder - file placement detection moved to thailint
+Overview: This package previously contained rules for enforcing proper file
+    organization and project structure. All file placement functionality has
+    been moved to thailint for better multi-language support and external
+    tool maintenance.
+Dependencies: None (thailint handles file placement)
+Exports: Empty - use thailint for file placement detection
+Interfaces: N/A
+Implementation: Replaced by thailint file-placement linter
 """
 
-from .file_placement_rules import FileOrganizationRule
-
-__all__ = ["FileOrganizationRule"]
+__all__ = []

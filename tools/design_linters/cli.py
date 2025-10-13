@@ -33,7 +33,7 @@ MAX_LINES_LENIENT = 500
 DEFAULT_LINE_SEPARATOR_LENGTH = 40
 
 
-class ArgumentParser:  # design-lint: ignore[solid.srp.low-cohesion]
+class ArgumentParser:  # thailint: ignore[srp]
     """Handles command-line argument parsing and configuration management."""
 
     def _create_parser(self) -> argparse.ArgumentParser:
@@ -395,7 +395,7 @@ class LintingExecutor:
         }
 
 
-class DesignLinterCLI:  # design-lint: ignore[solid.srp.low-cohesion]
+class DesignLinterCLI:  # thailint: ignore[srp]
     """Main CLI interface for the unified design linter.
 
     This class uses composition pattern to delegate responsibilities to specialized

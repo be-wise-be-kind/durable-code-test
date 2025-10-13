@@ -19,7 +19,7 @@ from enum import Enum
 from typing import Any
 
 
-class Severity(Enum):  # design-lint: ignore[solid.srp.low-cohesion]
+class Severity(Enum):  # thailint: ignore[srp]
     """Enumeration of violation severity levels."""
 
     ERROR = "error"

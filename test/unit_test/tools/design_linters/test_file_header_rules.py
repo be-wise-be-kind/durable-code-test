@@ -25,7 +25,7 @@ from tools.design_linters.framework.interfaces import LintContext, Severity
 from tools.design_linters.rules.style.file_header_rules import FileHeaderRule
 
 
-class TestFileHeaderRule:  # design-lint: ignore[solid.srp.class-too-big,solid.srp.too-many-methods]
+class TestFileHeaderRule:  # thailint: ignore[srp]
     """Test suite for FileHeaderRule."""
 
     @pytest.fixture
@@ -364,7 +364,7 @@ def test_function():
         assert len(violations) > 0  # Missing required fields
 
 
-class TestFileHeaderFieldParsing:  # design-lint: ignore[solid.srp.class-too-big,solid.srp.too-many-methods]
+class TestFileHeaderFieldParsing:  # thailint: ignore[srp]
     """Test the field parsing logic specifically."""
 
     @pytest.fixture
@@ -432,7 +432,7 @@ Exports: TestClass, test_function
         assert "scope" in fields
 
 
-class TestFileHeaderTemporalLanguage:  # design-lint: ignore[solid.srp.class-too-big,solid.srp.too-many-methods]
+class TestFileHeaderTemporalLanguage:  # thailint: ignore[srp]
     """Test suite for temporal language detection in file headers."""
 
     @pytest.fixture

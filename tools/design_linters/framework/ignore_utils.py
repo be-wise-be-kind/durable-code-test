@@ -35,7 +35,7 @@ IGNORE_PATTERNS = [
     r"#\s*type:\s*ignore",  # Type checking ignore
 ]
 
-# Specific rule ignore patterns (e.g., # design-lint: ignore[literals.magic-number])
+# Specific rule ignore patterns (e.g., # thailint: ignore[magic-numbers])
 SPECIFIC_RULE_PATTERN = r"#\s*design-lint:\s*(?:ignore|disable)\[([^\]]+)\]"
 
 

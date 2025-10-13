@@ -43,13 +43,13 @@ lint-stop: ## Stop dedicated linting containers
 	@echo "$(GREEN)✓ Linting containers stopped$(NC)"
 
 # Run all linters - REQUIRED BY GITHUB ACTIONS
-lint-all: lint-ensure-containers ## Run ALL linters (Python, JS/TS, and custom design rules) in parallel
+lint-all: lint-ensure-containers ## Run ALL linters (Python, JS/TS, thailint, and custom design rules) in parallel
 	@echo "$(CYAN)╔════════════════════════════════════════════════════════════╗$(NC)"
 	@echo "$(CYAN)║        Running ALL Linters (Parallel Execution)           ║$(NC)"
 	@echo "$(CYAN)╚════════════════════════════════════════════════════════════╝$(NC)"
 	@echo ""
 	@echo "$(YELLOW)Starting parallel linting execution...$(NC)"
-	@$(MAKE) -j3 lint-python lint-js lint-design || (echo "$(RED)✗ Linting failed$(NC)" && exit 1)
+	@$(MAKE) -j4 lint-python lint-js lint-thailint lint-design || (echo "$(RED)✗ Linting failed$(NC)" && exit 1)
 	@echo ""
 	@echo "$(YELLOW)━━━ Infrastructure Linters ━━━$(NC)"
 	@$(MAKE) -s lint-infra || (echo "$(RED)✗ Infrastructure linting failed$(NC)" && exit 1)
@@ -80,26 +80,29 @@ lint-js: lint-ensure-containers ## Run JavaScript/TypeScript linters using dedic
 		echo '• HTMLHint...' && htmlhint 'public/**/*.html' 'src/**/*.html' '*.html' --config /.htmlhintrc" || (echo "$(RED)✗ Frontend linting failed$(NC)" && exit 1)
 	@echo "$(GREEN)✓ Frontend linting passed$(NC)"
 
-# Design linting target (can be run independently or in parallel)
+# Thailint target (can be run independently or in parallel)
+lint-thailint: lint-ensure-containers ## Run thailint for magic numbers, nesting, SRP, file placement, and DRY
+	@echo "$(YELLOW)━━━ Thailint (Magic Numbers, Nesting, SRP, File Placement, DRY) ━━━$(NC)"
+	@docker exec durable-code-python-linter-$(BRANCH_NAME) bash -c "cd /workspace && \
+		echo '• Magic numbers...' && thailint magic-numbers backend/ tools/ && \
+		echo '• Nesting depth...' && thailint nesting backend/ tools/ && \
+		echo '• SRP violations...' && thailint srp backend/ tools/ && \
+		echo '• File placement...' && thailint file-placement . && \
+		echo '• DRY violations...' && thailint dry backend/ tools/" || (echo "$(RED)✗ Thailint failed$(NC)" && exit 1)
+	@echo "$(GREEN)✓ Thailint passed$(NC)"
+
+# Design linting target (can be run independently or in parallel) - now excludes rules replaced by thailint
 lint-design: lint-ensure-containers ## Run custom design linters using dedicated container
 	@echo "$(YELLOW)━━━ Custom Design Linters ━━━$(NC)"
 	@docker exec durable-code-python-linter-$(BRANCH_NAME) bash -c "cd /workspace && \
 		echo '• File headers...' && PYTHONPATH=/workspace/tools python -m design_linters --rules style.file-header --format text --recursive --fail-on-error backend tools test && \
-		echo '• SOLID principles...' && PYTHONPATH=/workspace/tools python -m design_linters --categories solid --format text --recursive --fail-on-error backend tools && \
-		echo '• Style rules...' && PYTHONPATH=/workspace/tools python -m design_linters --categories style --format text --recursive --fail-on-error backend tools test && \
-		echo '• Magic literals...' && PYTHONPATH=/workspace/tools python -m design_linters --categories literals --format text --recursive --fail-on-error backend tools test && \
+		echo '• Print statements...' && PYTHONPATH=/workspace/tools python -m design_linters --rules style.print-statement --format text --recursive --fail-on-error backend tools && \
 		echo '• Logging practices...' && PYTHONPATH=/workspace/tools python -m design_linters --categories logging --format text --recursive --fail-on-error backend tools test && \
 		echo '• Loguru usage...' && PYTHONPATH=/workspace/tools python -m design_linters --categories loguru --format text --recursive --fail-on-error backend tools test && \
 		echo '• Security rules...' && PYTHONPATH=/workspace/tools python -m design_linters --categories security --format text --recursive --fail-on-error backend tools test && \
 		echo '• Error handling...' && PYTHONPATH=/workspace/tools python -m design_linters --categories error_handling --format text --recursive --fail-on-error backend tools test && \
 		echo '• Testing practices...' && PYTHONPATH=/workspace/tools python -m design_linters --categories testing --format text --recursive --fail-on-error test && \
 		echo '• Linting rule enforcement...' && PYTHONPATH=/workspace/tools python -m design_linters --categories enforcement --format text --recursive --fail-on-error backend tools infra" || (echo "$(RED)✗ Custom linting failed$(NC)" && exit 1)
-	@echo "• File organization (checking root)..." && \
-		if docker exec durable-code-python-linter-$(BRANCH_NAME) bash -c "ls /workspace/root/*.py 2>/dev/null 1>&2"; then \
-			docker exec durable-code-python-linter-$(BRANCH_NAME) bash -c "cd /workspace/root && PYTHONPATH=/workspace/tools python -m design_linters.cli --categories organization --format text --fail-on-error *.py" || (echo "$(RED)✗ File organization check failed$(NC)" && exit 1); \
-		else \
-			echo "  No Python files in root to check"; \
-		fi
 	@echo "$(GREEN)✓ Custom design linting passed$(NC)"
 
 # Auto-fix formatting issues
@@ -118,11 +121,12 @@ lint-fix: lint-ensure-containers ## Auto-fix linting issues (Ruff, ESLint, Prett
 	@echo "$(GREEN)✅ Auto-fix complete!$(NC)"
 
 # Run custom design linters only
-lint-custom: lint-ensure-containers ## Run custom design linters with all categories
+lint-custom: lint-ensure-containers ## Run thailint and custom design linters with all categories
 	@echo "$(CYAN)╔════════════════════════════════════════════════════════════╗$(NC)"
-	@echo "$(CYAN)║                Custom Design Linters                      ║$(NC)"
+	@echo "$(CYAN)║          Thailint + Custom Design Linters                 ║$(NC)"
 	@echo "$(CYAN)╚════════════════════════════════════════════════════════════╝$(NC)"
-	@docker exec durable-code-python-linter-$(BRANCH_NAME) bash -c "cd /workspace && PYTHONPATH=/workspace/tools python -m design_linters --format text --recursive backend tools test"
+	@$(MAKE) -s lint-thailint
+	@$(MAKE) -s lint-design
 	@echo "$(GREEN)✓ Custom linting complete$(NC)"
 
 # Lint infrastructure files (Terraform and shell scripts)

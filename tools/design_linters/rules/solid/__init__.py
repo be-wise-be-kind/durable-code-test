@@ -1,31 +1,15 @@
 #!/usr/bin/env python3
 """
-Purpose: SOLID principle rules for the pluggable linter framework
-Scope: Implements SOLID principle violations as pluggable rules
-Overview: This package contains individual rules for detecting violations
-    of SOLID principles (Single Responsibility, Open/Closed, Liskov Substitution,
-    Interface Segregation, Dependency Inversion). Each principle is implemented
-    as separate, focused rules that can be enabled/disabled independently.
-Dependencies: Framework interfaces and AST analysis
-Exports: Individual SOLID principle rules
-Interfaces: All rules implement LintRule interface
-Implementation: Rule-based architecture with focused responsibilities
+Purpose: SOLID principle rules (now replaced by thailint)
+Scope: Empty placeholder - SRP detection moved to thailint
+Overview: This package previously contained rules for detecting SOLID principle
+    violations, particularly Single Responsibility Principle. All SRP detection
+    functionality has been moved to thailint for better multi-language support
+    and external tool maintenance.
+Dependencies: None (thailint handles SRP detection)
+Exports: Empty - use thailint for SRP detection
+Interfaces: N/A
+Implementation: Replaced by thailint srp linter
 """
 
-from .srp_rules import (
-    ClassTooBigRule,
-    LowCohesionRule,
-    TooManyDependenciesRule,
-    TooManyMethodsRule,
-    TooManyResponsibilitiesRule,
-)
-
-# Export all rules for discovery
-__all__ = [
-    # SRP Rules
-    "TooManyMethodsRule",
-    "TooManyResponsibilitiesRule",
-    "LowCohesionRule",
-    "ClassTooBigRule",
-    "TooManyDependenciesRule",
-]
+__all__ = []

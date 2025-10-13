@@ -28,7 +28,7 @@ from loguru import logger
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../../../tools"))
 
 
-class TestBasicImports(unittest.TestCase):  # design-lint: ignore[solid.srp.class-too-big,solid.srp.too-many-methods]
+class TestBasicImports(unittest.TestCase):  # thailint: ignore[srp]
     """Test that all modules can be imported without errors."""
 
     def test_framework_imports(self):
@@ -65,7 +65,7 @@ class TestBasicImports(unittest.TestCase):  # design-lint: ignore[solid.srp.clas
             self.fail(f"CLI import failed: {e}")
 
 
-class TestBasicFunctionality(unittest.TestCase):  # design-lint: ignore[solid.srp.class-too-big,solid.srp.too-many-methods]
+class TestBasicFunctionality(unittest.TestCase):  # thailint: ignore[srp]
     """Test basic functionality without complex scenarios."""
 
     def test_severity_enum(self):
@@ -153,7 +153,7 @@ class TestBasicFunctionality(unittest.TestCase):  # design-lint: ignore[solid.sr
         self.assertEqual(rule.rule_id, "style.print-statement")
 
 
-class TestCategoriesFilter(unittest.TestCase):  # design-lint: ignore[solid.srp.class-too-big,solid.srp.too-many-methods]
+class TestCategoriesFilter(unittest.TestCase):  # thailint: ignore[srp]
     """Test that --categories filter works correctly."""
 
     def setUp(self):
@@ -272,7 +272,7 @@ class VeryLongClassWithManyLines:
         self.assertIn("solid", solid_rules[0].categories)
 
 
-class TestIgnoreFunctionality(unittest.TestCase):  # design-lint: ignore[solid.srp.class-too-big,solid.srp.too-many-methods]
+class TestIgnoreFunctionality(unittest.TestCase):  # thailint: ignore[srp]
     """Test that ignore directives work correctly."""
 
     def setUp(self):
@@ -298,7 +298,7 @@ class TestIgnoreFunctionality(unittest.TestCase):  # design-lint: ignore[solid.s
         # Create test file with magic number and ignore directive
         test_code = """
 def calculate():
-    return 42  # design-lint: ignore[literals.magic-number]
+    return 42  # thailint: ignore[magic-numbers]
 """
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
