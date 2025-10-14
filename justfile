@@ -245,6 +245,14 @@ lint-custom: lint-ensure-containers
     @docker exec durable-code-python-linter-{{BRANCH_NAME}} bash -c "cd /workspace && PYTHONPATH=/workspace/tools python -m design_linters --format text --recursive backend tools test"
     @echo -e "{{GREEN}}✓ Custom linting complete{{NC}}"
 
+# Run thailint only (magic numbers, nesting, SRP, file placement, DRY)
+lint-thailint: lint-ensure-containers
+    @echo -e "{{CYAN}}╔════════════════════════════════════════════════════════════╗{{NC}}"
+    @echo -e "{{CYAN}}║                      Thailint                             ║{{NC}}"
+    @echo -e "{{CYAN}}╚════════════════════════════════════════════════════════════╝{{NC}}"
+    @docker exec durable-code-python-linter-{{BRANCH_NAME}} bash -c "cd /workspace && echo '• Magic numbers...' && thailint --config /workspace/root/.thailint.yaml magic-numbers backend/app tools && echo '• Nesting depth...' && thailint --config /workspace/root/.thailint.yaml nesting backend/app tools && echo '• Single Responsibility...' && thailint --config /workspace/root/.thailint.yaml srp backend/app tools && echo '• DRY violations...' && thailint --config /workspace/root/.thailint.yaml dry backend/app tools"
+    @echo -e "{{GREEN}}✓ Thailint complete{{NC}}"
+
 # Run enforcement linting on specific files
 lint-enforcement FILES:
     @just lint-ensure-containers
