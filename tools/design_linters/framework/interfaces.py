@@ -13,7 +13,7 @@ Overview: This module establishes the foundational interfaces that enable a plug
     handling for suppressing specific violations, node stack tracking for context-aware analysis,
     and helper functions for creating consistent violation messages across all rules.
 Dependencies: abc for abstract base classes, typing for type hints, ast for AST nodes
-Exports: LintRule, LintViolation, LintReporter, LintAnalyzer, LintOrchestrator
+Exports: LintRule, LintViolation, LintReporter, LintAnalyzer, LintCoordinator
 Interfaces: All classes are abstract interfaces requiring implementation
 Implementation: Enables plugin architecture with dynamic rule loading
 """
@@ -310,7 +310,7 @@ class RuleRegistry(ABC):
         raise NotImplementedError("Subclasses must implement discover_rules")
 
 
-class LintOrchestrator(ABC):
+class LintCoordinator(ABC):
     """Abstract interface for coordinating the linting process (Python-focused)."""
 
     @abstractmethod

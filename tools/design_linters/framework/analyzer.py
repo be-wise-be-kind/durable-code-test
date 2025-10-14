@@ -6,15 +6,15 @@ Overview: This module implements the core orchestration and analysis engine for 
     linter framework, serving as the central coordinator for all linting operations. It provides
     the PythonAnalyzer class that parses Python source files into AST representations and manages
     the analysis context including file paths, source content, and node tracking. The
-    DefaultLintOrchestrator coordinates the execution of multiple lint rules across multiple files,
+    DefaultLintCoordinator coordinates the execution of multiple lint rules across multiple files,
     handling rule discovery, configuration management, parallel execution, and result aggregation.
     The module implements sophisticated context tracking with node stacks for hierarchical analysis,
     ignore directive parsing for suppressing specific violations, and comprehensive error handling
     to ensure robust operation even when individual rules fail. The design follows SOLID principles
     with clear separation between analysis, orchestration, and reporting concerns.
 Dependencies: ast for Python AST parsing, pathlib for file operations
-Exports: PythonAnalyzer, LintOrchestrator, DefaultLintOrchestrator
-Interfaces: Implements LintAnalyzer and LintOrchestrator interfaces
+Exports: PythonAnalyzer, LintCoordinator, DefaultLintCoordinator
+Interfaces: Implements LintAnalyzer and LintCoordinator interfaces
 Implementation: Visitor pattern with plugin architecture coordination
 """
 
@@ -30,7 +30,7 @@ from .interfaces import (
     ConfigurationProvider,
     LintAnalyzer,
     LintContext,
-    LintOrchestrator,
+    LintCoordinator,
     LintReporter,
     LintRule,
     LintViolation,
@@ -341,7 +341,7 @@ class _RuleExecutionService:
             return []
 
 
-class DefaultLintOrchestrator(LintOrchestrator):
+class DefaultLintCoordinator(LintCoordinator):
     """Default implementation of the linting orchestrator."""
 
     def __init__(

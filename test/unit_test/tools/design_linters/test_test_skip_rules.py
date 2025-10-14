@@ -21,7 +21,7 @@ from tools.design_linters.rules.testing.test_skip_rules import \
     NoSkippedTestsRule
 
 
-class TestNoSkippedTestsRule:  # design-lint: ignore[solid.srp.class-too-big,solid.srp.too-many-methods]
+class TestNoSkippedTestsRule:  # thailint: ignore[srp]
     """Test suite for the NoSkippedTestsRule."""
 
     def setup_method(self) -> None:

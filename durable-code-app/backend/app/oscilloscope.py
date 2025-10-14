@@ -59,6 +59,10 @@ EXAMPLE_CONFIGURE_OFFSET = 0.5  # Example offset for configure command
 # HTTP Status codes
 HTTP_NOT_FOUND = 404
 
+# WebSocket close codes
+WS_CLOSE_POLICY_VIOLATION = 1008  # Policy violation (e.g., rate limit exceeded)
+WS_CLOSE_NORMAL = 1000  # Normal closure
+
 # API Router for oscilloscope endpoints
 router = APIRouter(
     prefix="/api/oscilloscope",
@@ -354,7 +358,7 @@ async def _handle_timeout_error(websocket: WebSocket, state_machine: WebSocketSt
     state_machine.disconnect()
     with contextlib.suppress(WebSocketDisconnect, OSError):
         await websocket.send_json({"error": "Connection timeout", "message": "Inactivity timeout"})
-        await websocket.close(code=1000, reason="Timeout")
+        await websocket.close(code=WS_CLOSE_NORMAL, reason="Timeout")
 
 
 def _handle_disconnect_error(state_machine: WebSocketStateMachine, client_ip: str) -> None:
@@ -423,7 +427,7 @@ async def oscilloscope_stream(websocket: WebSocket) -> None:
 
     # Check rate limit before accepting connection
     if not _websocket_rate_limiter.check_rate_limit(client_ip):
-        await websocket.close(code=1008, reason="Rate limit exceeded")
+        await websocket.close(code=WS_CLOSE_POLICY_VIOLATION, reason="Rate limit exceeded")
         logger.warning("WebSocket connection rejected due to rate limit", client_ip=client_ip)
         return
 

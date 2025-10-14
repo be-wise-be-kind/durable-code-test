@@ -3,8 +3,8 @@
 Purpose: Multi-language orchestrator for the pluggable design linter framework
 Scope: Extends the existing orchestrator to support multiple programming languages
 Overview: This module provides a multi-language orchestrator that extends the existing
-    Python-focused DefaultLintOrchestrator to support multiple programming languages.
-    It inherits from BaseOrchestrator and manages a registry of language-specific
+    Python-focused DefaultLintCoordinator to support multiple programming languages.
+    It inherits from BaseCoordinator and manages a registry of language-specific
     analyzers, automatically selecting the appropriate analyzer based on file extensions.
     The orchestrator maintains backward compatibility with existing Python rules while
     enabling new multi-language rules to work across different programming languages.
@@ -12,8 +12,8 @@ Overview: This module provides a multi-language orchestrator that extends the ex
     language-specific and generic contexts, and provides unified reporting across
     all supported languages.
 Dependencies: pathlib for file operations, typing for type hints
-Exports: MultiLanguageOrchestrator, LanguageRegistry
-Interfaces: Implements BaseOrchestrator for multi-language support
+Exports: MultiLanguageCoordinator, LanguageRegistry
+Interfaces: Implements BaseCoordinator for multi-language support
 Implementation: Extends existing orchestrator with language-agnostic capabilities
 """
 
@@ -22,8 +22,8 @@ from typing import Any
 
 from loguru import logger
 
-from .analyzer import DefaultLintOrchestrator, PythonAnalyzer
-from .base_interfaces import BaseLintAnalyzer, BaseLintContext, BaseLintRule, BaseOrchestrator
+from .analyzer import DefaultLintCoordinator, PythonAnalyzer
+from .base_interfaces import BaseCoordinator, BaseLintAnalyzer, BaseLintContext, BaseLintRule
 from .interfaces import LintViolation, RuleRegistry
 
 
@@ -71,21 +71,21 @@ class DefaultLanguageRegistry:
         return set(self._extension_map.keys())
 
 
-class MultiLanguageOrchestrator(BaseOrchestrator):
+class MultiLanguageCoordinator(BaseCoordinator):
     """Multi-language orchestrator that extends the existing Python orchestrator."""
 
     def __init__(
         self,
         rule_registry: RuleRegistry,
         language_registry: DefaultLanguageRegistry | None = None,
-        python_orchestrator: DefaultLintOrchestrator | None = None,
+        python_orchestrator: DefaultLintCoordinator | None = None,
     ):
         """Initialize with rule registry and optional language registry."""
         self.rule_registry = rule_registry
         self.language_registry = language_registry or DefaultLanguageRegistry()
 
         # Use existing Python orchestrator or create a new one
-        self.python_orchestrator = python_orchestrator or DefaultLintOrchestrator(
+        self.python_orchestrator = python_orchestrator or DefaultLintCoordinator(
             rule_registry=rule_registry,
             analyzers={"python": PythonAnalyzer()},
             reporters={},

@@ -263,15 +263,20 @@ just test-coverage
 
 ### Linting
 ```bash
-# Run all linting (backend + frontend + custom)
+# Run all linting (backend + frontend + thailint + custom)
 just lint-all
 
 # Fix auto-fixable issues
 just lint-fix
 
-# Run custom design linters
+# Run thailint (magic numbers, nesting, SRP, file placement, DRY)
+just lint-thailint
+
+# Run custom design linters (file headers, logging, security, etc.)
 just lint-custom
 ```
+
+**Note**: This project uses [thailint](https://pypi.org/project/thailint/) for multi-language code quality enforcement (magic numbers, nesting, SRP, file placement, DRY detection). See `.ai/docs/THAILINT_INTEGRATION.md` for details.
 
 ### Building
 ```bash

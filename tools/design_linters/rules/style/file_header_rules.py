@@ -623,15 +623,7 @@ class HeaderViolationChecker:
     def _get_pattern_description(self, pattern_type: str, matched_text: str) -> str:
         """Get descriptive name for pattern type based on matched text."""
         if pattern_type == "created_updated":
-            text_lower = matched_text.lower()
-            if "created" in text_lower or "creation" in text_lower:
-                return "creation timestamp"
-            elif "updated" in text_lower or "modified" in text_lower:
-                return "update timestamp"
-            elif "changed" in text_lower:
-                return "change timestamp"
-            else:
-                return "creation/update timestamp"
+            return self._get_created_updated_description(matched_text)
 
         # Map other pattern types to descriptive names
         pattern_descriptions = {
@@ -646,6 +638,24 @@ class HeaderViolationChecker:
             "future_references": "future reference",
         }
         return pattern_descriptions.get(pattern_type, "temporal language")
+
+    def _get_created_updated_description(self, matched_text: str) -> str:
+        """Get specific description for created/updated pattern types.
+
+        Args:
+            matched_text: The matched text to analyze
+
+        Returns:
+            Specific timestamp description
+        """
+        text_lower = matched_text.lower()
+        if "created" in text_lower or "creation" in text_lower:
+            return "creation timestamp"
+        if "updated" in text_lower or "modified" in text_lower:
+            return "update timestamp"
+        if "changed" in text_lower:
+            return "change timestamp"
+        return "creation/update timestamp"
 
     def _format_missing_fields(self, fields: set[str]) -> str:
         """Format missing fields for display."""

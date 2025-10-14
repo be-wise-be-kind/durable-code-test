@@ -1,19 +1,14 @@
 #!/usr/bin/env python3
 """
-Purpose: Magic number detection rules for the framework
-Scope: Converts magic number detector to framework-based rules
-Overview: This package contains rules for detecting magic numbers that should
-    be named constants. Rules are focused and can be enabled/disabled
-    independently for fine-grained control.
-Dependencies: Framework interfaces and literal analysis utilities
-Exports: Individual literal detection rules
-Interfaces: All rules implement LintRule interface
-Implementation: Strategy-based rules with proper separation of concerns
+Purpose: Literal detection rules (now replaced by thailint)
+Scope: Empty placeholder - magic number detection moved to thailint
+Overview: This package previously contained rules for detecting magic numbers.
+    All literal detection functionality has been moved to thailint for better
+    multi-language support and external tool maintenance.
+Dependencies: None (thailint handles literal detection)
+Exports: Empty - use thailint for magic number detection
+Interfaces: N/A
+Implementation: Replaced by thailint magic-numbers linter
 """
 
-from .magic_number_rules import MagicComplexRule, MagicNumberRule
-
-__all__ = [
-    "MagicNumberRule",
-    "MagicComplexRule",
-]
+__all__ = []

@@ -1,0 +1,209 @@
+# Purpose: Thailint configuration for multi-language code quality enforcement
+# Scope: Python, TypeScript, and JavaScript linting across the entire project
+# Overview: Configures thailint to detect magic numbers, excessive nesting, SRP violations,
+#     file placement issues, and duplicate code. Settings align with project standards
+#     for code quality enforcement. Includes comprehensive ignore patterns for test files,
+#     configuration files, and special cases where violations are acceptable.
+# Dependencies: thailint package, .ai/layout.yaml for file placement rules
+# Exports: Configuration for magic_numbers, nesting, srp, file_placement, and dry linters
+# Interfaces: Used by thailint CLI and pre-commit hooks
+# Implementation: YAML configuration with per-linter settings and ignore patterns
+#
+# Configuration generated with: thailint init-config --preset lenient
+# Customized for project-specific requirements
+
+# ============================================================================
+# MAGIC NUMBERS LINTER
+# ============================================================================
+# Detects numeric literals that should be named constants
+#
+magic_numbers:
+  enabled: true
+
+  # Allow common numbers that are self-documenting
+  # Preset: lenient (includes time conversions 60, 3600)
+  allowed_numbers: [-1, 0, 1, 2, 3, 4, 5, 10, 60, 100, 1000, 1024, 3600]
+
+  # Small integers in loops/ranges are acceptable
+  max_small_integer: 10
+
+  # Ignore patterns for test files and configuration
+  ignore:
+    - "test/**"
+    - "**/test_*.py"
+    - "**/*_test.py"
+    - "**/*constants.py"
+    - "**/*_constants.py"
+    - "**/config*.py"
+    - "**/settings*.py"
+    # Data files with legitimate numeric values (coordinates, proportions)
+    - "**/famous_tracks.py"
+    - "**/racing/types.py"
+    - "**/racing/models.py"  # Pydantic models with default values
+    - "**/racing/geometry/**"
+    - "**/racing/domain/generator.py"
+    - "**/racing/api/routes.py"
+    - "**/racing/algorithms/**"
+    # Files with decimal numbers
+    - "**/oscilloscope.py"
+    - "**/circuit_breaker.py"
+    # Design linter files (contain configuration values)
+    - "**/design_linters/**"
+    - "tools/design_linters/**"  # Explicit path for design linter rules
+    - "tools/design_linters/rules/multi_language/line_length_rules.py"  # Line length rule config
+
+# ============================================================================
+# NESTING DEPTH LINTER
+# ============================================================================
+# Prevents excessive code nesting for better readability
+#
+nesting:
+  enabled: true
+
+  # Maximum nesting depth
+  max_nesting_depth: 4
+
+  # Ignore patterns
+  ignore:
+    - "test/**"
+    - "**/test_*.py"
+    - "**/*_test.py"
+
+# ============================================================================
+# SINGLE RESPONSIBILITY PRINCIPLE (SRP) LINTER
+# ============================================================================
+# Detects classes with multiple responsibilities
+#
+srp:
+  enabled: true
+
+  # Maximum methods per class (project uses 15 for framework classes)
+  max_methods: 15
+
+  # Maximum lines of code per class
+  max_loc: 200
+
+  # Check for responsibility keywords in class names
+  check_keywords: true
+  keywords:
+    - Manager
+    - Handler
+    - Processor
+    - Controller
+    - Orchestrator
+    - Coordinator
+
+  # Ignore patterns
+  ignore:
+    - "test/**"
+    - "**/test_*.py"
+    - "**/*_test.py"
+    - "backend/tests/**"  # Test classes naturally have many test methods
+    - "backend/tests/test_state_machine.py"  # WebSocket state machine tests
+    - "backend/tests/racing/test_api_routes.py"  # API route tests
+    # Framework pattern classes are expected to have multiple methods
+    - "**/*Rule.py"
+    - "**/*Reporter.py"
+    - "**/*Analyzer.py"
+    - "**/*Registry.py"
+    - "**/*Interface.py"
+    # Legitimate coordinator classes (framework orchestration pattern)
+    - "tools/design_linters/framework/multi_language_orchestrator.py"  # MultiLanguageCoordinator
+    - "tools/design_linters/framework/interfaces.py"  # LintCoordinator interface
+    - "tools/design_linters/framework/analyzer.py"  # DefaultLintCoordinator
+    - "tools/design_linters/framework/base_interfaces.py"  # BaseCoordinator interface
+
+# ============================================================================
+# FILE PLACEMENT LINTER
+# ============================================================================
+# Enforces project structure and file organization
+#
+file_placement:
+  enabled: true
+
+  # Reference project layout configuration
+  layout_file: ".ai/layout.yaml"
+
+  # Ignore patterns
+  ignore:
+    - ".git/**"
+    - "**/__pycache__/**"
+    - "**/.pytest_cache/**"
+    - "**/.mypy_cache/**"
+    - "**/.ruff_cache/**"
+    - "**/node_modules/**"
+    - "**/dist/**"
+    - "**/build/**"
+    - "**/.venv/**"
+    - "**/venv/**"
+
+# ============================================================================
+# DRY (DON'T REPEAT YOURSELF) LINTER
+# ============================================================================
+# Detects duplicate code blocks
+#
+dry:
+  enabled: true
+
+  # Minimum lines for duplicate detection (project uses 4 instead of default 6)
+  min_duplicate_lines: 4
+
+  # Minimum occurrences before reporting
+  min_occurrences: 2
+
+  # Minimum tokens for duplicate detection
+  min_duplicate_tokens: 30
+
+  # Enable SQLite caching for faster incremental scans
+  cache_enabled: true
+
+  # Cache file location
+  cache_path: .thailint-cache/dry.db
+
+  # Ignore patterns
+  ignore:
+    - "test/**"
+    - "**/test_*.py"
+    - "**/*_test.py"
+    - "**/__init__.py"
+    - "**/migrations/**"
+    - "**/*_pb2.py"  # Generated protobuf files
+    # Framework files with legitimate interface duplication
+    - "tools/design_linters/framework/__init__.py"  # Factory function patterns
+    - "tools/design_linters/framework/interfaces.py"  # Abstract interface methods
+    - "tools/design_linters/framework/base_interfaces.py"  # Base interface methods
+    - "tools/design_linters/framework/analyzer.py"  # Analyzer imports and patterns
+    - "tools/design_linters/framework/multi_language_orchestrator.py"  # Orchestrator patterns
+    - "tools/design_linters/cli.py"  # CLI error handling patterns
+    - "tools/design_linters/rules/enforcement/no_skip_rules.py"  # Skip pattern checking
+
+# ============================================================================
+# GLOBAL SETTINGS
+# ============================================================================
+#
+# Exclude patterns (files/directories to completely skip scanning)
+exclude:
+  - ".git/"
+  - ".venv/"
+  - "venv/"
+  - "node_modules/"
+  - "__pycache__/"
+  - "*.pyc"
+  - ".pytest_cache/"
+  - "dist/"
+  - "build/"
+  - ".eggs/"
+  - ".mypy_cache/"
+  - ".ruff_cache/"
+
+# Output format (text or json)
+output_format: text
+
+# Exit with error code if violations found
+fail_on_violations: true
+
+# Show violation context
+show_context: true
+
+# Number of context lines to show
+context_lines: 2

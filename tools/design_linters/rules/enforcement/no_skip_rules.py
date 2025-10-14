@@ -118,16 +118,44 @@ class NoSkipRule(BaseLintRule):
         lines = context.file_content.splitlines()
 
         for line_num, line in enumerate(lines, start=1):
-            for pattern in self.SKIP_PATTERNS.get(language, []):
-                match = re.search(pattern, line)
-                if match:
-                    skipped_rule = self._extract_skipped_rule(match)
-                    if self._is_critical_skip(language, skipped_rule, file_path, line):
-                        violations.append(
-                            self._create_skip_violation(context, file_path, line_num, line, language, skipped_rule)
-                        )
+            violation = self._check_line_for_skip(context, file_path, line_num, line, language)
+            if violation:
+                violations.append(violation)
 
         return violations
+
+    def _check_line_for_skip(
+        self,
+        context: BaseLintContext,
+        file_path: Path,
+        line_num: int,
+        line: str,
+        language: str,
+    ) -> LintViolation | None:
+        """Check a single line for skip patterns.
+
+        Args:
+            context: Linting context
+            file_path: Path to file being checked
+            line_num: Line number
+            line: Line content
+            language: Programming language
+
+        Returns:
+            Violation if critical skip found, None otherwise
+        """
+        for pattern in self.SKIP_PATTERNS.get(language, []):
+            match = re.search(pattern, line)
+            if not match:
+                continue
+
+            skipped_rule = self._extract_skipped_rule(match)
+            if not self._is_critical_skip(language, skipped_rule, file_path, line):
+                continue
+
+            return self._create_skip_violation(context, file_path, line_num, line, language, skipped_rule)
+
+        return None
 
     def _get_language(self, file_path: Path) -> str | None:
         """Determine language from file extension."""

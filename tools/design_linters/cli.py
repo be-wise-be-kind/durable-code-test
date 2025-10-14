@@ -22,7 +22,7 @@ from typing import Any
 
 from loguru import logger
 
-from .framework import LintOrchestrator, LintViolation, create_orchestrator
+from .framework import LintCoordinator, LintViolation, create_orchestrator
 from .framework.reporters import ReporterFactory
 
 # Configuration constants for CLI behavior
@@ -33,7 +33,7 @@ MAX_LINES_LENIENT = 500
 DEFAULT_LINE_SEPARATOR_LENGTH = 40
 
 
-class ArgumentParser:  # design-lint: ignore[solid.srp.low-cohesion]
+class ArgumentParser:  # thailint: ignore[srp]  # pylint: disable=too-few-public-methods
     """Handles command-line argument parsing and configuration management."""
 
     def _create_parser(self) -> argparse.ArgumentParser:
@@ -145,27 +145,27 @@ class ConfigurationLoader:
             config.update(file_config)
 
 
-class ModeManager:
-    """Handles mode-specific configuration overrides."""
+class ModeConfigApplicator:  # pylint: disable=too-few-public-methods
+    """Applies mode-specific configuration overrides."""
 
     @staticmethod
     def apply_mode_overrides(config: dict[str, Any], args: argparse.Namespace) -> None:
         """Apply mode-specific configuration overrides."""
         if args.strict:
-            ModeManager.apply_strictness_mode(config)
+            ModeConfigApplicator.apply_strictness_mode(config)
         if args.legacy:
-            ModeManager.apply_legacy_mode(config, args.legacy)
+            ModeConfigApplicator.apply_legacy_mode(config, args.legacy)
 
     @staticmethod
     def apply_strictness_mode(config: dict[str, Any]) -> None:
         """Apply strict mode configuration."""
-        strict_config = ModeManager.get_strict_config()
+        strict_config = ModeConfigApplicator.get_strict_config()
         config.update(strict_config)
 
     @staticmethod
     def apply_legacy_mode(config: dict[str, Any], legacy_tool: str) -> None:
         """Apply legacy mode configuration."""
-        legacy_config = ModeManager.get_legacy_config(legacy_tool)
+        legacy_config = ModeConfigApplicator.get_legacy_config(legacy_tool)
         config.update(legacy_config)
 
     @staticmethod
@@ -250,12 +250,12 @@ class RuleFilter:
         config["rules"][rule_id] = {"enabled": False}
 
 
-class ConfigurationManager:
+class ConfigurationFacade:  # pylint: disable=too-few-public-methods
     """Coordinates configuration loading, mode management, and rule filtering."""
 
     def __init__(self) -> None:
         self.loader = ConfigurationLoader()
-        self.mode_manager = ModeManager()
+        self.mode_manager = ModeConfigApplicator()
         self.rule_filter = RuleFilter()
 
     def load_configuration(self, args: argparse.Namespace) -> dict[str, Any]:
@@ -267,14 +267,17 @@ class ConfigurationManager:
         return config
 
     def _filter_by_categories(self, config: dict[str, Any], categories_str: str) -> None:
-        """Filter rules by categories. Delegates to RuleFilter.filter_by_categories."""
+        """Filter rules by categories.
+
+        Delegates to RuleFilter.filter_by_categories.
+        """
         self.rule_filter.filter_by_categories(config, categories_str)
 
 
-class RuleListManager:
-    """Handles listing and displaying available rules and categories."""
+class RuleListFormatter:  # pylint: disable=too-few-public-methods
+    """Formats and displays available rules and categories."""
 
-    def list_rules(self, orchestrator: "LintOrchestrator") -> None:
+    def list_rules(self, orchestrator: "LintCoordinator") -> None:
         """List all available rules grouped by category."""
         print("📋 Available Linting Rules")
         print("=" * DEFAULT_LINE_SEPARATOR_LENGTH)
@@ -282,7 +285,7 @@ class RuleListManager:
         for rule in rules:
             print(f"  • {rule.rule_id}: {rule.rule_name}")
 
-    def list_categories(self, orchestrator: "LintOrchestrator") -> None:
+    def list_categories(self, orchestrator: "LintCoordinator") -> None:
         """List all available categories with rule counts."""
         print("📁 Available Rule Categories")
         print("=" * DEFAULT_LINE_SEPARATOR_LENGTH)
@@ -291,12 +294,13 @@ class RuleListManager:
         for rule in rules:
             categories.update(rule.categories or ["uncategorized"])
         for category in sorted(categories):
-            count = len([r for r in rules if category in (r.categories or ["uncategorized"])])
+            matching_rules = [r for r in rules if category in (r.categories or ["uncategorized"])]
+            count = len(matching_rules)
             print(f"  📂 {category} ({count} rules)")
 
 
-class OutputManager:
-    """Handles output formatting and reporting."""
+class OutputFormatter:  # pylint: disable=too-few-public-methods
+    """Formats and writes output in various formats."""
 
     def output_results(
         self,
@@ -327,16 +331,19 @@ class OutputManager:
             logger.exception("Error writing to %s: %s", args.output, e)
 
 
-class LintingExecutor:
-    """Handles the core linting execution logic."""
+class LintingExecutor:  # pylint: disable=too-few-public-methods
+    """Executes the core linting workflow logic."""
 
     def __init__(self) -> None:
-        self.orchestrator: LintOrchestrator | None = None
+        self.orchestrator: LintCoordinator | None = None
         self.files_analyzed: int = 0
 
     def execute_linting(self, args: argparse.Namespace) -> tuple[list[LintViolation], dict[str, Any]]:
-        """Execute linting on specified paths and return violations with metadata."""
-        config = ConfigurationManager().load_configuration(args)
+        """Execute linting on specified paths.
+
+        Returns violations with metadata.
+        """
+        config = ConfigurationFacade().load_configuration(args)
         self.orchestrator = self._create_orchestrator(args)
 
         paths = [Path(p) for p in args.paths] if args.paths else [Path(".")]
@@ -346,7 +353,7 @@ class LintingExecutor:
         metadata = self._generate_metadata(filtered_violations)
         return filtered_violations, metadata
 
-    def _create_orchestrator(self, _args: argparse.Namespace) -> "LintOrchestrator":
+    def _create_orchestrator(self, _args: argparse.Namespace) -> "LintCoordinator":
         """Create and configure the linting orchestrator."""
         try:
             return create_orchestrator()
@@ -355,7 +362,10 @@ class LintingExecutor:
             raise
 
     def _lint_all_paths(
-        self, paths: list[Path], config: dict[str, Any], args: argparse.Namespace
+        self,
+        paths: list[Path],
+        config: dict[str, Any],
+        args: argparse.Namespace,
     ) -> list[LintViolation]:
         """Lint all specified paths."""
         violations = []
@@ -381,7 +391,7 @@ class LintingExecutor:
         if not hasattr(args, "min_severity") or not args.min_severity:
             return violations
 
-        from .framework.types import Severity
+        from .framework.types import Severity  # pylint: disable=import-outside-toplevel
 
         min_severity = Severity.from_string(args.min_severity)
         return [v for v in violations if v.severity >= min_severity]
@@ -395,21 +405,23 @@ class LintingExecutor:
         }
 
 
-class DesignLinterCLI:  # design-lint: ignore[solid.srp.low-cohesion]
+class DesignLinterCLI:  # thailint: ignore[srp]  # pylint: disable=too-few-public-methods
     """Main CLI interface for the unified design linter.
 
-    This class uses composition pattern to delegate responsibilities to specialized
-    components, which is why cohesion appears low but the design is intentional.
+    This class uses composition pattern to delegate responsibilities to
+    specialized components, which is why cohesion appears low but the
+    design is intentional.
     """
 
     MSG_LINTING_INTERRUPTED = "❌ Linting interrupted by user"
     EXIT_CODE_INTERRUPTED = 130
 
     def __init__(self) -> None:
+        """Initialize CLI components."""
         self.argument_parser = ArgumentParser()
-        self.configuration_manager = ConfigurationManager()
-        self.rule_list_manager = RuleListManager()
-        self.output_manager = OutputManager()
+        self.configuration_manager = ConfigurationFacade()
+        self.rule_list_manager = RuleListFormatter()
+        self.output_manager = OutputFormatter()
         self.linting_executor = LintingExecutor()
 
     def run(self, args: list[str] | None = None) -> int:
@@ -457,17 +469,17 @@ class DesignLinterCLI:  # design-lint: ignore[solid.srp.low-cohesion]
         return 1
 
     def _should_show_traceback(self, local_vars: dict) -> bool:
-        """Determine if traceback should be shown."""
+        """Check if traceback should be shown based on verbose flag."""
         parsed_args = local_vars.get("parsed_args")
         return bool(parsed_args and hasattr(parsed_args, "verbose") and parsed_args.verbose)
 
     def _setup_logging(self, verbose: bool) -> None:
-        """Setup logging configuration."""
+        """Configure logging based on verbosity level."""
         level = "DEBUG" if verbose else "INFO"
         logger.remove()
         logger.add(sys.stderr, level=level)
 
-    def _create_orchestrator(self, _args: argparse.Namespace) -> "LintOrchestrator":
+    def _create_orchestrator(self, _args: argparse.Namespace) -> "LintCoordinator":
         """Create and configure the linting orchestrator."""
         try:
             return create_orchestrator()
@@ -476,12 +488,12 @@ class DesignLinterCLI:  # design-lint: ignore[solid.srp.low-cohesion]
             raise
 
     def _determine_exit_code(self, violations: list[LintViolation], args: argparse.Namespace) -> int:
-        """Determine appropriate exit code based on violations and settings."""
+        """Calculate exit code based on violations and settings."""
         if not violations:
             return 0
 
         if args.fail_on_error:
-            # Return non-zero exit code if there are any violations when fail_on_error is set
+            # Return non-zero if violations exist when fail_on_error set
             return 1
 
         return 0

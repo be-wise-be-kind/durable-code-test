@@ -24,7 +24,7 @@ from typing import Any
 from tools.design_linters.framework.interfaces import ASTLintRule, LintContext, LintViolation, Severity
 
 
-class PrintStatementRule(ASTLintRule):  # design-lint: ignore[solid.srp.too-many-methods]
+class PrintStatementRule(ASTLintRule):  # thailint: ignore[srp]
     """Rule to detect print statements that should use logging instead.
 
     AST visitor pattern requires multiple visit methods for different node types.
@@ -170,7 +170,7 @@ class PrintStatementRule(ASTLintRule):  # design-lint: ignore[solid.srp.too-many
         return "debug"
 
 
-class ConsoleOutputRule(ASTLintRule):  # design-lint: ignore[solid.srp.too-many-methods]
+class ConsoleOutputRule(ASTLintRule):  # thailint: ignore[srp]
     """Rule to detect other console output methods that should use logging.
 
     AST visitor pattern requires multiple visit methods for different node types.
