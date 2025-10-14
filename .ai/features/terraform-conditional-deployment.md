@@ -132,7 +132,7 @@ Resources that can be quickly recreated and are safe to destroy:
 
 ### Makefile Integration
 The Makefile passes the deployment scope as a Terraform variable:
-```makefile
+```justfile
 # No more target generation needed
 infra-up:
 	terraform apply -var="deployment_scope=$(SCOPE)" -auto-approve

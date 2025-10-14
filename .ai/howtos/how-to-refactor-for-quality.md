@@ -11,7 +11,7 @@
 ## When to Use This Guide
 
 Use this guide when:
-- ✅ Phase 1 (basic linting) is complete (`make lint-all` exits 0)
+- ✅ Phase 1 (basic linting) is complete (`just lint-all` exits 0)
 - ✅ Custom design linters show violations
 - ✅ Code is functionally correct but architecturally complex
 - ✅ React components have performance issues
@@ -572,19 +572,19 @@ After refactoring:
 
 ### Step 1: Run Tests
 ```bash
-make test
+just test
 ```
 All tests must pass. If tests fail, your refactoring broke functionality.
 
 ### Step 2: Check Linting
 ```bash
-make lint-all
+just lint-all
 ```
 Linting should still pass after refactoring.
 
 ### Step 3: Check Custom Linters
 ```bash
-make lint-custom
+just lint-custom
 ```
 Custom design linter violations should be resolved.
 
@@ -632,8 +632,8 @@ Phase 2 is complete when:
 - Components are appropriately sized
 - Performance optimizations are in place where needed
 - All tests pass
-- `make lint-all` exits with code 0
-- `make lint-custom` exits with code 0
+- `just lint-all` exits with code 0
+- `just lint-custom` exits with code 0
 - Manual testing confirms functionality
 
 ## Quick Reference

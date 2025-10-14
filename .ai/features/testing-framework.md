@@ -93,11 +93,11 @@ Hierarchical test organization with specialized test suites:
 
 Comprehensive test automation with multiple execution strategies:
 
-- **Complete Test Suite**: `make test`
-- **Unit Tests Only**: `make test-unit`
-- **Integration Testing**: `make test-integration`
-- **Coverage Analysis**: `make test-coverage`
-- **Performance Testing**: `make test-performance`
+- **Complete Test Suite**: `just test`
+- **Unit Tests Only**: `just test-unit`
+- **Integration Testing**: `just test-integration`
+- **Coverage Analysis**: `just test-coverage`
+- **Performance Testing**: `just test-performance`
 
 ## Testing Methodologies
 
@@ -299,7 +299,7 @@ Comprehensive test automation with multiple execution strategies:
 
 1. **Test File Creation**: Create new test module
 2. **Test Organization**: Organize tests by functionality
-3. **Integration**: Integrate with Make targets
+3. **Integration**: Integrate with Just targets
 4. **Documentation**: Document test purpose and usage
 
 ### Custom Test Utilities

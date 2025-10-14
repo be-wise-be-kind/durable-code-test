@@ -6,7 +6,7 @@
 
 **Overview**: Complete development tooling ecosystem that provides automated build processes, quality
     assurance workflows, comprehensive testing capabilities, and deployment automation. Emphasizes
-    consistency, reliability, and developer productivity through sophisticated Make targets, Docker
+    consistency, reliability, and developer productivity through sophisticated Just targets, Docker
     orchestration, and CI/CD integration. Supports all development lifecycle stages from local
     development to production deployment.
 
@@ -37,20 +37,20 @@ The project uses a sophisticated Make-based build system with multiple specializ
 **Location**: `Makefile`
 
 - **Development Environment Management**:
-  - `make dev`: Start development environment with hot reloading
-  - `make build`: Build production-ready Docker images
-  - `make start/stop/restart`: Container lifecycle management
-  - `make launch`: Build and start with automatic browser opening
+  - `just dev`: Start development environment with hot reloading
+  - `just build`: Build production-ready Docker images
+  - `just start/stop/restart`: Container lifecycle management
+  - `just launch`: Build and start with automatic browser opening
 
 - **Environment Initialization**:
-  - `make init`: Complete project setup including pre-commit hooks
-  - `make install-hooks`: Git hook configuration
-  - `make check-deps`: Dependency validation and updates
+  - `just init`: Complete project setup including pre-commit hooks
+  - `just install-hooks`: Git hook configuration
+  - `just check-deps`: Dependency validation and updates
 
 - **Monitoring and Debugging**:
-  - `make logs`: Real-time log streaming from all services
-  - `make status`: Container health and status checking
-  - `make clean`: Environment cleanup and reset
+  - `just logs`: Real-time log streaming from all services
+  - `just status`: Container health and status checking
+  - `just clean`: Environment cleanup and reset
 
 #### Linting Makefile
 
@@ -59,13 +59,13 @@ The project uses a sophisticated Make-based build system with multiple specializ
 Specialized linting automation with comprehensive rule management:
 
 - **Custom Linting**:
-  - `make lint-custom`: Run design linters with custom rule sets
-  - `make lint-all`: Execute all available linting rules
-  - `make lint-fix`: Automated fixing where possible
+  - `just lint-custom`: Run design linters with custom rule sets
+  - `just lint-all`: Execute all available linting rules
+  - `just lint-fix`: Automated fixing where possible
 
 - **Rule Management**:
-  - `make lint-list-rules`: Display all available linting rules
-  - `make lint-categories`: Show rule categories and descriptions
+  - `just lint-list-rules`: Display all available linting rules
+  - `just lint-categories`: Show rule categories and descriptions
 
 #### Testing Makefile
 
@@ -74,10 +74,10 @@ Specialized linting automation with comprehensive rule management:
 Comprehensive testing automation with multiple execution strategies:
 
 - **Test Execution**:
-  - `make test`: Run complete test suite
-  - `make test-unit`: Unit test execution only
-  - `make test-integration`: Integration test execution
-  - `make test-coverage`: Coverage analysis and reporting
+  - `just test`: Run complete test suite
+  - `just test-unit`: Unit test execution only
+  - `just test-integration`: Integration test execution
+  - `just test-coverage`: Coverage analysis and reporting
 
 ### Docker Orchestration
 
@@ -263,8 +263,8 @@ Automated workflows for quality assurance and deployment:
 
 ### Workflow Optimization
 
-- **Command Shortcuts**: Simplified Make targets for common tasks
-- **Auto-completion**: Shell completion for Make targets and commands
+- **Command Shortcuts**: Simplified Just targets for common tasks
+- **Auto-completion**: Shell completion for Just targets and commands
 - **Documentation**: Inline help and usage examples
 - **Error Recovery**: Automatic error detection and recovery suggestions
 

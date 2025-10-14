@@ -9,7 +9,7 @@
     properly fix issues rather than bypassing them. The enforcement is automated through the design linting
     framework and integrated into pre-commit hooks to prevent violations from entering the codebase.
 
-**Dependencies**: Design linting framework, pre-commit hooks, Make targets
+**Dependencies**: Design linting framework, pre-commit hooks, Just targets
 
 **Related**: STANDARDS.md, ERROR_HANDLING_STANDARDS.md, CLAUDE.md
 
@@ -265,7 +265,7 @@ The `enforcement.no-skip` rule automatically detects and blocks:
 ### Integration Points
 
 1. **Pre-commit Hooks**: Runs before every commit
-2. **Make Targets**: `make lint-all` includes enforcement checks
+2. **Make Targets**: `just lint-all` includes enforcement checks
 3. **CI/CD Pipeline**: Blocks PRs with skip violations
 4. **Design Linter**: Part of custom linting framework
 
@@ -426,10 +426,10 @@ CRITICAL_TYPESCRIPT_RULES = {
 
 ```bash
 # Check all files for skip violations
-make lint-all
+just lint-all
 
 # Check specific category
-make lint-custom
+just lint-custom
 
 # Pre-commit hook (automatic)
 git commit -m "feat: add feature"  # Enforcement runs automatically

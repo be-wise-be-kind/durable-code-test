@@ -334,7 +334,7 @@ def complex():
 
 **Integration Points:**
 - Pre-commit hooks: Runs automatically before commits
-- `make lint-all`: Includes enforcement checks
+- `just lint-all`: Includes enforcement checks
 - CI/CD: Blocks PRs with violations
 - Design linter: `--categories enforcement`
 

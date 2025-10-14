@@ -6,7 +6,7 @@ Overview: This guide provides systematic troubleshooting procedures for the work
     measures. The guide is organized by problem category with specific symptoms, root causes, and step-by-step
     solutions. It includes emergency recovery procedures, state management issues, cross-workspace dependency
     problems, and automation failures. Each section provides both immediate fixes and long-term prevention.
-Dependencies: Terraform CLI, AWS CLI, make targets, workspace scripts, GitHub Actions access
+Dependencies: Terraform CLI, AWS CLI, just targets, workspace scripts, GitHub Actions access
 Exports: Diagnostic procedures, resolution commands, recovery workflows
 Environment: Covers dev, staging, and production troubleshooting scenarios
 Implementation: Production-tested troubleshooting procedures with detailed command sequences
@@ -23,11 +23,11 @@ This guide provides comprehensive troubleshooting procedures for the workspace-s
 ### Essential Status Checks
 ```bash
 # Check infrastructure status
-make infra-status ENV=dev
+just infra-status ENV=dev
 
 # Check Terraform state
-make infra-state-list SCOPE=base ENV=dev
-make infra-state-list SCOPE=runtime ENV=dev
+just infra-state-list SCOPE=base ENV=dev
+just infra-state-list SCOPE=runtime ENV=dev
 
 # Check AWS resources directly
 aws ec2 describe-vpcs --filters "Name=tag:Environment,Values=dev"
@@ -47,11 +47,11 @@ pkill -f terraform
 terraform force-unlock <LOCK_ID> -force
 
 # Refresh state
-make infra-refresh SCOPE=base ENV=dev
-make infra-refresh SCOPE=runtime ENV=dev
+just infra-refresh SCOPE=base ENV=dev
+just infra-refresh SCOPE=runtime ENV=dev
 
 # Emergency shutdown
-make infra-down SCOPE=runtime ENV=dev
+just infra-down SCOPE=runtime ENV=dev
 ```
 
 ## Problem Categories
@@ -69,7 +69,7 @@ data.aws_vpc.main: Refreshing state...
 **Diagnostic Steps**:
 ```bash
 # 1. Check if base infrastructure is deployed
-make infra-status ENV=dev
+just infra-status ENV=dev
 
 # 2. Verify base workspace state
 cd infra/terraform/workspaces/base
@@ -83,14 +83,14 @@ aws ec2 describe-vpcs --filters "Name=tag:Environment,Values=dev" "Name=tag:Scop
 **Resolution**:
 ```bash
 # If base infrastructure missing:
-make infra-up SCOPE=base ENV=dev
+just infra-up SCOPE=base ENV=dev
 
 # If base exists but tags are wrong, re-apply base:
 cd infra/terraform/workspaces/base
 terraform apply -var-file="../../environments/dev.tfvars"
 
 # Then retry runtime deployment:
-make infra-up SCOPE=runtime ENV=dev
+just infra-up SCOPE=runtime ENV=dev
 ```
 
 ### Symptom: "Resource already exists"
@@ -114,7 +114,7 @@ terraform import aws_lb_target_group.frontend arn:aws:elasticloadbalancing:...
 aws elbv2 delete-target-group --target-group-arn arn:aws:elasticloadbalancing:...
 
 # 4. Retry deployment
-make infra-up SCOPE=runtime ENV=dev
+just infra-up SCOPE=runtime ENV=dev
 ```
 
 ### Symptom: "ECS service startup timeout"
@@ -143,7 +143,7 @@ aws logs tail /aws/ecs/durableai-dev-frontend
 aws ecr describe-images --repository-name durableai-dev-frontend
 
 # 2. If image missing, build and push
-make build-and-push ENV=dev
+just build-and-push ENV=dev
 
 # 3. Force new deployment
 aws ecs update-service --cluster durableai-dev-cluster --service durableai-dev-frontend --force-new-deployment
@@ -200,7 +200,7 @@ AWS resources have been modified outside of Terraform
 **Diagnostic Steps**:
 ```bash
 # 1. Generate detailed plan to see drift
-make infra-plan SCOPE=base ENV=dev
+just infra-plan SCOPE=base ENV=dev
 
 # 2. Check AWS console for manual changes
 # 3. Review CloudTrail for modification events
@@ -210,10 +210,10 @@ aws logs filter-log-events --log-group-name CloudTrail/DurableAI --filter-patter
 **Resolution**:
 ```bash
 # Option 1: Refresh state to import changes
-make infra-refresh SCOPE=base ENV=dev
+just infra-refresh SCOPE=base ENV=dev
 
 # Option 2: Apply to restore Terraform configuration
-make infra-up SCOPE=base ENV=dev
+just infra-up SCOPE=base ENV=dev
 
 # Option 3: Import manually modified resources
 terraform import aws_vpc.main vpc-12345678
@@ -247,13 +247,13 @@ terraform console
 **Resolution**:
 ```bash
 # 1. Re-apply base infrastructure with correct tags
-make infra-up SCOPE=base ENV=dev
+just infra-up SCOPE=base ENV=dev
 
 # 2. Verify tags are applied
 aws ec2 describe-subnets --subnet-ids $(terraform output -raw private_subnet_ids)
 
 # 3. Retry runtime deployment
-make infra-up SCOPE=runtime ENV=dev
+just infra-up SCOPE=runtime ENV=dev
 ```
 
 ### Symptom: "Security group not found"
@@ -273,7 +273,7 @@ cd infra/terraform/workspaces/runtime
 terraform plan -var-file="../../environments/dev.tfvars" | grep security_group
 
 # 3. Re-apply base if security group missing
-make infra-up SCOPE=base ENV=dev
+just infra-up SCOPE=base ENV=dev
 ```
 
 ## 4. GitHub Actions Automation Issues
@@ -304,7 +304,7 @@ gh secret set AWS_ACCESS_KEY_ID --body "your-new-key"
 gh secret set AWS_SECRET_ACCESS_KEY --body "your-new-secret"
 
 # 2. Manual teardown if automation fails
-make infra-down SCOPE=runtime ENV=dev
+just infra-down SCOPE=runtime ENV=dev
 
 # 3. Test automation manually
 gh workflow run nightly-teardown --field environment=dev
@@ -318,10 +318,10 @@ Error: Infrastructure readiness timeout after 10 minutes
 **Resolution**:
 ```bash
 # 1. Check infrastructure status
-make infra-status ENV=dev
+just infra-status ENV=dev
 
 # 2. Manual startup with detailed logging
-make infra-up SCOPE=runtime ENV=dev
+just infra-up SCOPE=runtime ENV=dev
 
 # 3. Check for resource limits or capacity issues
 aws ecs describe-services --cluster durableai-dev-cluster --services durableai-dev-frontend
@@ -341,16 +341,16 @@ Service 'durableai-dev-frontend' not found
 **Resolution**:
 ```bash
 # 1. Ensure runtime infrastructure is complete
-make infra-status ENV=dev
+just infra-status ENV=dev
 
 # 2. Wait for ECS services to be ready
-make infra-check ENV=dev
+just infra-check ENV=dev
 
 # 3. Retry application deployment
-make deploy ENV=dev
+just deploy ENV=dev
 
 # 4. If still failing, force service recreation
-make infra-up SCOPE=runtime ENV=dev
+just infra-up SCOPE=runtime ENV=dev
 ```
 
 ### Symptom: "Container image not found"
@@ -368,7 +368,7 @@ aws ecr describe-repositories --repository-names durableai-dev-frontend
 aws ecr describe-images --repository-name durableai-dev-frontend
 
 # 3. If missing, build and push images
-make build-and-push ENV=dev
+just build-and-push ENV=dev
 
 # 4. Update ECS service
 aws ecs update-service --cluster durableai-dev-cluster --service durableai-dev-frontend --force-new-deployment
@@ -384,7 +384,7 @@ Cost Alert: AWS charges exceed expected baseline
 **Diagnostic Steps**:
 ```bash
 # 1. Check infrastructure status (should show some resources down)
-make infra-status ENV=dev
+just infra-status ENV=dev
 
 # 2. Check for rogue resources
 aws ec2 describe-instances --filters "Name=instance-state-name,Values=running"
@@ -398,8 +398,8 @@ gh run list --workflow=nightly-teardown --status=success --limit=7
 **Resolution**:
 ```bash
 # 1. Emergency cost reduction
-make infra-down SCOPE=runtime ENV=dev
-make infra-down SCOPE=runtime ENV=staging
+just infra-down SCOPE=runtime ENV=dev
+just infra-down SCOPE=runtime ENV=staging
 
 # 2. Check for manual resource creation
 aws resourcegroupstaggingapi get-resources --tag-filters Key=Environment,Values=dev
@@ -428,12 +428,12 @@ cd infra/terraform/workspaces/base && terraform force-unlock <ID> -force || true
 cd infra/terraform/workspaces/runtime && terraform force-unlock <ID> -force || true
 
 # Step 4: Refresh state
-make infra-refresh SCOPE=base ENV=dev
-make infra-refresh SCOPE=runtime ENV=dev
+just infra-refresh SCOPE=base ENV=dev
+just infra-refresh SCOPE=runtime ENV=dev
 
 # Step 5: Plan to assess damage
-make infra-plan SCOPE=base ENV=dev > /tmp/base-plan.txt
-make infra-plan SCOPE=runtime ENV=dev > /tmp/runtime-plan.txt
+just infra-plan SCOPE=base ENV=dev > /tmp/base-plan.txt
+just infra-plan SCOPE=runtime ENV=dev > /tmp/runtime-plan.txt
 
 # Step 6: Recovery decision point
 echo "📋 Review plans in /tmp/*-plan.txt"
@@ -469,7 +469,7 @@ terraform import aws_lb.main arn:aws:elasticloadbalancing:...
 ### Monitoring Setup
 ```bash
 # Set up monitoring for state health
-*/30 * * * * make infra-status ENV=dev | grep -q "healthy" || echo "Infrastructure unhealthy" | mail admin@company.com
+*/30 * * * * just infra-status ENV=dev | grep -q "healthy" || echo "Infrastructure unhealthy" | mail admin@company.com
 
 # Monitor automation success
 gh run list --workflow=nightly-teardown --status=failure --created=">=2024-01-01" | wc -l
@@ -478,8 +478,8 @@ gh run list --workflow=nightly-teardown --status=failure --created=">=2024-01-01
 ### Regular Health Checks
 ```bash
 # Weekly infrastructure health check
-make infra-plan SCOPE=base ENV=dev | grep -q "No changes" || echo "Base infrastructure drift detected"
-make infra-plan SCOPE=runtime ENV=dev | grep -q "No changes" || echo "Runtime infrastructure drift detected"
+just infra-plan SCOPE=base ENV=dev | grep -q "No changes" || echo "Base infrastructure drift detected"
+just infra-plan SCOPE=runtime ENV=dev | grep -q "No changes" || echo "Runtime infrastructure drift detected"
 
 # Monthly cost review
 aws ce get-cost-and-usage --time-period Start=2024-01-01,End=2024-02-01 --granularity MONTHLY --metrics BlendedCost
@@ -528,16 +528,16 @@ cd infra/terraform/workspaces/runtime && terraform state pull > ../../../backups
 ### Quick Fixes
 ```bash
 # Fix most common issues
-make infra-refresh SCOPE=runtime ENV=dev && make infra-up SCOPE=runtime ENV=dev
+just infra-refresh SCOPE=runtime ENV=dev && just infra-up SCOPE=runtime ENV=dev
 
 # Reset runtime workspace
-make infra-down SCOPE=runtime ENV=dev && make infra-up SCOPE=runtime ENV=dev
+just infra-down SCOPE=runtime ENV=dev && just infra-up SCOPE=runtime ENV=dev
 
 # Emergency shutdown
-make infra-down SCOPE=runtime ENV=dev
+just infra-down SCOPE=runtime ENV=dev
 
 # Check everything
-make infra-status ENV=dev && make infra-check ENV=dev
+just infra-status ENV=dev && just infra-check ENV=dev
 ```
 
 ### State Management
@@ -559,7 +559,7 @@ terraform import aws_instance.example i-1234567890abcdef0
 ```bash
 # Verbose logging
 export TF_LOG=DEBUG
-make infra-plan SCOPE=runtime ENV=dev
+just infra-plan SCOPE=runtime ENV=dev
 
 # Check provider versions
 terraform version

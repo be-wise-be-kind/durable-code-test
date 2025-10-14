@@ -23,13 +23,13 @@
 
 ```bash
 # Complete project initialization
-make init
+just init
 
 # Start development environment
-make dev
+just dev
 
 # Verify setup
-make status
+just status
 ```
 
 ## Initial Setup (First Time)
@@ -43,7 +43,7 @@ make status
 
 ### Complete Initialization
 ```bash
-make init
+just init
 ```
 **What it does**:
 1. Installs pre-commit hooks
@@ -54,10 +54,10 @@ make init
 ### Verify Installation
 ```bash
 # Check container status
-make status
+just status
 
 # View service logs
-make logs
+just logs
 
 # Test API connectivity
 curl http://localhost:8000/health
@@ -70,18 +70,18 @@ open http://localhost:5173
 
 ### Start Development
 ```bash
-make dev
+just dev
 ```
 **Services Started**:
 - **Frontend**: React dev server on `http://localhost:5173`
 - **Backend**: FastAPI server on `http://localhost:8000`
 - **Development tools**: Hot reload, debugging, testing
 
-> **Note**: Linting tools are now in dedicated containers for better performance. They start automatically when you run `make lint-all` or related commands.
+> **Note**: Linting tools are now in dedicated containers for better performance. They start automatically when you run `just lint-all` or related commands.
 
 ### Development with Browser Launch
 ```bash
-make launch
+just launch
 ```
 **What it does**:
 1. Builds production images
@@ -91,16 +91,16 @@ make launch
 ### Environment Management
 ```bash
 # Stop development environment
-make dev-stop
+just dev-stop
 
 # Restart development environment
-make dev-restart
+just dev-restart
 
 # View development logs
-make dev-logs
+just dev-logs
 
 # Clean and rebuild
-make clean && make dev
+just clean && just dev
 ```
 
 ## Environment Configuration
@@ -194,7 +194,7 @@ npm run dev
 ## Git Configuration
 
 ### Pre-commit Hooks
-**Automatic Installation**: Handled by `make init`
+**Automatic Installation**: Handled by `just init`
 
 **Manual Installation**:
 ```bash
@@ -228,22 +228,22 @@ git push origin feature/your-feature-name
 ### Make Targets Reference
 ```bash
 # Environment management
-make init          # First-time setup
-make dev           # Start development
-make build         # Build production images
-make clean         # Clean environment
+just init          # First-time setup
+just dev           # Start development
+just build         # Build production images
+just clean         # Clean environment
 
 # Quality assurance
-make test          # Run all tests
-make lint-all      # Run all linting (uses dedicated containers)
-make lint-fix      # Auto-fix issues
-make lint-start    # Start linting containers manually
-make lint-stop     # Stop linting containers
+just test          # Run all tests
+just lint-all      # Run all linting (uses dedicated containers)
+just lint-fix      # Auto-fix issues
+just lint-start    # Start linting containers manually
+just lint-stop     # Stop linting containers
 
 # Monitoring
-make status        # Container status
-make logs          # View logs
-make help          # Show all commands
+just status        # Container status
+just logs          # View logs
+just help          # Show all commands
 ```
 
 ### Docker Commands
@@ -265,7 +265,7 @@ docker logs durable-code-test-backend-1
 ### Development Server
 ```bash
 # Via Make (recommended)
-make dev
+just dev
 
 # Direct execution
 cd durable-code-app/frontend
@@ -295,7 +295,7 @@ npm run preview
 ### Development Server
 ```bash
 # Via Make (recommended)
-make dev
+just dev
 
 # Direct execution (in Poetry environment)
 cd durable-code-app/backend
@@ -313,7 +313,7 @@ poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ### Development Database
 ```bash
 # Start database service
-make dev
+just dev
 
 # View database logs
 docker logs durable-code-test-db-1
@@ -371,8 +371,8 @@ If you encounter path errors after the reorganization:
 git pull origin main
 
 # Clean and rebuild
-make clean
-make init
+just clean
+just init
 
 # Verify new paths are being used
 grep -r "\.docker" Makefile
@@ -395,8 +395,8 @@ lsof -i :8000
 docker system prune -a
 
 # Rebuild without cache
-make clean
-make init
+just clean
+just init
 ```
 
 **Permission Issues**:
@@ -456,7 +456,7 @@ DEBUG=true poetry run uvicorn app.main:app --reload
 docker stats
 
 # Monitor container logs
-make logs
+just logs
 
 # Check disk usage
 docker system df
@@ -479,7 +479,7 @@ docker exec -it durable-code-test-backend-1 python -c "import psycopg2; print('D
 ### Service Verification
 ```bash
 # All services running
-make status
+just status
 
 # API endpoints working
 curl http://localhost:8000/docs
@@ -491,10 +491,10 @@ cd durable-code-app/frontend && npm run type-check
 ### Quality Validation
 ```bash
 # Run linting
-make lint-all
+just lint-all
 
 # Run tests
-make test
+just test
 
 # Check pre-commit hooks
 pre-commit run --all-files
@@ -517,16 +517,16 @@ The project uses **dedicated linting containers** separate from development cont
 **Usage**:
 ```bash
 # All linting (containers start automatically)
-make lint-all
+just lint-all
 
 # Specific linting
-make lint-python    # Python only
-make lint-js       # JavaScript only
-make lint-design   # Custom design linters
+just lint-python    # Python only
+just lint-js       # JavaScript only
+just lint-design   # Custom design linters
 
 # Manual container management (usually not needed)
-make lint-start    # Start containers
-make lint-stop     # Stop containers
+just lint-start    # Start containers
+just lint-stop     # Stop containers
 ```
 
 For more details, see:

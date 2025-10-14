@@ -65,13 +65,13 @@ jobs:
       - name: Check infrastructure status (before)
         run: |
           echo "📊 Infrastructure status before startup:"
-          make infra-status ENV=${{ inputs.environment || 'dev' }} AWS_PROFILE="" || echo "Status check completed"
+          just infra-status ENV=${{ inputs.environment || 'dev' }} AWS_PROFILE="" || echo "Status check completed"
 
       - name: Plan infrastructure startup
         if: ${{ inputs.dry_run == true }}
         run: |
           echo "🔍 Planning infrastructure startup (dry run)..."
-          make infra-plan SCOPE=${{ inputs.scope || 'runtime' }} ENV=${{ inputs.environment || 'dev' }} AWS_PROFILE=""
+          just infra-plan SCOPE=${{ inputs.scope || 'runtime' }} ENV=${{ inputs.environment || 'dev' }} AWS_PROFILE=""
 
       - name: Execute infrastructure startup
         if: ${{ inputs.dry_run != true }}
@@ -82,7 +82,7 @@ jobs:
 
           echo "⏰ Infrastructure startup initiated at $(date)"
           # In CI, don't use AWS_PROFILE - OIDC sets environment variables directly
-          make infra-up SCOPE="$SCOPE" ENV="$ENV" AUTO=true AWS_PROFILE=""
+          just infra-up SCOPE="$SCOPE" ENV="$ENV" AUTO=true AWS_PROFILE=""
 
       - name: Wait for infrastructure readiness
         if: ${{ inputs.dry_run != true }}
@@ -93,7 +93,7 @@ jobs:
           # Wait up to 10 minutes for infrastructure to be ready
           for i in {1..30}; do
             echo "  Attempt $i/30: Checking infrastructure readiness..."
-            if make infra-check ENV="$ENV" AWS_PROFILE="" 2>/dev/null; then
+            if just deploy-check ENV="$ENV" AWS_PROFILE="" 2>/dev/null; then
               echo "✅ Infrastructure is ready!"
               break
             fi
@@ -101,7 +101,7 @@ jobs:
             if [[ $i -eq 30 ]]; then
               echo "⚠️ Infrastructure readiness timeout after 10 minutes"
               echo "📊 Current status:"
-              make infra-status ENV="$ENV" AWS_PROFILE="" || true
+              just infra-status ENV="$ENV" AWS_PROFILE="" || true
               exit 1
             fi
 
@@ -115,7 +115,7 @@ jobs:
           ENV="${{ inputs.environment || 'dev' }}"
 
           echo "📦 Starting application deployment..."
-          make deploy ENV="$ENV"
+          just deploy ENV="$ENV"
 
       - name: Verify application health
         if: ${{ inputs.deploy_app == true && inputs.dry_run != true }}
@@ -124,7 +124,7 @@ jobs:
           ENV="${{ inputs.environment || 'dev' }}"
 
           # Get ALB DNS name from infrastructure status
-          ALB_DNS=$(make infra-output ENV="$ENV" AWS_PROFILE="" | grep alb_dns_name | cut -d'"' -f4 || echo "")
+          ALB_DNS=$(just infra-output ENV="$ENV" AWS_PROFILE="" | grep alb_dns_name | cut -d'"' -f4 || echo "")
 
           if [[ -z "$ALB_DNS" ]]; then
             echo "⚠️ Could not retrieve ALB DNS name"
@@ -157,7 +157,7 @@ jobs:
         if: ${{ inputs.dry_run != true }}
         run: |
           echo "📊 Final infrastructure status:"
-          make infra-status ENV=${{ inputs.environment || 'dev' }} AWS_PROFILE="" || echo "Status check completed"
+          just infra-status ENV=${{ inputs.environment || 'dev' }} AWS_PROFILE="" || echo "Status check completed"
 
       - name: Post startup summary
         if: always()
@@ -172,7 +172,7 @@ jobs:
 
           ENV="${{ inputs.environment || 'dev' }}"
           if [[ "${{ job.status }}" == "success" && "${{ inputs.dry_run }}" != "true" ]]; then
-            ALB_DNS=$(make infra-output ENV="$ENV" AWS_PROFILE="" | grep alb_dns_name | cut -d'"' -f4 || echo "")
+            ALB_DNS=$(just infra-output ENV="$ENV" AWS_PROFILE="" | grep alb_dns_name | cut -d'"' -f4 || echo "")
             if [[ -n "$ALB_DNS" ]]; then
               echo "🌐 Application URLs:"
               echo "  - Frontend: http://$ALB_DNS"
@@ -192,7 +192,7 @@ jobs:
           echo "📞 Check AWS console and Terraform state"
           echo ""
           echo "🚨 Manual recovery commands:"
-          echo "  make infra-up SCOPE=${{ inputs.scope || 'runtime' }} ENV=${{ inputs.environment || 'dev' }}"
+          echo "  just infra-up SCOPE=${{ inputs.scope || 'runtime' }} ENV=${{ inputs.environment || 'dev' }}"
           if [[ "${{ inputs.deploy_app }}" == "true" ]]; then
-            echo "  make deploy ENV=${{ inputs.environment || 'dev' }}"
+            echo "  just deploy ENV=${{ inputs.environment || 'dev' }}"
           fi

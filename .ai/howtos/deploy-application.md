@@ -25,20 +25,20 @@
 
 ```bash
 # 1. Ensure infrastructure is deployed first
-make infra-up SCOPE=all ENV=dev AUTO=true
+just infra-up SCOPE=all ENV=dev AUTO=true
 
 # 2. Deploy application containers to ECS
-make deploy
+just deploy
 
 # 3. Verify deployment
-make deploy-check
+just deploy-check
 
 # 4. Access application
 # Via ALB DNS: http://durableai-dev-alb-<id>.us-west-2.elb.amazonaws.com
 # Via Custom Domain: https://dev.durableaicoding.net
 ```
 
-**What `make deploy` does**:
+**What `just deploy` does**:
 1. Builds Docker images for frontend (port 3000) and backend (port 8000)
 2. Authenticates with AWS ECR registry
 3. Tags and pushes images to ECR with timestamp tags
@@ -51,13 +51,13 @@ make deploy-check
 
 ```bash
 # Build development images
-make build
+just build
 
 # Start local environment
-make start
+just start
 
 # Verify deployment
-make status
+just status
 curl http://localhost:8000/health
 ```
 
@@ -65,7 +65,7 @@ curl http://localhost:8000/health
 
 ### Build Production Images
 ```bash
-make build
+just build
 ```
 **What it does**:
 1. Builds optimized Docker images for all services
@@ -89,7 +89,7 @@ docker run --rm durable-code-test-frontend:latest npm run build
 
 ### Start Production Services
 ```bash
-make start
+just start
 ```
 **Services Started**:
 - **Frontend**: Optimized React build on `http://localhost:3000`
@@ -180,8 +180,8 @@ docker-compose ps
 # Manual deployment
 ENV=dev ./infra/scripts/deploy-app.sh
 
-# Or use make target
-make deploy
+# Or use just target
+just deploy
 ```
 
 **Resource Naming Convention**:
@@ -465,9 +465,9 @@ docker cp durable-code-test-backend-1:/app/uploads ./uploads_backup
 docker exec -i durable-code-test-db-1 psql -U postgres -d durable_code < backup.sql
 
 # Rebuild and redeploy
-make clean
-make build
-make start
+just clean
+just build
+just start
 ```
 
 ## CI/CD Integration
@@ -487,8 +487,8 @@ jobs:
       - uses: actions/checkout@v3
       - name: Deploy to production
         run: |
-          make build
-          make start
+          just build
+          just start
 ```
 
 ### Automated Deployment
@@ -499,9 +499,9 @@ set -e
 
 echo "Starting deployment..."
 git pull origin main
-make build
-make start
-make status
+just build
+just start
+just status
 
 echo "Deployment complete!"
 ```
@@ -557,14 +557,14 @@ docker exec -it durable-code-test-db-1 psql -U postgres -c "SELECT * FROM pg_sta
 ### Quick Rollback
 ```bash
 # Stop current deployment
-make stop
+just stop
 
 # Rollback to previous images
 docker tag durable-code-test-frontend:previous durable-code-test-frontend:latest
 docker tag durable-code-test-backend:previous durable-code-test-backend:latest
 
 # Start with previous version
-make start
+just start
 ```
 
 ### Database Rollback

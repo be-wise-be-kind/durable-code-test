@@ -4,10 +4,10 @@
 # Overview: Stages specified files, runs linting checks on staged content, and provides clear feedback to developers.
 #           On linting failures, generates detailed instructions for Claude AI to fix the detected issues.
 #           Designed for integration into development workflows and pre-commit processes.
-# Dependencies: git, make (for lint-all-staged target)
+# Dependencies: git, just (for lint-all-staged target)
 # Usage: ./scripts/lint-and-request-fix.sh [FILE_PATH] (FILE_PATH is optional, stages current file if provided)
-# Interfaces: Git staging area operations and make lint-all-staged command
-# Implementation: Uses git add for staging, make for linting, and provides structured error reporting with exit codes
+# Interfaces: Git staging area operations and just lint-all-staged command
+# Implementation: Uses git add for staging, just for linting, and provides structured error reporting with exit codes
 
 # Script to lint staged files and request Claude to fix any issues
 
@@ -17,7 +17,7 @@ cd /home/stevejackson/Projects/durable-code-test
 git add "$1" 2>/dev/null
 
 # Run linting on staged files
-if make lint-all-staged 2>&1; then
+if just lint-all-staged 2>&1; then
     echo "✅ Linting passed - no issues found"
     exit 0
 else

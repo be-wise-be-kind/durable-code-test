@@ -191,7 +191,7 @@ jobs:
 
           for target in "${targets[@]}"; do
             echo "Checking target: $target"
-            if make -n "$target" ENV=test SCOPE=runtime >/dev/null 2>&1; then
+            if just --dry-run "$target" ENV=test SCOPE=runtime >/dev/null 2>&1; then
               echo "✅ Target '$target' syntax is valid"
             else
               echo "❌ Target '$target' has syntax errors"
@@ -205,13 +205,13 @@ jobs:
 
           # Test that Makefile correctly resolves workspace directories
           echo "Testing SCOPE=base resolution..."
-          make -n infra-plan SCOPE=base ENV=test 2>&1 | grep -q "workspaces/base" || {
+          just --dry-run infra-plan SCOPE=base ENV=test 2>&1 | grep -q "workspaces/base" || {
             echo "❌ Base workspace directory not resolved correctly"
             exit 1
           }
 
           echo "Testing SCOPE=runtime resolution..."
-          make -n infra-plan SCOPE=runtime ENV=test 2>&1 | grep -q "workspaces/runtime" || {
+          just --dry-run infra-plan SCOPE=runtime ENV=test 2>&1 | grep -q "workspaces/runtime" || {
             echo "❌ Runtime workspace directory not resolved correctly"
             exit 1
           }
@@ -223,7 +223,7 @@ jobs:
           echo "🐳 Testing Docker volume mounts..."
 
           # Test that required directories are mounted in Docker commands
-          make -n infra-plan SCOPE=base ENV=test 2>&1 | grep -q "backend-config" || {
+          just --dry-run infra-plan SCOPE=base ENV=test 2>&1 | grep -q "backend-config" || {
             echo "❌ Backend config directory not mounted"
             exit 1
           }
@@ -250,19 +250,19 @@ jobs:
 
           # These commands should not require AWS credentials for dry run
           echo "Step 1: Test planning base infrastructure..."
-          make -n infra-plan SCOPE=base ENV=test || {
+          just --dry-run infra-plan SCOPE=base ENV=test || {
             echo "❌ Base infrastructure planning failed"
             exit 1
           }
 
           echo "Step 2: Test planning runtime infrastructure..."
-          make -n infra-plan SCOPE=runtime ENV=test || {
+          just --dry-run infra-plan SCOPE=runtime ENV=test || {
             echo "❌ Runtime infrastructure planning failed"
             exit 1
           }
 
           echo "Step 3: Test planning all infrastructure..."
-          make -n infra-plan SCOPE=all ENV=test || {
+          just --dry-run infra-plan SCOPE=all ENV=test || {
             echo "❌ All infrastructure planning failed"
             exit 1
           }
@@ -284,12 +284,12 @@ jobs:
           echo "After merge, the following commands will be available:"
           echo '```bash'
           echo "# Deploy complete infrastructure"
-          echo "make infra-up SCOPE=all ENV=dev"
+          echo "just infra-up SCOPE=all ENV=dev"
           echo ""
           echo "# Daily cost optimization"
-          echo "make infra-down SCOPE=runtime ENV=dev"
-          echo "make infra-up SCOPE=runtime ENV=dev"
+          echo "just infra-down SCOPE=runtime ENV=dev"
+          echo "just infra-up SCOPE=runtime ENV=dev"
           echo ""
           echo "# Check status"
-          echo "make infra-status ENV=dev"
+          echo "just infra-status ENV=dev"
           echo '```'

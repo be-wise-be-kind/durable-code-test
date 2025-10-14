@@ -31,16 +31,16 @@ Write what you want, not how to build it. Terraform handles the complexity of re
 
 ### Environment Parity
 ```bash
-make infra-up ENV=dev    # Deploys development
-make infra-up ENV=prod   # Deploys production
+just infra-up ENV=dev    # Deploys development
+just infra-up ENV=prod   # Deploys production
 ```
 Same code, different configurations. Environment differences are data, not logic.
 
 ### Instant Infrastructure
 ```bash
-make infra-plan  # See what will change
-make infra-up    # Apply changes
-make infra-down  # Destroy everything
+just infra-plan  # See what will change
+just infra-up    # Apply changes
+just infra-down  # Destroy everything
 ```
 Complete infrastructure lifecycle in three commands.
 
@@ -62,7 +62,7 @@ Every resource is tagged, tracked, and attributed. Know exactly what costs what 
 ### Make Target Abstraction
 - Simple commands hide complexity
 - Consistent interface across all operations
-- Self-documenting through make help
+- Self-documenting through just help
 
 ## Capabilities
 
@@ -71,31 +71,31 @@ Every resource is tagged, tracked, and attributed. Know exactly what costs what 
 **Create Complete Environments**
 ```bash
 # Spin up a complete development environment
-ENV=feature-xyz make infra-up
+ENV=feature-xyz just infra-up
 ```
 
 **Preview Changes**
 ```bash
 # See exactly what will change before applying
-make infra-plan
+just infra-plan
 ```
 
 **Import Existing Resources**
 ```bash
 # Bring manually created resources under Terraform control
-make infra-import RESOURCE=aws_s3_bucket.legacy ID=my-bucket
+just infra-import RESOURCE=aws_s3_bucket.legacy ID=my-bucket
 ```
 
 **Destroy and Recreate**
 ```bash
 # Complete environment refresh
-make infra-down && make infra-up
+just infra-down && just infra-up
 ```
 
 **Cost Optimization**
 ```bash
 # Schedule automatic shutdown
-make infra-schedule-shutdown
+just infra-schedule-shutdown
 ```
 
 ### What Gets Deployed
@@ -107,34 +107,34 @@ See `.ai/docs/INFRASTRUCTURE_PRINCIPLES.md` for architectural decisions and comp
 ### 1. Local Development
 ```bash
 # Start local environment
-make dev
+just dev
 
 # Make infrastructure changes
 vim infra/terraform/something.tf
 
 # Validate changes
-make infra-validate
+just infra-validate
 ```
 
 ### 2. Test in Isolation
 ```bash
 # Create feature environment
-ENV=feature-123 make infra-up
+ENV=feature-123 just infra-up
 
 # Test your changes
 # ...
 
 # Tear down when done
-ENV=feature-123 make infra-down
+ENV=feature-123 just infra-down
 ```
 
 ### 3. Deploy to Shared Environments
 ```bash
 # Plan production changes
-ENV=prod make infra-plan
+ENV=prod just infra-plan
 
 # Apply with approval
-ENV=prod make infra-up
+ENV=prod just infra-up
 ```
 
 ## Safety Features
@@ -151,7 +151,7 @@ Production resources have deletion protection. Critical resources require additi
 ### Rollback Capability
 ```bash
 # If something goes wrong
-make infra-rollback
+just infra-rollback
 ```
 
 ## Integration Points
@@ -182,7 +182,7 @@ Infrastructure is self-documenting:
 Don't over-engineer. Start simple and evolve as needed.
 
 ### Version Everything
-Infrastructure code, variables, and even Make targets are versioned.
+Infrastructure code, variables, and even Just targets are versioned.
 
 ### Test Destructively
 Regularly destroy and recreate development environments to ensure reproducibility.
@@ -194,27 +194,27 @@ Every PR shows cost impact. Reviews consider cost alongside functionality.
 
 ### Check AWS Credentials
 ```bash
-make infra-check-aws
+just infra-check-aws
 ```
 
 ### Format Terraform Code
 ```bash
-make infra-fmt
+just infra-fmt
 ```
 
 ### Clean Terraform Cache
 ```bash
-make infra-clean-cache
+just infra-clean-cache
 ```
 
 ### Generate Resource Graph
 ```bash
-make infra-graph
+just infra-graph
 ```
 
 ### Show Current State
 ```bash
-make infra-state-list
+just infra-state-list
 ```
 
 ## Extending the System
@@ -227,7 +227,7 @@ make infra-state-list
 
 ### Adding New Environments
 1. Create new tfvars file
-2. Update Make targets if needed
+2. Update Just targets if needed
 3. Configure backend
 4. Deploy
 
@@ -245,6 +245,6 @@ Infrastructure as Code is about applying software engineering discipline to infr
 - **Versioning**: Every change is tracked and revertible
 - **Testing**: Changes can be validated before production
 - **Collaboration**: Team members can review and improve
-- **Automation**: Machines do the work, humans make decisions
+- **Automation**: Machines do the work, humans just decisions
 
 This isn't just about automation - it's about treating infrastructure with the same rigor, care, and craftsmanship we apply to application code.

@@ -104,16 +104,16 @@ Developers should run these commands before pushing:
 
 ```bash
 # Run all linting checks locally
-make lint-all
+just lint-all
 
 # Auto-fix issues where possible
-make lint-fix
+just lint-fix
 
 # Check complexity ratings
-make lint-complexity
+just lint-complexity
 
 # Run security checks
-make lint-security
+just lint-security
 ```
 
 ### 7. Monitoring and Metrics
@@ -137,9 +137,9 @@ Track these metrics monthly:
 
 ### If checks are failing:
 
-1. **Run locally first**: `make lint-all`
-2. **Auto-fix when possible**: `make lint-fix`
-3. **Check complexity**: `make lint-complexity`
+1. **Run locally first**: `just lint-all`
+2. **Auto-fix when possible**: `just lint-fix`
+3. **Check complexity**: `just lint-complexity`
 4. **Review specific tool output** in GitHub Actions logs
 
 ### Common issues:
