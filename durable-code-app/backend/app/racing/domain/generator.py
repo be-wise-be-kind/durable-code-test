@@ -116,6 +116,29 @@ def generate_control_points_with_bounds(
     return control_points
 
 
+def _compute_perpendicular_normal(
+    prev_point: tuple[float, float],
+    next_point: tuple[float, float],
+) -> tuple[float, float] | None:
+    """Compute perpendicular normal vector from two points.
+
+    Args:
+        prev_point: Previous control point
+        next_point: Next control point
+
+    Returns:
+        Normalized perpendicular vector (nx, ny) or None if points are coincident
+    """
+    dx = next_point[0] - prev_point[0]
+    dy = next_point[1] - prev_point[1]
+    length = math.sqrt(dx * dx + dy * dy)
+
+    if length == 0:
+        return None
+
+    return (-dy / length, dx / length)
+
+
 def apply_curve_offset(
     control_points: list[tuple[float, float]],
     index: int,
@@ -137,13 +160,10 @@ def apply_curve_offset(
     prev_pt = control_points[index - 1]
     next_pt = control_points[(index + 1) % num_points]
 
-    dx = next_pt[0] - prev_pt[0]
-    dy = next_pt[1] - prev_pt[1]
-    length = math.sqrt(dx * dx + dy * dy)
-
-    if length > 0:
-        normal_x = -dy / length * offset_dist * direction
-        normal_y = dx / length * offset_dist * direction
+    normal = _compute_perpendicular_normal(prev_pt, next_pt)
+    if normal:
+        normal_x = normal[0] * offset_dist * direction
+        normal_y = normal[1] * offset_dist * direction
         current = control_points[index]
         control_points[index] = (current[0] + normal_x, current[1] + normal_y)
 
@@ -184,26 +204,46 @@ def add_chicanes(control_points: list[tuple[float, float]]) -> None:
     chicane_positions = [num_points // 4, (3 * num_points) // 4]
 
     for idx, i in enumerate(chicane_positions):
-        if 1 < i < num_points - 1:
-            direction = (-1) ** idx
-            apply_curve_offset(control_points, i, 30, direction)
+        if not (1 < i < num_points - 1):
+            continue
 
-            # Adjust adjacent point for chicane effect
-            if i + 1 < num_points:
-                prev_pt = control_points[i - 1]
-                next_pt = control_points[(i + 1) % num_points]
-                dx = next_pt[0] - prev_pt[0]
-                dy = next_pt[1] - prev_pt[1]
-                length = math.sqrt(dx * dx + dy * dy)
+        direction = (-1) ** idx
+        apply_curve_offset(control_points, i, 30, direction)
+        _adjust_chicane_adjacent_point(control_points, i, direction, num_points)
 
-                if length > 0:
-                    normal_x = -dy / length * 30 * direction
-                    normal_y = dx / length * 30 * direction
-                    next_current = control_points[i + 1]
-                    control_points[i + 1] = (
-                        next_current[0] - normal_x * 0.6,
-                        next_current[1] - normal_y * 0.6,
-                    )
+
+def _adjust_chicane_adjacent_point(
+    control_points: list[tuple[float, float]],
+    index: int,
+    direction: int,
+    num_points: int,
+) -> None:
+    """Adjust adjacent point for chicane effect.
+
+    Args:
+        control_points: Control points to modify
+        index: Current chicane index
+        direction: Direction multiplier
+        num_points: Total number of points
+    """
+    if index + 1 >= num_points:
+        return
+
+    prev_pt = control_points[index - 1]
+    next_pt = control_points[(index + 1) % num_points]
+    normal = _compute_perpendicular_normal(prev_pt, next_pt)
+
+    if not normal:
+        return
+
+    chicane_offset = 30
+    normal_x = normal[0] * chicane_offset * direction
+    normal_y = normal[1] * chicane_offset * direction
+    next_current = control_points[index + 1]
+    control_points[index + 1] = (
+        next_current[0] - normal_x * 0.6,
+        next_current[1] - normal_y * 0.6,
+    )
 
 
 def add_hairpin_turns(
@@ -226,42 +266,58 @@ def add_hairpin_turns(
     hairpin_indices = [num_points // 4, num_points // 2, (3 * num_points) // 4]
 
     for hairpin_idx, base_idx in enumerate(hairpin_indices):
-        if 1 < base_idx < num_points - 1:
-            base_point = control_points[base_idx]
-            prev_point = control_points[base_idx - 1]
-            next_point = control_points[(base_idx + 1) % num_points]
+        if not (1 < base_idx < num_points - 1):
+            continue
 
-            dx = next_point[0] - prev_point[0]
-            dy = next_point[1] - prev_point[1]
-            length = math.sqrt(dx * dx + dy * dy)
-
-            if length > 0:
-                normal = (-dy / length, dx / length)
-                hairpin_distance = 80 + (hairpin_idx * 15)
-
-                # Offset main point
-                control_points[base_idx] = (
-                    base_point[0] + normal[0] * hairpin_distance,
-                    base_point[1] + normal[1] * hairpin_distance,
-                )
-
-                # Offset entry point
-                if base_idx - 1 >= 0:
-                    entry = control_points[base_idx - 1]
-                    control_points[base_idx - 1] = (
-                        entry[0] + normal[0] * hairpin_distance * 0.5,
-                        entry[1] + normal[1] * hairpin_distance * 0.5,
-                    )
-
-                # Offset exit point
-                if base_idx + 1 < num_points:
-                    exit_pt = control_points[base_idx + 1]
-                    control_points[base_idx + 1] = (
-                        exit_pt[0] + normal[0] * hairpin_distance * 0.5,
-                        exit_pt[1] + normal[1] * hairpin_distance * 0.5,
-                    )
+        hairpin_distance = 80 + (hairpin_idx * 15)
+        _apply_hairpin_offset(control_points, base_idx, hairpin_distance, num_points)
 
     return control_points
+
+
+def _apply_hairpin_offset(
+    control_points: list[tuple[float, float]],
+    base_idx: int,
+    hairpin_distance: float,
+    num_points: int,
+) -> None:
+    """Apply hairpin offset to a control point and its neighbors.
+
+    Args:
+        control_points: Control points to modify
+        base_idx: Index of hairpin base point
+        hairpin_distance: Distance to offset points
+        num_points: Total number of points
+    """
+    base_point = control_points[base_idx]
+    prev_point = control_points[base_idx - 1]
+    next_point = control_points[(base_idx + 1) % num_points]
+
+    normal = _compute_perpendicular_normal(prev_point, next_point)
+    if not normal:
+        return
+
+    # Offset main point
+    control_points[base_idx] = (
+        base_point[0] + normal[0] * hairpin_distance,
+        base_point[1] + normal[1] * hairpin_distance,
+    )
+
+    # Offset entry point
+    if base_idx - 1 >= 0:
+        entry = control_points[base_idx - 1]
+        control_points[base_idx - 1] = (
+            entry[0] + normal[0] * hairpin_distance * 0.5,
+            entry[1] + normal[1] * hairpin_distance * 0.5,
+        )
+
+    # Offset exit point
+    if base_idx + 1 < num_points:
+        exit_pt = control_points[base_idx + 1]
+        control_points[base_idx + 1] = (
+            exit_pt[0] + normal[0] * hairpin_distance * 0.5,
+            exit_pt[1] + normal[1] * hairpin_distance * 0.5,
+        )
 
 
 def add_track_variation(

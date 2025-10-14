@@ -10,7 +10,7 @@ Overview: This module extends the existing Python-specific interfaces to support
     by inheriting from the base classes instead of the Python-specific ones. The design
     maintains complete backward compatibility while enabling future multi-language support.
 Dependencies: abc for abstract base classes, typing for type hints, pathlib for paths
-Exports: BaseLintRule, BaseLintAnalyzer, BaseLintContext, BaseOrchestrator
+Exports: BaseLintRule, BaseLintAnalyzer, BaseLintContext, BaseCoordinator
 Interfaces: Language-agnostic base classes that existing Python classes inherit from
 Implementation: Inheritance-based multi-language support with backward compatibility
 """
@@ -161,7 +161,7 @@ class BaseLintAnalyzer(ABC):
         raise NotImplementedError("Subclasses must implement analyze_file")
 
 
-class BaseOrchestrator(ABC):
+class BaseCoordinator(ABC):
     """Base class for multi-language orchestrators."""
 
     @abstractmethod

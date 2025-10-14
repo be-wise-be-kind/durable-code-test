@@ -42,7 +42,7 @@ repos:
 
       - id: python-flake8
         name: Flake8 (Python style)
-        entry: bash -c 'app_files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^app/.*\.py$" || true); tools_files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^tools/.*\.py$" || true); if [ -n "$app_files" ]; then make lint-ensure-containers >/dev/null 2>&1; docker exec durable-code-python-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") bash -c "cd /workspace && flake8 $app_files"; fi; if [ -n "$tools_files" ]; then docker exec durable-code-python-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") bash -c "cd /workspace && flake8 $tools_files --config tools/.flake8"; fi'
+        entry: bash -c 'app_files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^app/.*\.py$" || true); tools_files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^tools/.*\.py$" || true); if [ -n "$app_files" ]; then make lint-ensure-containers >/dev/null 2>&1; docker exec durable-code-python-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") bash -c "cd /workspace && flake8 --config /workspace/root/tools/.flake8 $app_files"; fi; if [ -n "$tools_files" ]; then docker exec durable-code-python-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") bash -c "cd /workspace && flake8 --config /workspace/root/tools/.flake8 $tools_files"; fi'
         language: system
         files: \.(py)$
         pass_filenames: false
@@ -116,7 +116,7 @@ repos:
       # Thailint - run on changed files only
       - id: thailint
         name: Thailint (magic numbers, nesting, SRP, file placement, DRY)
-        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.(py|ts|tsx)$" | xargs || true); if [ -n "$files" ]; then make lint-ensure-containers >/dev/null 2>&1; docker exec durable-code-python-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") bash -c "cd /workspace && thailint magic-numbers $files && thailint nesting $files && thailint srp $files && thailint dry $files"; fi'
+        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.(py|ts|tsx)$" | sed "s|^durable-code-app/||" | tr "\n" " " || true); if [ -n "$files" ]; then make lint-ensure-containers >/dev/null 2>&1; docker exec durable-code-python-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") bash -c "cd /workspace && thailint --config /workspace/root/.thailint.yaml magic-numbers $files && thailint --config /workspace/root/.thailint.yaml nesting $files && thailint --config /workspace/root/.thailint.yaml srp $files && thailint --config /workspace/root/.thailint.yaml dry $files"; fi'
         language: system
         files: \.(py|ts|tsx)$
         pass_filenames: false

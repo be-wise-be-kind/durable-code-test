@@ -57,8 +57,8 @@ class CircuitBreakerState(Enum):
     HALF_OPEN = "half_open"  # Testing if service recovered
 
 
-class CircuitBreakerStateManager:
-    """Manages state transitions for circuit breaker."""
+class CircuitBreakerStateMachine:
+    """State machine for circuit breaker state transitions."""
 
     def __init__(
         self,
@@ -192,7 +192,7 @@ class CircuitBreaker:
             ConnectionError,
             TimeoutError,
         )
-        self.state_manager = CircuitBreakerStateManager(name, failure_threshold, success_threshold, timeout_duration)
+        self.state_manager = CircuitBreakerStateMachine(name, failure_threshold, success_threshold, timeout_duration)
 
     async def _execute_function(self, func: Callable[..., Any], *args: Any, **kwargs: Any) -> Any:
         """Execute the function with proper async handling."""

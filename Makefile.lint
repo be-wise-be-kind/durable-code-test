@@ -84,11 +84,11 @@ lint-js: lint-ensure-containers ## Run JavaScript/TypeScript linters using dedic
 lint-thailint: lint-ensure-containers ## Run thailint for magic numbers, nesting, SRP, file placement, and DRY
 	@echo "$(YELLOW)━━━ Thailint (Magic Numbers, Nesting, SRP, File Placement, DRY) ━━━$(NC)"
 	@docker exec durable-code-python-linter-$(BRANCH_NAME) bash -c "cd /workspace && \
-		echo '• Magic numbers...' && thailint magic-numbers backend/ tools/ && \
-		echo '• Nesting depth...' && thailint nesting backend/ tools/ && \
-		echo '• SRP violations...' && thailint srp backend/ tools/ && \
-		echo '• File placement...' && thailint file-placement . && \
-		echo '• DRY violations...' && thailint dry backend/ tools/" || (echo "$(RED)✗ Thailint failed$(NC)" && exit 1)
+		echo '• Magic numbers...' && thailint --config /workspace/root/.thailint.yaml magic-numbers backend/ tools/ && \
+		echo '• Nesting depth...' && thailint --config /workspace/root/.thailint.yaml nesting backend/ tools/ && \
+		echo '• SRP violations...' && thailint --config /workspace/root/.thailint.yaml srp backend/ tools/ && \
+		echo '• File placement...' && thailint --config /workspace/root/.thailint.yaml file-placement . && \
+		echo '• DRY violations...' && thailint --config /workspace/root/.thailint.yaml dry backend/ tools/" || (echo "$(RED)✗ Thailint failed$(NC)" && exit 1)
 	@echo "$(GREEN)✓ Thailint passed$(NC)"
 
 # Design linting target (can be run independently or in parallel) - now excludes rules replaced by thailint

@@ -39,6 +39,7 @@ ALLOWED_ORIGINS: list[str] = [
 # Security configuration
 ALLOWED_METHODS: list[str] = ["GET", "POST", "DELETE"]  # Only specific methods
 ALLOWED_HEADERS: list[str] = ["Content-Type", "Authorization"]  # Only necessary headers
+CORS_PREFLIGHT_MAX_AGE_SECONDS = 3600  # Cache CORS preflight requests for 1 hour
 
 # API Messages and Constants
 WELCOME_MESSAGE = "Welcome to Durable Code API"
@@ -166,7 +167,7 @@ def _configure_middleware(application: FastAPI) -> None:
         allow_credentials=False,  # Disable credentials for security
         allow_methods=ALLOWED_METHODS,  # Only specific methods
         allow_headers=ALLOWED_HEADERS,  # Only necessary headers
-        max_age=3600,  # Cache preflight for 1 hour
+        max_age=CORS_PREFLIGHT_MAX_AGE_SECONDS,
     )
 
 
