@@ -26,9 +26,10 @@ data "terraform_remote_state" "base" {
   backend = "s3"
 
   config = {
-    bucket = "durable-code-terraform-state"
-    key    = "base/${local.environment}/terraform.tfstate"
-    region = "us-west-2"
+    bucket         = "durable-code-terraform-state"
+    key            = "env:/base-${local.environment}/base/${local.environment}/terraform.tfstate"
+    region         = "us-west-2"
+    workspace_key_prefix = ""
   }
 }
 

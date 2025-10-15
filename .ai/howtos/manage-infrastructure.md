@@ -1,6 +1,6 @@
 # How to Manage Infrastructure
 
-**Purpose**: Provide step-by-step instructions for managing AWS infrastructure using Docker-based Terraform Just targets
+**Purpose**: Provide step-by-step instructions for managing AWS infrastructure using Terraform Just targets
 **Scope**: Infrastructure deployment, state management, cost control, and troubleshooting procedures
 
 ---
@@ -9,10 +9,10 @@
 
 Before starting, ensure you have:
 
-1. **Docker installed and running**
+1. **Terraform installed** (handled automatically by `just init`)
    ```bash
-   docker --version
-   docker ps  # Should not error
+   # Check Terraform installation
+   terraform --version  # Should show v1.9.8
    ```
 
 2. **AWS credentials configured**
@@ -37,14 +37,27 @@ Before starting, ensure you have:
 
 ## First-Time Setup
 
-### Step 1: Verify AWS Credentials
+### Step 1: Install Tools
+
+```bash
+# Install Terraform, pre-commit, and build Docker images
+just init
+```
+
+This command:
+- Installs tfenv (Terraform version manager)
+- Installs Terraform 1.9.8
+- Installs pre-commit hooks
+- Builds Docker containers for the application
+
+### Step 2: Verify AWS Credentials
 
 ```bash
 # Check default profile
-just infra-check-aws
+just infra check-aws
 
 # Check specific profile
-AWS_PROFILE=production just infra-check-aws
+AWS_PROFILE=production just infra check-aws
 ```
 
 Expected output:
@@ -59,25 +72,21 @@ Expected output:
 +--------------+------------------------------+
 ```
 
-### Step 2: Set Up Terraform Backend
-
-Create S3 bucket and DynamoDB table for state management:
+### Step 3: Initialize Terraform Workspaces
 
 ```bash
-just infra-backend-setup
+# Initialize for default scope (runtime)
+just infra init
+
+# Initialize specific scope
+just infra init base
+just infra init runtime
+
+# Initialize all scopes
+just infra init all
 ```
 
-This creates:
-- S3 bucket: `durable-code-terraform-state`
-- DynamoDB table: `durable-code-terraform-locks`
-
-### Step 3: Initialize Terraform
-
-```bash
-just infra-init
-```
-
-Note: This happens automatically on first use of any command, but can be run explicitly.
+Note: Initialization happens automatically on first use of plan/up, but can be run explicitly.
 
 ## Daily Workflow
 
@@ -86,71 +95,79 @@ Note: This happens automatically on first use of any command, but can be run exp
 Always preview changes before applying:
 
 ```bash
-# See what will change
-just infra-plan
+# See what will change (default: runtime scope)
+just infra plan
+
+# Plan specific scope
+just infra plan base
+just infra plan runtime
 
 # With specific profile
-AWS_PROFILE=staging just infra-plan
+AWS_PROFILE=staging just infra plan
 ```
 
 ### Applying Changes
 
 ```bash
-# Interactive - will ask for confirmation
-just infra-up
+# Interactive - will ask for confirmation (default: runtime)
+just infra up
 
 # Non-interactive - for CI/CD
-AUTO=true just infra-up
+just infra up runtime true
+
+# Deploy specific scope
+just infra up base
+just infra up runtime
 
 # With specific profile
-AWS_PROFILE=production just infra-up
+AWS_PROFILE=production just infra up
 ```
 
 ### Checking Current State
 
 ```bash
-# List all resources
-just infra-state-list
+# Show infrastructure status
+just infra status
 
-# Show specific resource
-RESOURCE=aws_instance.web just infra-state-show
+# Show outputs (default: runtime)
+just infra output
 
-# Show outputs
-just infra-output
+# Show outputs for specific scope
+just infra output base
+just infra output runtime
 
 # Show outputs as JSON (for scripts)
-FORMAT=json just infra-output
+just infra output runtime json
 ```
 
 ## Environment Management
 
 ### Using Different Environments
 
+The environment is controlled via the `ENV` variable (default: dev):
+
 ```bash
 # Development
-AWS_PROFILE=dev just infra-plan
+ENV=dev just infra plan
 
 # Staging
-AWS_PROFILE=staging just infra-plan
+ENV=staging just infra plan
 
 # Production
-AWS_PROFILE=production just infra-plan
+ENV=prod just infra plan
 ```
 
-### Using Workspaces
+### Workspace Management
+
+Workspaces are automatically managed in the format `{scope}-{env}` (e.g., `base-dev`, `runtime-prod`):
 
 ```bash
-# List workspaces
-just infra-workspace-list
+# Show current workspace status
+just infra status
 
-# Create new workspace
-WORKSPACE=staging just infra-workspace-new
-
-# Switch workspace
-WORKSPACE=production just infra-workspace-select
-
-# Apply in current workspace
-just infra-up
+# Workspaces are selected automatically based on SCOPE and ENV
+ENV=staging just infra plan base  # Uses base-staging workspace
+ENV=prod just infra plan runtime  # Uses runtime-prod workspace
 ```
 
 ## Cost Management
@@ -158,18 +175,16 @@ just infra-up
 ### Destroy Infrastructure When Not Needed
 
 ```bash
-# Interactive destroy
-just infra-down
+# Interactive destroy (default: runtime)
+just infra down
 
-# Non-interactive (careful!)
-AUTO=true just infra-down
-```
+# Destroy specific scope (requires confirmation)
+just infra down runtime destroy-runtime
+just infra down base destroy-base
+just infra down all destroy-all
 
-### Check Costs Before Applying
-
-```bash
-# Requires Infracost API key
-INFRACOST_API_KEY=your_key just infra-cost
+# Example: destroy runtime to save costs overnight
+just infra down runtime destroy-runtime
 ```
 
 ## Maintenance Tasks
@@ -177,29 +192,19 @@ INFRACOST_API_KEY=your_key just infra-cost
 ### Format Terraform Code
 
 ```bash
-# Auto-format all .tf files
-just infra-fmt
-
-# Validate configuration
-just infra-validate
-
-# Both format and validate
-just infra-check
+# Auto-format all .tf files recursively
+just infra fmt
 ```
 
-### Refresh State
-
-Sync state with actual infrastructure:
+### Validate Configuration
 
 ```bash
-just infra-refresh
-```
+# Validate Terraform configuration (default: runtime)
+just infra validate
 
-### Import Existing Resources
-
-```bash
-# Import an existing AWS resource
-RESOURCE=aws_instance.web ID=i-1234567890 just infra-import
+# Validate specific scope
+just infra validate base
+just infra validate runtime
 ```
 
 ## Troubleshooting
@@ -209,22 +214,18 @@ RESOURCE=aws_instance.web ID=i-1234567890 just infra-import
 If you see "Backend initialization required":
 
 ```bash
-# Option 1: Reinitialize (keeps state)
-just infra-reinit
-
-# Option 2: Clean everything and start fresh
-just infra-clean-cache
-just infra-init
+# Reinitialize with -reconfigure flag (automatic in init)
+just infra init
 ```
 
 ### AWS Credentials Not Working
 
 ```bash
 # Check which profile is being used
-just infra-check-aws
+just infra check-aws
 
 # Try a different profile
-AWS_PROFILE=another-profile just infra-check-aws
+AWS_PROFILE=another-profile just infra check-aws
 
 # Check credentials file
 cat ~/.aws/credentials
@@ -235,54 +236,37 @@ cat ~/.aws/credentials
 Someone else might be running Terraform:
 
 ```bash
-# Check who has the lock
-just infra-state-list
-
 # Wait and retry
 sleep 30
-just infra-plan
+just infra plan
+
+# Check DynamoDB lock table
+aws dynamodb scan --table-name durable-code-terraform-locks
 ```
 
-### Docker Volume Issues
+**IMPORTANT**: Never force-unlock Terraform state without explicit permission (per CLAUDE.md standards).
+
+### Terraform Not Found
+
+If Terraform is not in PATH:
 
 ```bash
-# Remove cached .terraform directory
-just infra-clean-cache
+# Add tfenv to PATH
+echo 'export PATH="$HOME/.tfenv/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
 
-# Reinitialize
-just infra-init
+# Or use absolute path
+$HOME/.tfenv/bin/terraform --version
 ```
 
 ## Advanced Usage
-
-### Running Terraform Console
-
-Test expressions and explore state:
-
-```bash
-just infra-console
-
-# In console:
-> var.environment
-> aws_instance.web.public_ip
-> exit
-```
-
-### Generate Infrastructure Graph
-
-Visualize resource dependencies:
-
-```bash
-just infra-graph
-# Creates infrastructure-graph.png
-```
 
 ### Quick Deploy
 
 Initialize and apply in one command:
 
 ```bash
-just infra-up
+just infra up
 ```
 
 ### Using Environment Variables
@@ -291,10 +275,11 @@ just infra-up
 # Set defaults
 export AWS_PROFILE=staging
 export AWS_REGION=eu-west-1
+export ENV=staging
 
 # Now commands use these defaults
-just infra-plan
-just infra-up
+just infra plan
+just infra up
 ```
 
 ## CI/CD Integration
@@ -304,45 +289,57 @@ just infra-up
 ```yaml
 - name: Deploy Infrastructure
   run: |
-    AWS_PROFILE=production AUTO=true just infra-up
+    ENV=production just infra up runtime true
 ```
 
 ### Jenkins Example
 
 ```groovy
-sh 'AWS_PROFILE=production AUTO=true just infra-up'
+sh 'ENV=production just infra up runtime true'
 ```
 
 ## Best Practices
 
 1. **Always plan before applying**
    ```bash
-   just infra-plan
+   just infra plan
    # Review changes
-   just infra-up
+   just infra up
    ```
 
-2. **Use workspaces for environments**
+2. **Use ENV variable for environments**
    ```bash
-   WORKSPACE=staging just infra-workspace-select
-   just infra-up
+   ENV=staging just infra plan
+   ENV=staging just infra up
    ```
 
-3. **Tag resources appropriately**
-   - Environment tags
+3. **Separate base and runtime scopes**
+   ```bash
+   # Deploy persistent infrastructure once
+   just infra up base
+
+   # Deploy/destroy runtime frequently for cost savings
+   just infra up runtime
+   just infra down runtime destroy-runtime
+   ```
+
+4. **Tag resources appropriately**
+   - Environment tags (automatic via locals)
+   - Workspace tags (automatic)
    - Cost center tags
    - Owner tags
 
-4. **Destroy unused infrastructure**
+5. **Destroy unused infrastructure**
    ```bash
-   # Dev environment after work
-   AWS_PROFILE=dev just infra-down
+   # Runtime environment after work (saves costs)
+   just infra down runtime destroy-runtime
    ```
 
-5. **Keep state secure**
+6. **Keep state secure**
    - Never commit state files
    - Use encrypted S3 backend
    - Enable versioning
+   - Never force-unlock without permission
 
 ## Common Patterns
 
@@ -350,20 +347,20 @@ sh 'AWS_PROFILE=production AUTO=true just infra-up'
 
 ```bash
 # Check credentials
-just infra-check-aws
+just infra check-aws
 
-# See current state
-just infra-state-list
+# Check infrastructure status
+just infra status
 
 # Plan any pending changes
-just infra-plan
+just infra plan
 ```
 
 ### End of Day Cleanup
 
 ```bash
-# Destroy dev environment to save costs
-AWS_PROFILE=dev AUTO=true just infra-down
+# Destroy runtime to save costs (keeps base infrastructure)
+just infra down runtime destroy-runtime
 ```
 
 ### Deploy New Feature
@@ -373,24 +370,24 @@ AWS_PROFILE=dev AUTO=true just infra-down
 git checkout feature/new-service
 
 # Plan changes
-just infra-plan
+just infra plan
 
 # Apply if looks good
-just infra-up
+just infra up
 
 # Check outputs
-just infra-output
+just infra output
 ```
 
 ### Emergency Rollback
 
 ```bash
-# Quick destroy if something goes wrong
-AUTO=true just infra-down
+# Quick destroy runtime if something goes wrong
+just infra down runtime destroy-runtime
 
 # Or revert to previous state
 git checkout main
-just infra-up
+just infra up
 ```
 
 ## Domain Registration

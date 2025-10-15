@@ -196,12 +196,12 @@ features:
 
   infrastructure-management:
     file: "features/infrastructure-management.md"
-    summary: "Docker-based Terraform infrastructure management for AWS deployment"
+    summary: "Terraform infrastructure management for AWS deployment with unified just targets"
     key_files:
-      - "Makefile.infra"
+      - "justfile"
       - "infra/terraform/"
       - "infra/scripts/"
-    usage: "make infra-plan, make infra-apply, make infra-destroy"
+    usage: "just infra plan, just infra up, just infra down"
 
   claude-integration:
     file: "features/claude-integration.md"
@@ -243,10 +243,10 @@ features:
     file: "features/terraform-conditional-deployment.md"
     summary: "Intelligent resource deployment based on environment needs and cost optimization"
     key_files:
-      - "infra/terraform/locals.tf"
-      - "infra/terraform/conditional_resources.tf"
-      - "Makefile.infra"
-    usage: "make infra-plan SCOPE=base, make infra-plan SCOPE=compute"
+      - "infra/terraform/workspaces/"
+      - "infra/terraform/backend-config/"
+      - "justfile"
+    usage: "just infra plan base, just infra plan runtime"
 
 standards:
   _expanded_section: "index_expanded.md#standards"
@@ -368,12 +368,12 @@ howtos:
     key_commands: ["make build", "make start", "make status"]
 
   manage-infrastructure.md:
-    purpose: "Manage AWS infrastructure using Terraform Make targets"
-    key_commands: ["make infra-plan", "make infra-apply", "make infra-destroy", "make infra-check-aws"]
+    purpose: "Manage AWS infrastructure using Terraform just targets"
+    key_commands: ["just infra plan", "just infra up", "just infra down", "just infra check-aws"]
 
   terraform-workspaces.md:
     purpose: "Initialize and manage Terraform workspaces for base/runtime separation"
-    key_commands: ["./infra/scripts/workspace-init.sh base dev", "./infra/scripts/workspace-status.sh dev", "make infra-up-base", "make infra-up-runtime"]
+    key_commands: ["just infra init base", "just infra init runtime", "just infra status", "just infra up base", "just infra up runtime"]
 
   debug-issues.md:
     purpose: "Systematic debugging and troubleshooting"
@@ -518,22 +518,22 @@ common_workflows:
 
   deploy_infrastructure:
     steps:
-      - "Check AWS credentials with make infra-check-aws"
-      - "Initialize Terraform with make infra-init (auto-runs)"
-      - "Plan changes with make infra-plan"
-      - "Apply infrastructure with make infra-apply"
+      - "Check AWS credentials with just infra check-aws"
+      - "Initialize Terraform with just infra init (auto-runs)"
+      - "Plan changes with just infra plan [SCOPE]"
+      - "Apply infrastructure with just infra up [SCOPE]"
       - "Monitor costs and destroy when not needed"
     details_in: ".ai/howtos/manage-infrastructure.md"
 
   manage_terraform_workspaces:
     steps:
-      - "Initialize base workspace with ./infra/scripts/workspace-init.sh base ENV"
-      - "Initialize runtime workspace with ./infra/scripts/workspace-init.sh runtime ENV"
-      - "Deploy base infrastructure with make infra-up-base ENV=dev"
-      - "Deploy runtime infrastructure with make infra-up-runtime ENV=dev"
-      - "Check status with ./infra/scripts/workspace-status.sh ENV"
-      - "Destroy runtime for cost savings with make infra-down-runtime ENV=dev"
-      - "Redeploy runtime next day with make infra-up-runtime ENV=dev"
+      - "Initialize base workspace with just infra init base"
+      - "Initialize runtime workspace with just infra init runtime"
+      - "Deploy base infrastructure with just infra up base"
+      - "Deploy runtime infrastructure with just infra up runtime"
+      - "Check status with just infra status"
+      - "Destroy runtime for cost savings with just infra down runtime destroy-runtime"
+      - "Redeploy runtime next day with just infra up runtime"
     details_in: "infra/terraform/workspaces/README.md"
 
   manage_roadmap:
