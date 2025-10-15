@@ -48,7 +48,8 @@ MAX_OFFSET = 10.0  # Maximum DC offset
 # Timing constants
 COMMAND_TIMEOUT = 0.01  # Timeout for receiving commands in seconds
 IDLE_SLEEP_DURATION = 0.1  # Sleep duration when not streaming in seconds
-WEBSOCKET_TIMEOUT = 30.0  # WebSocket connection timeout in seconds
+# Note: WebSocket global timeout removed - streaming connections are expected to be long-lived
+# For production apps requiring connection limits, implement inactivity detection instead
 WEBSOCKET_MAX_MESSAGE_SIZE = 1024 * 1024  # 1MB maximum message size
 
 # Example constants for documentation
@@ -135,7 +136,10 @@ class WebSocketRateLimiter:
 
 
 # Global rate limiter instance
-_websocket_rate_limiter = WebSocketRateLimiter(max_connections_per_ip=5, window_seconds=60.0)
+# Note: Increased from 5 to 50 connections to support demo usage patterns
+# where users frequently refresh or reconnect. This still provides protection
+# against abuse while allowing normal demo interaction.
+_websocket_rate_limiter = WebSocketRateLimiter(max_connections_per_ip=50, window_seconds=60.0)
 
 
 class OscilloscopeCommand(BaseModel):
@@ -437,16 +441,17 @@ async def _dispatch_exception_handler(
 async def _handle_stream_errors(
     websocket: WebSocket, generator: WaveformGenerator, state_machine: WebSocketStateMachine, client_ip: str
 ) -> None:
-    """Handle WebSocket stream errors with specific error handlers."""
+    """Handle WebSocket stream errors with specific error handlers.
+
+    Note: No global timeout - the connection stays alive as long as it's actively streaming.
+    This is appropriate for real-time data streaming applications where continuous
+    connections are expected. The connection will close on client disconnect or errors.
+    """
     try:
-        async with asyncio.timeout(WEBSOCKET_TIMEOUT):
-            await _run_stream_loop(websocket, generator, state_machine)
+        await _run_stream_loop(websocket, generator, state_machine)
     except asyncio.CancelledError:
         _handle_cancellation_error(state_machine, client_ip)
         # Don't re-raise - let cleanup happen in finally block
-    except TimeoutError:
-        # Handle timeout from asyncio.timeout context manager
-        await _handle_timeout_error(websocket, state_machine, client_ip)
     except (WebSocketDisconnect, OSError, ValueError, TypeError) as exception:
         await _dispatch_exception_handler(exception, websocket, state_machine, client_ip)
     finally:
@@ -465,8 +470,9 @@ async def oscilloscope_stream(websocket: WebSocket) -> None:
         Server -> Client: JSON data (OscilloscopeData)
 
     Security:
-        - 30-second inactivity timeout
-        - Rate limiting: 5 connections per IP per minute
+        - No global connection timeout (appropriate for streaming applications)
+        - Rate limiting: 50 connections per IP per minute
+        - Connection closes on client disconnect or protocol errors
     """
     # Get client IP for rate limiting
     client_ip = websocket.client.host if websocket.client else "unknown"
