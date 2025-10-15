@@ -46,8 +46,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Setup Just
+        uses: extractions/setup-just@v2
+
+      - name: Setup tfenv
+        run: |
+          git clone --depth=1 https://github.com/tfutils/tfenv.git ~/.tfenv
+          echo "$HOME/.tfenv/bin" >> $GITHUB_PATH
+
+      - name: Install Terraform
+        run: |
+          tfenv install 1.9.8
+          tfenv use 1.9.8
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -63,37 +73,49 @@ jobs:
           echo "✅ AWS credentials verified"
 
       - name: Check infrastructure status (before)
+        env:
+          ENV: ${{ inputs.environment || 'dev' }}
+          AWS_PROFILE: ""
         run: |
           echo "📊 Infrastructure status before startup:"
-          just infra-status ENV=${{ inputs.environment || 'dev' }} AWS_PROFILE="" || echo "Status check completed"
+          just infra status || echo "Status check completed"
 
       - name: Plan infrastructure startup
         if: ${{ inputs.dry_run == true }}
+        env:
+          ENV: ${{ inputs.environment || 'dev' }}
+          AWS_PROFILE: ""
         run: |
           echo "🔍 Planning infrastructure startup (dry run)..."
-          just infra-plan SCOPE=${{ inputs.scope || 'runtime' }} ENV=${{ inputs.environment || 'dev' }} AWS_PROFILE=""
+          just infra plan ${{ inputs.scope || 'runtime' }}
 
       - name: Execute infrastructure startup
         if: ${{ inputs.dry_run != true }}
+        env:
+          ENV: ${{ inputs.environment || 'dev' }}
+          AWS_PROFILE: ""
         run: |
           echo "🚀 Starting infrastructure startup..."
-          ENV="${{ inputs.environment || 'dev' }}"
           SCOPE="${{ inputs.scope || 'runtime' }}"
 
           echo "⏰ Infrastructure startup initiated at $(date)"
           # In CI, don't use AWS_PROFILE - OIDC sets environment variables directly
-          just infra-up SCOPE="$SCOPE" ENV="$ENV" AUTO=true AWS_PROFILE=""
+          just infra up "$SCOPE" true
 
       - name: Wait for infrastructure readiness
         if: ${{ inputs.dry_run != true }}
+        env:
+          ENV: ${{ inputs.environment || 'dev' }}
+          AWS_PROFILE: ""
+          AWS_REGION: us-west-2
         run: |
           echo "⏳ Waiting for infrastructure to be ready..."
-          ENV="${{ inputs.environment || 'dev' }}"
 
           # Wait up to 10 minutes for infrastructure to be ready
           for i in {1..30}; do
             echo "  Attempt $i/30: Checking infrastructure readiness..."
-            if just deploy-check ENV="$ENV" AWS_PROFILE="" 2>/dev/null; then
+            # Check if ALB exists and is active
+            if aws elbv2 describe-load-balancers --names "durableai-${ENV}-alb" --region "$AWS_REGION" >/dev/null 2>&1; then
               echo "✅ Infrastructure is ready!"
               break
             fi
@@ -101,7 +123,7 @@ jobs:
             if [[ $i -eq 30 ]]; then
               echo "⚠️ Infrastructure readiness timeout after 10 minutes"
               echo "📊 Current status:"
-              just infra-status ENV="$ENV" AWS_PROFILE="" || true
+              just infra status || true
               exit 1
             fi
 
@@ -110,21 +132,25 @@ jobs:
 
       - name: Deploy application
         if: ${{ inputs.deploy_app == true && inputs.dry_run != true }}
+        env:
+          ENV: ${{ inputs.environment || 'dev' }}
+          AWS_PROFILE: ""
         run: |
           echo "🚀 Deploying application..."
-          ENV="${{ inputs.environment || 'dev' }}"
-
           echo "📦 Starting application deployment..."
-          just deploy ENV="$ENV"
+          just deploy
 
       - name: Verify application health
         if: ${{ inputs.deploy_app == true && inputs.dry_run != true }}
+        env:
+          ENV: ${{ inputs.environment || 'dev' }}
+          AWS_PROFILE: ""
+          AWS_REGION: us-west-2
         run: |
           echo "🏥 Verifying application health..."
-          ENV="${{ inputs.environment || 'dev' }}"
 
-          # Get ALB DNS name from infrastructure status
-          ALB_DNS=$(just infra-output ENV="$ENV" AWS_PROFILE="" | grep alb_dns_name | cut -d'"' -f4 || echo "")
+          # Get ALB DNS name from AWS directly
+          ALB_DNS=$(aws elbv2 describe-load-balancers --names "durableai-${ENV}-alb" --region "$AWS_REGION" --query 'LoadBalancers[0].DNSName' --output text 2>/dev/null || echo "")
 
           if [[ -z "$ALB_DNS" ]]; then
             echo "⚠️ Could not retrieve ALB DNS name"
@@ -155,12 +181,19 @@ jobs:
 
       - name: Check infrastructure status (after)
         if: ${{ inputs.dry_run != true }}
+        env:
+          ENV: ${{ inputs.environment || 'dev' }}
+          AWS_PROFILE: ""
         run: |
           echo "📊 Final infrastructure status:"
-          just infra-status ENV=${{ inputs.environment || 'dev' }} AWS_PROFILE="" || echo "Status check completed"
+          just infra status || echo "Status check completed"
 
       - name: Post startup summary
         if: always()
+        env:
+          ENV: ${{ inputs.environment || 'dev' }}
+          AWS_PROFILE: ""
+          AWS_REGION: us-west-2
         run: |
           echo "🎯 Morning Startup Summary"
           echo "  Environment: ${{ inputs.environment || 'dev' }}"
@@ -170,9 +203,8 @@ jobs:
           echo "  Status: ${{ job.status }}"
           echo ""
 
-          ENV="${{ inputs.environment || 'dev' }}"
           if [[ "${{ job.status }}" == "success" && "${{ inputs.dry_run }}" != "true" ]]; then
-            ALB_DNS=$(just infra-output ENV="$ENV" AWS_PROFILE="" | grep alb_dns_name | cut -d'"' -f4 || echo "")
+            ALB_DNS=$(aws elbv2 describe-load-balancers --names "durableai-${ENV}-alb" --region "$AWS_REGION" --query 'LoadBalancers[0].DNSName' --output text 2>/dev/null || echo "")
             if [[ -n "$ALB_DNS" ]]; then
               echo "🌐 Application URLs:"
               echo "  - Frontend: http://$ALB_DNS"
@@ -192,7 +224,7 @@ jobs:
           echo "📞 Check AWS console and Terraform state"
           echo ""
           echo "🚨 Manual recovery commands:"
-          echo "  just infra-up SCOPE=${{ inputs.scope || 'runtime' }} ENV=${{ inputs.environment || 'dev' }}"
+          echo "  just infra up ${{ inputs.scope || 'runtime' }} true"
           if [[ "${{ inputs.deploy_app }}" == "true" ]]; then
-            echo "  just deploy ENV=${{ inputs.environment || 'dev' }}"
+            echo "  just deploy"
           fi

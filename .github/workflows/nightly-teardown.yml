@@ -41,8 +41,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Setup Just
+        uses: extractions/setup-just@v2
+
+      - name: Setup tfenv
+        run: |
+          git clone --depth=1 https://github.com/tfutils/tfenv.git ~/.tfenv
+          echo "$HOME/.tfenv/bin" >> $GITHUB_PATH
+
+      - name: Install Terraform
+        run: |
+          tfenv install 1.9.8
+          tfenv use 1.9.8
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -58,42 +68,54 @@ jobs:
           echo "✅ AWS credentials verified"
 
       - name: Check infrastructure status (before)
+        env:
+          ENV: ${{ inputs.environment || 'dev' }}
+          AWS_PROFILE: ""
         run: |
           echo "📊 Infrastructure status before teardown:"
-          just infra-status ENV=${{ inputs.environment || 'dev' }} AWS_PROFILE="" || echo "Status check failed - continuing with teardown"
+          just infra status || echo "Status check failed - continuing with teardown"
 
       - name: Plan infrastructure teardown
         if: ${{ inputs.dry_run == true }}
+        env:
+          ENV: ${{ inputs.environment || 'dev' }}
+          AWS_PROFILE: ""
         run: |
           echo "🔍 Planning infrastructure teardown (dry run)..."
           echo "Note: Terraform destroy does not support separate plan output."
           echo "Showing current state instead:"
-          just infra-status ENV=${{ inputs.environment || 'dev' }} AWS_PROFILE=""
+          just infra status
 
       - name: Execute infrastructure teardown
         if: ${{ inputs.dry_run != true }}
+        env:
+          ENV: ${{ inputs.environment || 'dev' }}
+          AWS_PROFILE: ""
         run: |
           echo "🔥 Executing infrastructure teardown..."
-          ENV="${{ inputs.environment || 'dev' }}"
           SCOPE="${{ inputs.scope || 'runtime' }}"
 
           # In CI, don't use AWS_PROFILE - OIDC sets environment variables directly
           # Add confirmation for base/all scope destruction
           if [[ "$SCOPE" == "all" ]]; then
             echo "⚠️ Destroying all infrastructure"
-            just infra-down SCOPE="$SCOPE" ENV="$ENV" AUTO=true CONFIRM=destroy-all AWS_PROFILE=""
+            just infra down "$SCOPE" destroy-all
           elif [[ "$SCOPE" == "base" ]]; then
             echo "⚠️ Destroying base infrastructure"
-            just infra-down SCOPE="$SCOPE" ENV="$ENV" AUTO=true CONFIRM=destroy-base AWS_PROFILE=""
+            just infra down "$SCOPE" destroy-base
           else
-            just infra-down SCOPE="$SCOPE" ENV="$ENV" AUTO=true AWS_PROFILE=""
+            echo "Destroying runtime infrastructure"
+            just infra down "$SCOPE"
           fi
 
       - name: Check infrastructure status (after)
         if: ${{ inputs.dry_run != true }}
+        env:
+          ENV: ${{ inputs.environment || 'dev' }}
+          AWS_PROFILE: ""
         run: |
           echo "📊 Infrastructure status after teardown:"
-          just infra-status ENV=${{ inputs.environment || 'dev' }} AWS_PROFILE="" || echo "Status check completed"
+          just infra status || echo "Status check completed"
 
       - name: Calculate cost savings
         if: ${{ inputs.dry_run != true }}
@@ -121,7 +143,7 @@ jobs:
           echo ""
           echo "💡 To restore infrastructure:"
           echo "  - Automatic: 8 AM PST via morning-startup workflow"
-          echo "  - Manual: just infra-up SCOPE=${{ inputs.scope || 'runtime' }} ENV=${{ inputs.environment || 'dev' }}"
+          echo "  - Manual: just infra up ${{ inputs.scope || 'runtime' }} true"
 
       - name: Notify on failure
         if: failure()
