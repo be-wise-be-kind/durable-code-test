@@ -317,7 +317,7 @@ export class ErrorBoundary extends Component<Props, State> {
 ## 6. AI-Optimized Documentation
 
 ### Abstract Principle
-**Reduce context requirements through structured metadata.** AI agents waste tokens reading entire files. Structured headers and indices provide instant context.
+**Provide optimal context through structured metadata.** AI agents need contractor-level understanding to work effectively, but loading entire codebases wastes tokens and overwhelms decision-making. Structured headers and indices provide comprehensive context efficiently, giving agents the depth they need without the noise they don't.
 
 ### Our Implementation: Mandatory File Headers + index.yaml
 
