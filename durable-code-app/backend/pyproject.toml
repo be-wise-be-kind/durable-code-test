@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Backend API for Durable Code Test"
 authors = ["Your Name <you@example.com>"]
 readme = "README.md"
-packages = [{include = "app"}, {include = "tools"}]
+packages = [{include = "app"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"

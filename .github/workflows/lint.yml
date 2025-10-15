@@ -1,16 +1,14 @@
-# Purpose: Comprehensive code quality and linting workflow using dedicated Docker linting containers
-# Scope: Complete linting coverage for Python, TypeScript, React, and custom design pattern validation
-# Overview: Executes comprehensive code quality checks using dedicated linting containers that separate
-#     linting tools from development environments. Implements optimized Docker registry caching with
-#     conditional rebuilds, reducing CI time by 80-90% when dependencies haven't changed. Uses GitHub
-#     Container Registry (GHCR) to cache pre-built linting images and only rebuilds when Dockerfiles
-#     or dependency files change. Runs multiple linting tools including Ruff, ESLint, custom SOLID
-#     principle validators, and design pattern linters in isolated containers.
-# Dependencies: Docker BuildKit, GHCR registry cache, just task runner, docker-compose
+# Purpose: Comprehensive code quality and linting workflow using poetry and npm
+# Scope: Complete linting coverage for Python, TypeScript, React, and infrastructure validation
+# Overview: Executes comprehensive code quality checks using native tooling (poetry for Python,
+#     npm for frontend). Runs multiple linting tools including Ruff, ESLint, MyPy, Pylint,
+#     TypeScript compiler, Prettier, and infrastructure validation tools. Uses poetry and npm
+#     caching for fast CI execution.
+# Dependencies: Poetry, Node.js, just task runner
 # Exports: Linting execution status, code quality reports, and comprehensive quality summaries
-# Environment: GitHub Actions CI/CD pipeline with GHCR-based image caching for linting containers
-# Related: .docker/dockerfiles/linting/, .docker/compose/lint.yml, justfile
-# Implementation: Uses GHCR registry cache with conditional rebuilds based on file change detection
+# Environment: GitHub Actions CI/CD pipeline with poetry and npm dependency caching
+# Related: justfile, .pre-commit-config.yaml, pyproject.toml, package.json
+# Implementation: Direct execution of linting tools via poetry run and npm run
 
 name: Linting
 
@@ -23,233 +21,72 @@ on:
 env:
   PYTHON_VERSION: '3.11'
   NODE_VERSION: '20'
-  DOCKER_BUILDKIT: 1
-  COMPOSE_DOCKER_CLI_BUILD: 1
-  REGISTRY: ghcr.io
-  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/durable-code
 
 jobs:
   lint:
     name: Code Quality & Linting
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 2  # Need previous commit to detect changes
 
       # Install Just task runner
       - name: Install Just
         uses: extractions/setup-just@v2
 
-      # Set up Docker Buildx for advanced caching features
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      # Login to GitHub Container Registry for caching
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
+      # Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          python-version: ${{ env.PYTHON_VERSION }}
 
-      # Detect if linting dependencies have changed
-      - name: Check if linting dependencies changed
-        id: lint-deps-check
-        run: |
-          # Files that affect linting container builds
-          LINT_FILES=(
-            ".docker/dockerfiles/Dockerfile.backend"
-            ".docker/dockerfiles/Dockerfile.frontend"
-            "durable-code-app/backend/pyproject.toml"
-            "durable-code-app/backend/poetry.lock"
-            "durable-code-app/frontend/package.json"
-            "durable-code-app/frontend/package-lock.json"
-          )
+      # Install and configure Poetry
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: latest
+          virtualenvs-create: true
+          virtualenvs-in-project: true
 
-          # Check if any lint dependency files changed
-          CHANGED=false
-          for file in "${LINT_FILES[@]}"; do
-            if git diff --name-only HEAD~1 HEAD | grep -q "^${file}$"; then
-              echo "Detected change in: $file"
-              CHANGED=true
-              break
-            fi
-          done
+      # Cache Poetry dependencies
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            durable-code-app/backend/.venv
+          key: poetry-${{ runner.os }}-${{ hashFiles('durable-code-app/backend/poetry.lock') }}
+          restore-keys: |
+            poetry-${{ runner.os }}-
 
-          # Always rebuild on main branch to refresh cache
-          if [ "${{ github.ref }}" == "refs/heads/main" ]; then
-            echo "On main branch - will rebuild and cache"
-            CHANGED=true
-          fi
+      # Set up Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: durable-code-app/frontend/package-lock.json
 
-          echo "rebuild_needed=$CHANGED" >> $GITHUB_OUTPUT
-
-          if [ "$CHANGED" == "true" ]; then
-            echo "🔨 Linting containers will be rebuilt"
-          else
-            echo "✨ Using cached linting containers (no dependency changes detected)"
-          fi
-
-      # Build or pull both linting containers in parallel
-      - name: Build or pull linting containers (parallel)
-        run: |
-          PYTHON_IMAGE="${{ env.IMAGE_PREFIX }}-python-linter:latest"
-          JS_IMAGE="${{ env.IMAGE_PREFIX }}-js-linter:latest"
-          REBUILD="${{ steps.lint-deps-check.outputs.rebuild_needed }}"
-
-          # Function to build or pull Python container
-          build_python() {
-            if [ "$REBUILD" == "true" ]; then
-              echo "Building Python linting container with registry cache..."
-              docker buildx build \
-                --cache-from type=registry,ref=${PYTHON_IMAGE} \
-                --cache-to type=registry,ref=${PYTHON_IMAGE},mode=max \
-                --target lint \
-                --load \
-                -t durable-code-python-linter:latest \
-                -f ./.docker/dockerfiles/Dockerfile.backend \
-                .
-              echo "✓ Python linting container built and cached"
-            else
-              echo "Pulling cached Python linting container..."
-              docker pull ${PYTHON_IMAGE} || echo "No cache found, will build"
-              if docker image inspect ${PYTHON_IMAGE} >/dev/null 2>&1; then
-                docker tag ${PYTHON_IMAGE} durable-code-python-linter:latest
-                echo "✓ Python linting container pulled from cache"
-              else
-                echo "Cache miss - building Python linting container..."
-                docker buildx build \
-                  --cache-from type=registry,ref=${PYTHON_IMAGE} \
-                  --cache-to type=registry,ref=${PYTHON_IMAGE},mode=max \
-                  --target lint \
-                  --load \
-                  -t durable-code-python-linter:latest \
-                  -f ./.docker/dockerfiles/Dockerfile.backend \
-                  .
-              fi
-            fi
-          }
-
-          # Function to build or pull JavaScript container
-          build_js() {
-            if [ "$REBUILD" == "true" ]; then
-              echo "Building JavaScript linting container with registry cache..."
-              docker buildx build \
-                --cache-from type=registry,ref=${JS_IMAGE} \
-                --cache-to type=registry,ref=${JS_IMAGE},mode=max \
-                --target lint \
-                --load \
-                -t durable-code-js-linter:latest \
-                -f ./.docker/dockerfiles/Dockerfile.frontend \
-                .
-              echo "✓ JavaScript linting container built and cached"
-            else
-              echo "Pulling cached JavaScript linting container..."
-              docker pull ${JS_IMAGE} || echo "No cache found, will build"
-              if docker image inspect ${JS_IMAGE} >/dev/null 2>&1; then
-                docker tag ${JS_IMAGE} durable-code-js-linter:latest
-                echo "✓ JavaScript linting container pulled from cache"
-              else
-                echo "Cache miss - building JavaScript linting container..."
-                docker buildx build \
-                  --cache-from type=registry,ref=${JS_IMAGE} \
-                  --cache-to type=registry,ref=${JS_IMAGE},mode=max \
-                  --target lint \
-                  --load \
-                  -t durable-code-js-linter:latest \
-                  -f ./.docker/dockerfiles/Dockerfile.frontend \
-                  .
-              fi
-            fi
-          }
-
-          # Run both builds in parallel
-          echo "Starting parallel container builds/pulls..."
-          build_python &
-          PYTHON_PID=$!
-          build_js &
-          JS_PID=$!
-
-          # Wait for both to complete
-          wait $PYTHON_PID
-          PYTHON_EXIT=$?
-          wait $JS_PID
-          JS_EXIT=$?
-
-          # Check if both succeeded
-          if [ $PYTHON_EXIT -ne 0 ]; then
-            echo "❌ Python container build/pull failed"
-            exit 1
-          fi
-          if [ $JS_EXIT -ne 0 ]; then
-            echo "❌ JavaScript container build/pull failed"
-            exit 1
-          fi
-
-          echo "✓ Both linting containers ready"
-
-      # Start linting containers using docker-compose
-      - name: Start linting containers
-        run: |
-          # Check if docker-compose or docker compose should be used
-          if command -v docker-compose &> /dev/null; then
-            DOCKER_COMPOSE="docker-compose"
-          else
-            DOCKER_COMPOSE="docker compose"
-          fi
-
-          # Use docker-compose to start the linting containers
-          $DOCKER_COMPOSE -f .docker/compose/lint.yml up -d
-
-          # Wait for containers to be ready
-          sleep 2
-
-          # Verify containers are running
-          docker ps | grep -E "durable-code-(python|js)-linter" || echo "Containers may be starting..."
+      # Install dependencies
+      - name: Install dependencies
+        run: just install
 
       # Run linting using just task runner
       - name: Run comprehensive linting
         run: just lint
 
-      # Stop linting containers after use
-      - name: Stop linting containers
-        if: always()
-        run: |
-          # Check if docker-compose or docker compose should be used
-          if command -v docker-compose &> /dev/null; then
-            DOCKER_COMPOSE="docker-compose"
-          else
-            DOCKER_COMPOSE="docker compose"
-          fi
-
-          $DOCKER_COMPOSE -f .docker/compose/lint.yml down || echo "Containers may have already stopped"
-
       - name: Generate linting summary
         if: always()
         run: |
           echo "## 🔍 Linting Summary" >> $GITHUB_STEP_SUMMARY
-          echo "All linting checks completed using dedicated linting containers via \`just lint\`" >> $GITHUB_STEP_SUMMARY
+          echo "All linting checks completed using poetry and npm via \`just lint\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🐳 Dedicated Linting Containers Used:" >> $GITHUB_STEP_SUMMARY
-          echo "- **Python Linter Container**: \`durable-code-python-linter\`" >> $GITHUB_STEP_SUMMARY
-          echo "  - Ruff, Flake8, MyPy, Pylint, Bandit, Xenon" >> $GITHUB_STEP_SUMMARY
-          echo "- **JavaScript Linter Container**: \`durable-code-js-linter\`" >> $GITHUB_STEP_SUMMARY
-          echo "  - ESLint, Prettier, TypeScript, HTMLHint" >> $GITHUB_STEP_SUMMARY
+          echo "### 🛠️ Linting Tools Used:" >> $GITHUB_STEP_SUMMARY
+          echo "- **Python**: Ruff, Flake8, MyPy, Pylint, Bandit, Xenon (via poetry)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Frontend**: ESLint, Prettier, TypeScript, Stylelint (via npm)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Infrastructure**: Terraform fmt, Shellcheck" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### ⚡ Performance Optimizations:" >> $GITHUB_STEP_SUMMARY
-          echo "- **Registry-based caching**: Pre-built images cached in GHCR" >> $GITHUB_STEP_SUMMARY
-          echo "- **Conditional rebuilds**: Only rebuild when dependencies change" >> $GITHUB_STEP_SUMMARY
-          echo "- **Parallel execution**: Python and JavaScript linting run concurrently" >> $GITHUB_STEP_SUMMARY
-          if [ "${{ steps.lint-deps-check.outputs.rebuild_needed }}" == "false" ]; then
-            echo "- **⚡ Cache hit**: Containers pulled from cache (no rebuild needed)" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "- **🔨 Rebuild**: Dependencies changed, containers rebuilt and cached" >> $GITHUB_STEP_SUMMARY
-          fi
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Expected time savings**: 80-90% faster when using cached containers" >> $GITHUB_STEP_SUMMARY
+          echo "### ⚡ Performance:" >> $GITHUB_STEP_SUMMARY
+          echo "- Poetry dependency caching for fast Python environment setup" >> $GITHUB_STEP_SUMMARY
+          echo "- npm caching for fast frontend dependency installation" >> $GITHUB_STEP_SUMMARY
+          echo "- Parallel execution of Python and frontend linting" >> $GITHUB_STEP_SUMMARY

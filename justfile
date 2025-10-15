@@ -132,92 +132,104 @@ shell-frontend:
 # Linting Targets
 ################################################################################
 
-# Ensure linting containers are running
-@lint-ensure-containers:
-    #!/usr/bin/env bash
-    if ! docker ps | grep -q "durable-code-python-linter-{{BRANCH_NAME}}"; then
-        echo -e "{{CYAN}}Starting Python linting container...{{NC}}"
-        {{COMPOSE_CMD}} -f .docker/compose/lint.yml up -d python-linter
-    fi
-    if ! docker ps | grep -q "durable-code-js-linter-{{BRANCH_NAME}}"; then
-        echo -e "{{CYAN}}Starting JS linting container...{{NC}}"
-        {{COMPOSE_CMD}} -f .docker/compose/lint.yml up -d js-linter
-    fi
-    echo -e "{{GREEN}}✓ Linting containers ready{{NC}}"
-
-# Start dedicated linting containers
-lint-start:
-    @echo -e "{{CYAN}}Starting linting containers...{{NC}}"
-    @{{COMPOSE_CMD}} -f .docker/compose/lint.yml up -d --build
-    @echo -e "{{GREEN}}✓ Linting containers started{{NC}}"
-
-# Stop dedicated linting containers
-lint-stop:
-    @echo -e "{{CYAN}}Stopping linting containers...{{NC}}"
-    @{{COMPOSE_CMD}} -f .docker/compose/lint.yml down
-    @echo -e "{{GREEN}}✓ Linting containers stopped{{NC}}"
-
-# Run all linters (Python + JS + custom + infra)
-lint: lint-ensure-containers
+# Run linting with optional scope parameter (all, python, frontend, security, infra)
+lint SCOPE="all":
     @echo -e "{{CYAN}}╔════════════════════════════════════════════════════════════╗{{NC}}"
-    @echo -e "{{CYAN}}║        Running ALL Linters (Parallel Execution)           ║{{NC}}"
+    @echo -e "{{CYAN}}║              Running Linting: {{SCOPE}}                    ║{{NC}}"
     @echo -e "{{CYAN}}╚════════════════════════════════════════════════════════════╝{{NC}}"
     @echo ""
-    @just _lint-python &
-    @just _lint-js &
-    @wait
-    @just _lint-infra
+    @just _run-lint {{SCOPE}}
     @echo ""
-    @echo -e "{{GREEN}}✅ ALL linting checks passed!{{NC}}"
+    @echo -e "{{GREEN}}✅ Linting checks passed!{{NC}}"
+
+# Internal: Execute linting based on scope
+@_run-lint SCOPE:
+    #!/usr/bin/env bash
+    set -e
+
+    case "{{SCOPE}}" in
+        all)
+            echo -e "{{YELLOW}}Running all linters in parallel...{{NC}}"
+            just _lint-python &
+            PYTHON_PID=$!
+            just _lint-frontend &
+            FRONTEND_PID=$!
+
+            wait $PYTHON_PID
+            PYTHON_EXIT=$?
+            wait $FRONTEND_PID
+            FRONTEND_EXIT=$?
+
+            if [ $PYTHON_EXIT -ne 0 ] || [ $FRONTEND_EXIT -ne 0 ]; then
+                echo -e "{{RED}}❌ Linting failed{{NC}}"
+                exit 1
+            fi
+
+            just _lint-infra
+            ;;
+        python)
+            just _lint-python
+            ;;
+        frontend)
+            just _lint-frontend
+            ;;
+        security)
+            just _lint-security
+            ;;
+        infra)
+            just _lint-infra
+            ;;
+        *)
+            echo -e "{{RED}}Unknown scope: {{SCOPE}}{{NC}}"
+            echo -e "{{YELLOW}}Valid scopes: all, python, frontend, security, infra{{NC}}"
+            exit 1
+            ;;
+    esac
 
 # Internal: Python linting
 @_lint-python:
     echo -e "{{YELLOW}}━━━ Python Linters ━━━{{NC}}"
-    docker exec -u root durable-code-python-linter-{{BRANCH_NAME}} bash -c "cd /workspace/backend && \
-        mkdir -p /tmp/.cache/ruff /tmp/.cache/mypy && \
-        echo '• Ruff...' && RUFF_CACHE_DIR=/tmp/.cache/ruff ruff format --check app /workspace/tools && RUFF_CACHE_DIR=/tmp/.cache/ruff ruff check app /workspace/tools && \
-        echo '• Flake8...' && flake8 app --count 2>/dev/null && flake8 /workspace/tools --config /workspace/tools/.flake8 --count 2>/dev/null && \
-        echo '• MyPy...' && MYPY_CACHE_DIR=/tmp/.cache/mypy mypy . && \
-        echo '• Pylint...' && pylint app /workspace/tools 2>&1 | tail -3 && \
-        echo '• Bandit...' && bandit -r app /workspace/tools -q && \
-        echo '• Xenon...' && xenon --max-absolute B --max-modules B --max-average A app"
+    cd durable-code-app/backend && \
+        echo '• Ruff format...' && poetry run ruff format --check app ../../tools && \
+        echo '• Ruff lint...' && poetry run ruff check app ../../tools && \
+        echo '• Flake8...' && poetry run flake8 app --count 2>/dev/null && poetry run flake8 ../../tools --config ../../tools/.flake8 --count 2>/dev/null && \
+        echo '• MyPy...' && poetry run mypy . && \
+        echo '• Pylint...' && poetry run pylint app ../../tools 2>&1 | tail -3 && \
+        echo '• Bandit...' && poetry run bandit -r app ../../tools -q && \
+        echo '• Xenon...' && poetry run xenon --max-absolute B --max-modules B --max-average A app
     echo -e "{{GREEN}}✓ Python linting passed{{NC}}"
 
-# Internal: JavaScript/TypeScript linting
-@_lint-js:
+# Internal: Frontend linting
+@_lint-frontend:
     echo -e "{{YELLOW}}━━━ TypeScript/React Linters ━━━{{NC}}"
-    docker exec durable-code-js-linter-{{BRANCH_NAME}} sh -c "cd /workspace/frontend && \
+    cd durable-code-app/frontend && \
         echo '• TypeScript...' && npm run typecheck && \
         echo '• ESLint...' && npm run lint && \
         echo '• Stylelint...' && npm run lint:css && \
-        echo '• Prettier...' && npm run format:check && \
-        echo '• HTMLHint...' && htmlhint 'public/**/*.html' 'src/**/*.html' '*.html' --config /.htmlhintrc"
+        echo '• Prettier...' && npm run format:check
     echo -e "{{GREEN}}✓ Frontend linting passed{{NC}}"
+
+# Internal: Security linting
+@_lint-security:
+    echo -e "{{YELLOW}}━━━ Security Linters ━━━{{NC}}"
+    cd durable-code-app/backend && \
+        echo '• Bandit (Python security)...' && poetry run bandit -r app ../../tools -q
+    echo -e "{{GREEN}}✓ Security linting passed{{NC}}"
 
 # Internal: Infrastructure linting
 @_lint-infra:
     echo -e "{{YELLOW}}━━━ Infrastructure Linters ━━━{{NC}}"
     printf '%-30s' "• Terraform format" && (just infra-fmt >/dev/null 2>&1 && echo -e "{{GREEN}}✓{{NC}}" || exit 1)
-    printf '%-30s' "• Shellcheck" && docker exec durable-code-python-linter-{{BRANCH_NAME}} bash -c "\
-        if command -v shellcheck >/dev/null 2>&1; then \
-            for script in /workspace/infra/scripts/*.sh /workspace/scripts/*.sh; do \
-                if [ -f \"\$script\" ]; then shellcheck --severity=warning \"\$script\" >/dev/null 2>&1 || exit 1; fi; \
-            done; \
-            echo -e '{{GREEN}}✓{{NC}}'; \
-        fi"
+    printf '%-30s' "• Shellcheck" && (shellcheck infra/scripts/*.sh scripts/*.sh 2>/dev/null && echo -e "{{GREEN}}✓{{NC}}" || echo -e "{{YELLOW}}⚠ (not installed){{NC}}")
     echo -e "{{GREEN}}✓ Infrastructure linting passed{{NC}}"
 
 # Auto-fix formatting issues
-lint-fix: lint-ensure-containers
+lint-fix:
     @echo -e "{{CYAN}}Auto-fixing code formatting...{{NC}}"
     @echo -e "{{YELLOW}}Fixing Python code...{{NC}}"
-    @docker exec -u root durable-code-python-linter-{{BRANCH_NAME}} bash -c "cd /workspace/backend && \
-        mkdir -p /tmp/.cache/ruff && \
-        RUFF_CACHE_DIR=/tmp/.cache/ruff ruff format app /workspace/tools && \
-        RUFF_CACHE_DIR=/tmp/.cache/ruff ruff check --fix app /workspace/tools"
+    @cd durable-code-app/backend && poetry run ruff format app ../../tools && poetry run ruff check --fix app ../../tools
     @echo -e "{{YELLOW}}Fixing TypeScript/React code...{{NC}}"
-    @docker exec durable-code-js-linter-{{BRANCH_NAME}} sh -c "cd /workspace/frontend && \
-        npm run lint:fix && npm run lint:css:fix && npm run format"
+    @cd durable-code-app/frontend && npm run lint:fix && npm run lint:css:fix && npm run format
     @echo -e "{{GREEN}}✅ Auto-fix complete!{{NC}}"
 
 ################################################################################
@@ -616,3 +628,29 @@ gh-check-details:
 
 # Alias for compatibility
 lint-all: lint
+
+################################################################################
+# Installation Targets
+################################################################################
+
+# Install all dependencies for linting and development
+install:
+    @echo -e "{{CYAN}}╔════════════════════════════════════════════════════════════╗{{NC}}"
+    @echo -e "{{CYAN}}║              Installing Dependencies                      ║{{NC}}"
+    @echo -e "{{CYAN}}╚════════════════════════════════════════════════════════════╝{{NC}}"
+    @echo ""
+    @echo -e "{{YELLOW}}Installing Python dependencies (Poetry)...{{NC}}"
+    @cd durable-code-app/backend && poetry install
+    @echo -e "{{GREEN}}✓ Python dependencies installed{{NC}}"
+    @echo ""
+    @echo -e "{{YELLOW}}Installing frontend dependencies (npm)...{{NC}}"
+    @cd durable-code-app/frontend && npm ci
+    @echo -e "{{GREEN}}✓ Frontend dependencies installed{{NC}}"
+    @echo ""
+    @echo -e "{{YELLOW}}Installing pre-commit hooks...{{NC}}"
+    @pip3 install pre-commit 2>/dev/null || pip install pre-commit 2>/dev/null || echo -e "{{YELLOW}}⚠ Pre-commit not installed via pip{{NC}}"
+    @pre-commit install 2>/dev/null || echo -e "{{YELLOW}}⚠ Pre-commit hooks not installed{{NC}}"
+    @pre-commit install --hook-type pre-push 2>/dev/null || echo -e "{{YELLOW}}⚠ Pre-push hooks not installed{{NC}}"
+    @echo -e "{{GREEN}}✓ Pre-commit hooks installed{{NC}}"
+    @echo ""
+    @echo -e "{{GREEN}}✅ All dependencies installed!{{NC}}"

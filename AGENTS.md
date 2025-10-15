@@ -138,9 +138,7 @@ See `.ai/howto/create-roadmap-item.md` for detailed workflow instructions.
 
 **Docker and Testing**:
 - ⚠️ **NEVER run tests locally** - Always use Docker or Just targets
-- ⚠️ **NEVER run npm install locally** - Always update package.json and rebuild Docker containers
-- ⚠️ All package installations must be done within Docker containers, not on the host system
-- ⚠️ All linting should be run through Docker or Just targets (not `npm run lint`, not direct linting commands)
+- ⚠️ Linting uses poetry and npm (not Docker) - Always use `just lint` or `just lint [scope]`
 
 **Make Targets**:
 - ⚠️ Always use Just targets for operations (testing, linting, building)
@@ -175,6 +173,7 @@ See `.ai/howto/create-roadmap-item.md` for detailed workflow instructions.
 - If a linting rule is firing, FIX the code - don't skip the rule
 - The enforcement.no-skip linting rule will automatically catch and block attempts to skip critical rules
 - See `.ai/docs/LINTING_ENFORCEMENT_STANDARDS.md` for complete guidance on fixing vs skipping
+- Always use `just lint` or `just lint-fix` instead of calling linting tools directly
 
 ### Code Style
 
@@ -263,20 +262,20 @@ just test-coverage
 
 ### Linting
 ```bash
-# Run all linting (backend + frontend + thailint + custom)
-just lint-all
+# Run all linting (Python + frontend + infrastructure)
+just lint
+
+# Run specific scope
+just lint python      # Python only (Ruff, MyPy, Pylint, Bandit, Xenon)
+just lint frontend    # Frontend only (TypeScript, ESLint, Stylelint, Prettier)
+just lint security    # Security tools only (Bandit)
+just lint infra       # Infrastructure only (Terraform, Shellcheck)
 
 # Fix auto-fixable issues
 just lint-fix
-
-# Run thailint (magic numbers, nesting, SRP, file placement, DRY)
-just lint-thailint
-
-# Run custom design linters (file headers, logging, security, etc.)
-just lint-custom
 ```
 
-**Note**: This project uses [thailint](https://pypi.org/project/thailint/) for multi-language code quality enforcement (magic numbers, nesting, SRP, file placement, DRY detection). See `.ai/docs/THAILINT_INTEGRATION.md` for details.
+**Note**: Linting runs via poetry (Python) and npm (frontend), not Docker. Use `just install` to set up dependencies.
 
 ### Building
 ```bash

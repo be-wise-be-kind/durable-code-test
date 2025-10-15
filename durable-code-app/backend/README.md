@@ -37,3 +37,4 @@ docker run -p 8000:8000 backend
 - OpenAPI documentation: http://localhost:8000/docs
 - Health endpoint: http://localhost:8000/health
 - WebSocket endpoint: ws://localhost:8000/ws
+# Test comment
