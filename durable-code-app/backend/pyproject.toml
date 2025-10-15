@@ -37,7 +37,6 @@ pip-audit = "^2.9.0"
 httpx = "^0.28.0"
 playwright = "^1.40.0"
 pytest-playwright = "^0.4.0"
-thailint = "^0.4.3"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
@@ -58,7 +57,6 @@ warn_no_return = true
 check_untyped_defs = true
 strict_equality = true
 exclude = [
-    'tools/design_linters/.*',
     'tools/simple_print_check\.py'
 ]
 

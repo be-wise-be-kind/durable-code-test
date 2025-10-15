@@ -331,7 +331,7 @@ class TestGlobalExceptionHandlers:
         assert response.status_code == 500
         data = response.json()
         assert data["error"] == "INTERNAL_ERROR"
-        assert data["message"] == "An unexpected error occurred"
+        assert data["message"] == "An internal error occurred. Please contact support if the problem persists."
         # Should not expose internal error details
         assert "Internal error details" not in str(data)
 

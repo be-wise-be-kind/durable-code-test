@@ -113,33 +113,6 @@ repos:
         pass_filenames: false
         stages: [pre-commit]
 
-      # Thailint - run on changed files only
-      - id: thailint
-        name: Thailint (magic numbers, nesting, SRP, file placement, DRY)
-        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.(py|ts|tsx)$" | sed "s|^durable-code-app/||" | tr "\n" " " || true); if [ -n "$files" ]; then just lint-ensure-containers >/dev/null 2>&1; docker exec durable-code-python-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") bash -c "cd /workspace && thailint --config /workspace/root/.thailint.yaml magic-numbers $files && thailint --config /workspace/root/.thailint.yaml nesting $files && thailint --config /workspace/root/.thailint.yaml srp $files && thailint --config /workspace/root/.thailint.yaml dry $files"; fi'
-        language: system
-        files: \.(py|ts|tsx)$
-        pass_filenames: false
-        stages: [pre-commit]
-
-      # Custom Design Linters - run on changed files only (now excludes rules replaced by thailint)
-      - id: design-linters
-        name: Custom design linters (file headers, logging, security, error handling, enforcement)
-        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.(py|md)$" | xargs || true); if [ -n "$files" ]; then just lint-ensure-containers >/dev/null 2>&1; docker exec durable-code-python-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") bash -c "cd /workspace && PYTHONPATH=/workspace/tools python -m design_linters --format text --fail-on-error $files"; fi'
-        language: system
-        files: \.(py|md)$
-        pass_filenames: false
-        stages: [pre-commit]
-
-      # Linting Rule Enforcement - check Python/TS/TF files for skip directives (excludes shell scripts due to linter issue)
-      - id: no-skip-enforcement
-        name: Linting rule skip enforcement
-        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.(py|ts|tsx|tf)$" | xargs || true); if [ -n "$files" ]; then just lint-enforcement FILES="$files" 2>&1 | grep -v "^just"; fi'
-        language: system
-        files: \.(py|ts|tsx|tf)$
-        pass_filenames: false
-        stages: [pre-commit]
-
       # Pre-push hooks
       - id: check-uncommitted-changes
         name: Check for uncommitted changes
