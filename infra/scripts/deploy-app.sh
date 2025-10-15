@@ -33,6 +33,11 @@ ECR_REGISTRY="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
 ENV="${ENV:-dev}"
 TAG="v$(date +%Y%m%d-%H%M%S)"
 
+# Resource naming - matches Terraform infrastructure
+# ECR repositories use durableai prefix, ECS resources use durable-code prefix
+ECR_PREFIX="durableai"
+ECS_PREFIX="durable-code"
+
 # Get deployment timestamp for version display
 BUILD_TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
 
@@ -65,29 +70,29 @@ echo "Building Docker images..."
 
 # Frontend
 echo "Building frontend..."
-docker build -t "durableai-${ENV}-frontend:${TAG}" \
+docker build -t "${ECR_PREFIX}-${ENV}-frontend:${TAG}" \
   -f .docker/dockerfiles/Dockerfile.frontend \
   --target prod \
   --build-arg BUILD_TIMESTAMP="${BUILD_TIMESTAMP}" \
   .
-docker tag "durableai-${ENV}-frontend:${TAG}" "${ECR_REGISTRY}/durableai-${ENV}-frontend:${TAG}"
-docker tag "durableai-${ENV}-frontend:${TAG}" "${ECR_REGISTRY}/durableai-${ENV}-frontend:latest"
+docker tag "${ECR_PREFIX}-${ENV}-frontend:${TAG}" "${ECR_REGISTRY}/${ECR_PREFIX}-${ENV}-frontend:${TAG}"
+docker tag "${ECR_PREFIX}-${ENV}-frontend:${TAG}" "${ECR_REGISTRY}/${ECR_PREFIX}-${ENV}-frontend:latest"
 
 # Backend
 echo "Building backend..."
-docker build -t "durableai-${ENV}-backend:${TAG}" \
+docker build -t "${ECR_PREFIX}-${ENV}-backend:${TAG}" \
   -f .docker/dockerfiles/Dockerfile.backend \
   --target prod \
   .
-docker tag "durableai-${ENV}-backend:${TAG}" "${ECR_REGISTRY}/durableai-${ENV}-backend:${TAG}"
-docker tag "durableai-${ENV}-backend:${TAG}" "${ECR_REGISTRY}/durableai-${ENV}-backend:latest"
+docker tag "${ECR_PREFIX}-${ENV}-backend:${TAG}" "${ECR_REGISTRY}/${ECR_PREFIX}-${ENV}-backend:${TAG}"
+docker tag "${ECR_PREFIX}-${ENV}-backend:${TAG}" "${ECR_REGISTRY}/${ECR_PREFIX}-${ENV}-backend:latest"
 
 # Push images to ECR
 echo "Pushing images to ECR..."
-docker push "${ECR_REGISTRY}/durableai-${ENV}-frontend:${TAG}"
-docker push "${ECR_REGISTRY}/durableai-${ENV}-frontend:latest"
-docker push "${ECR_REGISTRY}/durableai-${ENV}-backend:${TAG}"
-docker push "${ECR_REGISTRY}/durableai-${ENV}-backend:latest"
+docker push "${ECR_REGISTRY}/${ECR_PREFIX}-${ENV}-frontend:${TAG}"
+docker push "${ECR_REGISTRY}/${ECR_PREFIX}-${ENV}-frontend:latest"
+docker push "${ECR_REGISTRY}/${ECR_PREFIX}-${ENV}-backend:${TAG}"
+docker push "${ECR_REGISTRY}/${ECR_PREFIX}-${ENV}-backend:latest"
 
 echo "=== Registering New Task Definitions ==="
 echo "Creating new task definitions with updated images..."
@@ -102,21 +107,21 @@ fi
 echo "Fetching current frontend task definition..."
 if [ "${USE_PROFILE}" = true ]; then
   aws ecs describe-task-definition \
-    --task-definition "durableai-${ENV}-frontend" \
+    --task-definition "${ECS_PREFIX}-${ENV}-frontend" \
     --region "${AWS_REGION}" \
     --profile "${AWS_PROFILE}" \
     --query 'taskDefinition' \
     --output json > /tmp/frontend-task-def.json
 else
   aws ecs describe-task-definition \
-    --task-definition "durableai-${ENV}-frontend" \
+    --task-definition "${ECS_PREFIX}-${ENV}-frontend" \
     --region "${AWS_REGION}" \
     --query 'taskDefinition' \
     --output json > /tmp/frontend-task-def.json
 fi
 
 # Update the image tag, ensure port 3000, and fix health check in the task definition
-jq ".containerDefinitions[0].image = \"${ECR_REGISTRY}/durableai-${ENV}-frontend:${TAG}\" | .containerDefinitions[0].portMappings[0].containerPort = 3000 | .containerDefinitions[0].portMappings[0].hostPort = 3000 | .containerDefinitions[0].healthCheck.command = [\"CMD-SHELL\", \"curl -f http://localhost:3000/ || exit 1\"] | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)" /tmp/frontend-task-def.json > /tmp/frontend-task-def-new.json
+jq ".containerDefinitions[0].image = \"${ECR_REGISTRY}/${ECR_PREFIX}-${ENV}-frontend:${TAG}\" | .containerDefinitions[0].portMappings[0].containerPort = 3000 | .containerDefinitions[0].portMappings[0].hostPort = 3000 | .containerDefinitions[0].healthCheck.command = [\"CMD-SHELL\", \"curl -f http://localhost:3000/ || exit 1\"] | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)" /tmp/frontend-task-def.json > /tmp/frontend-task-def-new.json
 
 echo "Registering new frontend task definition..."
 if [ "${USE_PROFILE}" = true ]; then
@@ -137,21 +142,21 @@ fi
 echo "Fetching current backend task definition..."
 if [ "${USE_PROFILE}" = true ]; then
   aws ecs describe-task-definition \
-    --task-definition "durableai-${ENV}-backend" \
+    --task-definition "${ECS_PREFIX}-${ENV}-backend" \
     --region "${AWS_REGION}" \
     --profile "${AWS_PROFILE}" \
     --query 'taskDefinition' \
     --output json > /tmp/backend-task-def.json
 else
   aws ecs describe-task-definition \
-    --task-definition "durableai-${ENV}-backend" \
+    --task-definition "${ECS_PREFIX}-${ENV}-backend" \
     --region "${AWS_REGION}" \
     --query 'taskDefinition' \
     --output json > /tmp/backend-task-def.json
 fi
 
 # Update the image tag in the task definition
-jq ".containerDefinitions[0].image = \"${ECR_REGISTRY}/durableai-${ENV}-backend:${TAG}\" | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)" /tmp/backend-task-def.json > /tmp/backend-task-def-new.json
+jq ".containerDefinitions[0].image = \"${ECR_REGISTRY}/${ECR_PREFIX}-${ENV}-backend:${TAG}\" | del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)" /tmp/backend-task-def.json > /tmp/backend-task-def-new.json
 
 echo "Registering new backend task definition..."
 if [ "${USE_PROFILE}" = true ]; then
@@ -176,8 +181,8 @@ echo "Updating services with new task definitions..."
 echo "Updating frontend service with new task definition..."
 if [ "${USE_PROFILE}" = true ]; then
   aws ecs update-service \
-    --cluster "durableai-${ENV}-cluster" \
-    --service "durableai-${ENV}-frontend" \
+    --cluster "${ECS_PREFIX}-${ENV}-cluster" \
+    --service "${ECS_PREFIX}-${ENV}-frontend" \
     --task-definition "${FRONTEND_TASK_ARN}" \
     --force-new-deployment \
     --region "${AWS_REGION}" \
@@ -185,8 +190,8 @@ if [ "${USE_PROFILE}" = true ]; then
     --output json > /dev/null
 else
   aws ecs update-service \
-    --cluster "durableai-${ENV}-cluster" \
-    --service "durableai-${ENV}-frontend" \
+    --cluster "${ECS_PREFIX}-${ENV}-cluster" \
+    --service "${ECS_PREFIX}-${ENV}-frontend" \
     --task-definition "${FRONTEND_TASK_ARN}" \
     --force-new-deployment \
     --region "${AWS_REGION}" \
@@ -196,8 +201,8 @@ fi
 echo "Updating backend service with new task definition..."
 if [ "${USE_PROFILE}" = true ]; then
   aws ecs update-service \
-    --cluster "durableai-${ENV}-cluster" \
-    --service "durableai-${ENV}-backend" \
+    --cluster "${ECS_PREFIX}-${ENV}-cluster" \
+    --service "${ECS_PREFIX}-${ENV}-backend" \
     --task-definition "${BACKEND_TASK_ARN}" \
     --force-new-deployment \
     --region "${AWS_REGION}" \
@@ -205,8 +210,8 @@ if [ "${USE_PROFILE}" = true ]; then
     --output json > /dev/null
 else
   aws ecs update-service \
-    --cluster "durableai-${ENV}-cluster" \
-    --service "durableai-${ENV}-backend" \
+    --cluster "${ECS_PREFIX}-${ENV}-cluster" \
+    --service "${ECS_PREFIX}-${ENV}-backend" \
     --task-definition "${BACKEND_TASK_ARN}" \
     --force-new-deployment \
     --region "${AWS_REGION}" \
@@ -221,7 +226,7 @@ echo "The services are now redeploying. Check the ECS console for deployment sta
 echo "To access the application, check the ALB DNS name:"
 echo ""
 if [ "${USE_PROFILE}" = true ]; then
-  aws elbv2 describe-load-balancers --names "durableai-${ENV}-alb" --profile "${AWS_PROFILE}" --query 'LoadBalancers[0].DNSName' --output text
+  aws elbv2 describe-load-balancers --names "${ECS_PREFIX}-${ENV}-alb" --profile "${AWS_PROFILE}" --query 'LoadBalancers[0].DNSName' --output text
 else
-  aws elbv2 describe-load-balancers --names "durableai-${ENV}-alb" --query 'LoadBalancers[0].DNSName' --output text
+  aws elbv2 describe-load-balancers --names "${ECS_PREFIX}-${ENV}-alb" --query 'LoadBalancers[0].DNSName' --output text
 fi

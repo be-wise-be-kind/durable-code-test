@@ -30,11 +30,41 @@ interface DemoState {
 }
 
 // Conditionally apply devtools middleware only in development
-const middleware = import.meta.env.DEV ? devtools : <T>(f: T) => f;
+export const useDemoStore = import.meta.env.DEV
+  ? create<DemoState>()(
+      devtools(
+        (set) => ({
+          // Initial state
+          isConnected: false,
+          connectionStatus: 'disconnected',
+          socket: null,
+          waveformData: [],
+          amplitude: 1.0,
+          frequency: 1.0,
 
-export const useDemoStore = create<DemoState>()(
-  middleware(
-    (set) => ({
+          // Actions
+          setConnected: (isConnected: boolean) => set({ isConnected }),
+          setConnectionStatus: (
+            connectionStatus: 'disconnected' | 'connecting' | 'connected' | 'error',
+          ) => set({ connectionStatus }),
+          setSocket: (socket: WebSocket | null) => set({ socket }),
+          setWaveformData: (waveformData: WaveformPoint[]) => set({ waveformData }),
+          setAmplitude: (amplitude: number) => set({ amplitude }),
+          setFrequency: (frequency: number) => set({ frequency }),
+          reset: () =>
+            set({
+              isConnected: false,
+              connectionStatus: 'disconnected',
+              socket: null,
+              waveformData: [],
+              amplitude: 1.0,
+              frequency: 1.0,
+            }),
+        }),
+        { name: 'demo-store' },
+      ),
+    )
+  : create<DemoState>()((set) => ({
       // Initial state
       isConnected: false,
       connectionStatus: 'disconnected',
@@ -44,12 +74,14 @@ export const useDemoStore = create<DemoState>()(
       frequency: 1.0,
 
       // Actions
-      setConnected: (isConnected) => set({ isConnected }),
-      setConnectionStatus: (connectionStatus) => set({ connectionStatus }),
-      setSocket: (socket) => set({ socket }),
-      setWaveformData: (waveformData) => set({ waveformData }),
-      setAmplitude: (amplitude) => set({ amplitude }),
-      setFrequency: (frequency) => set({ frequency }),
+      setConnected: (isConnected: boolean) => set({ isConnected }),
+      setConnectionStatus: (
+        connectionStatus: 'disconnected' | 'connecting' | 'connected' | 'error',
+      ) => set({ connectionStatus }),
+      setSocket: (socket: WebSocket | null) => set({ socket }),
+      setWaveformData: (waveformData: WaveformPoint[]) => set({ waveformData }),
+      setAmplitude: (amplitude: number) => set({ amplitude }),
+      setFrequency: (frequency: number) => set({ frequency }),
       reset: () =>
         set({
           isConnected: false,
@@ -59,7 +91,4 @@ export const useDemoStore = create<DemoState>()(
           amplitude: 1.0,
           frequency: 1.0,
         }),
-    }),
-    { name: 'demo-store' },
-  ),
-);
+    }));
