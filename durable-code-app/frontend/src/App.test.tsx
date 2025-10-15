@@ -86,7 +86,7 @@ describe('App Component', () => {
 
       // Check for principle titles in the banner (no longer "Fundamental AI Principles" header)
       expect(screen.getByText('Immediate Feedback Loops')).toBeInTheDocument();
-      expect(screen.getByText('Maximum Context')).toBeInTheDocument();
+      expect(screen.getByText('Optimal Context')).toBeInTheDocument();
       expect(screen.getByText('Clear Success Criteria')).toBeInTheDocument();
       expect(screen.getByText('Modular Task Decomposition')).toBeInTheDocument();
     });
@@ -318,7 +318,7 @@ describe('App Component', () => {
 
       // Check that AI principles are displayed
       expect(screen.getByText('Immediate Feedback Loops')).toBeInTheDocument();
-      expect(screen.getByText('Maximum Context')).toBeInTheDocument();
+      expect(screen.getByText('Optimal Context')).toBeInTheDocument();
       expect(screen.getByText('Clear Success Criteria')).toBeInTheDocument();
       expect(screen.getByText('Modular Task Decomposition')).toBeInTheDocument();
     });

@@ -112,7 +112,7 @@ tags = merge(
 
     # Operational
     Owner         = "platform-team"      # Team responsible
-    Repository    = "github.com/steve-e-jackson/durable-code-test"
+    Repository    = "github.com/be-wise-be-kind/durable-code-test"
 
     # Scheduling (for Lambda automation)
     Schedule      = "business-hours"     # For start/stop automation
@@ -496,7 +496,7 @@ locals {
     Environment   = var.environment
     ManagedBy     = "terraform"
     CostCenter    = "engineering"
-    Repository    = "github.com/steve-e-jackson/durable-code-test"
+    Repository    = "github.com/be-wise-be-kind/durable-code-test"
   }
 
   name_prefix = "durableai-${var.environment}"

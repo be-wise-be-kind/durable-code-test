@@ -396,8 +396,8 @@ describe('Link Validator Utilities', () => {
 
     it('detects broken external resource links', async () => {
       const externalLinks = [
-        'https://github.com/stevej-at-benlabs/durable-code-test',
-        'https://github.com/stevej-at-benlabs/durable-code-test/blob/main/README.md',
+        'https://github.com/be-wise-be-kind/durable-code-test',
+        'https://github.com/be-wise-be-kind/durable-code-test/blob/main/README.md',
         'https://nonexistent-domain-for-testing.com/invalid-path',
       ];
 

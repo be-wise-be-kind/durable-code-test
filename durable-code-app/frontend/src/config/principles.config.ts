@@ -24,9 +24,9 @@ export const principles: Principle[] = [
   },
   {
     number: 2,
-    title: 'Maximum Context',
+    title: 'Optimal Context',
     description:
-      "AI needs the same context you'd give a new contractor, plus access to external resources: database schemas, API docs, infrastructure setup, Notion pages, and architectural decisions. More context equals better output.",
+      'AI needs contractor-level context to work effectively: database schemas, API docs, infrastructure setup, and architectural decisions. Provide comprehensive understanding without overwhelming with unnecessary details. The right context equals better output.',
     examples: ['Database Schema', 'API Docs', 'Infra Setup', 'Architecture'],
   },
   {

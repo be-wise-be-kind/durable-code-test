@@ -247,7 +247,7 @@ const CASE_STUDY_STEPS: CaseStudyStep[] = [
       links: [
         {
           text: 'View Infrastructure Code',
-          url: 'https://github.com/steve-e-jackson/durable-code-test/tree/feature/pr0-domain-aws-setup/infra',
+          url: 'https://github.com/be-wise-be-kind/durable-code-test/tree/feature/pr0-domain-aws-setup/infra',
         },
       ],
     },

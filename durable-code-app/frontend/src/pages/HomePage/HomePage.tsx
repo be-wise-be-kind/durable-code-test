@@ -101,7 +101,7 @@ export default function HomePage(): ReactElement {
             <ul>
               <li>
                 <a
-                  href="https://github.com/stevej-at-benlabs/durable-code-test"
+                  href="https://github.com/be-wise-be-kind/durable-code-test"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
@@ -110,7 +110,7 @@ export default function HomePage(): ReactElement {
               </li>
               <li>
                 <a
-                  href="https://github.com/stevej-at-benlabs/durable-code-test/blob/main/README.md"
+                  href="https://github.com/be-wise-be-kind/durable-code-test/blob/main/README.md"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
