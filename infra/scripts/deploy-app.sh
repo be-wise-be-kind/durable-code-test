@@ -41,11 +41,25 @@ ECS_PREFIX="durable-code"
 # Get deployment timestamp for version display
 BUILD_TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
 
+# Determine API URL based on environment
+if [ "${ENV}" = "dev" ]; then
+  # For dev environment, use vanity URL if available, otherwise ALB DNS
+  API_URL="${API_URL:-https://dev.durableaicoding.net}"
+elif [ "${ENV}" = "staging" ]; then
+  API_URL="${API_URL:-https://staging.durableaicoding.net}"
+elif [ "${ENV}" = "prod" ]; then
+  API_URL="${API_URL:-https://durableaicoding.net}"
+else
+  # Fallback to ALB DNS for unknown environments
+  API_URL="${API_URL:-http://${ECS_PREFIX}-${ENV}-alb.amazonaws.com}"
+fi
+
 echo "=== Starting Application Deployment ==="
 echo "Environment: ${ENV}"
 echo "ECR Registry: ${ECR_REGISTRY}"
 echo "Tag: ${TAG}"
 echo "Build Timestamp: ${BUILD_TIMESTAMP}"
+echo "API URL: ${API_URL}"
 
 # Login to ECR
 echo "Logging into ECR..."
@@ -74,6 +88,7 @@ docker build -t "${ECR_PREFIX}-${ENV}-frontend:${TAG}" \
   -f .docker/dockerfiles/Dockerfile.frontend \
   --target prod \
   --build-arg BUILD_TIMESTAMP="${BUILD_TIMESTAMP}" \
+  --build-arg API_URL="${API_URL}" \
   .
 docker tag "${ECR_PREFIX}-${ENV}-frontend:${TAG}" "${ECR_REGISTRY}/${ECR_PREFIX}-${ENV}-frontend:${TAG}"
 

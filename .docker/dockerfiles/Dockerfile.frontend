@@ -109,11 +109,13 @@ CMD ["npm", "run", "test:coverage"]
 # =============================================================================
 FROM dependencies AS builder
 
-# Accept build argument for deployment timestamp
+# Accept build arguments for deployment configuration
 ARG BUILD_TIMESTAMP=unknown
+ARG API_URL=http://localhost:8000
 
-# Set environment variable for Vite build
+# Set environment variables for Vite build
 ENV VITE_BUILD_TIMESTAMP=$BUILD_TIMESTAMP
+ENV VITE_API_URL=$API_URL
 
 # Build the production application
 RUN npm run build
