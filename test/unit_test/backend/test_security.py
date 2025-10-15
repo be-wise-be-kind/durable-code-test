@@ -145,6 +145,7 @@ class TestSecurityHeaders:
         csp = response.headers.get("content-security-policy")
         assert "default-src 'self'" in csp
         assert "script-src 'self'" in csp
+        assert "https://cdn.jsdelivr.net" in csp
 
     def test_hsts_header_content(self) -> None:
         """Test HSTS header content."""
