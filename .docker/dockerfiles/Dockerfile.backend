@@ -27,9 +27,9 @@ RUN pip install --no-cache-dir poetry==1.7.1
 COPY durable-code-app/backend/pyproject.toml durable-code-app/backend/poetry.lock* ./
 
 # Configure Poetry to not create virtual environment
-# Install ONLY production dependencies in base layer
+# Install ONLY production dependencies in base layer (exclude dev group)
 RUN poetry config virtualenvs.create false && \
-    poetry install --only main --no-interaction --no-ansi --no-root
+    poetry install --without dev --no-interaction --no-ansi --no-root
 
 # Create non-root user for security (used by prod stage)
 RUN useradd -m -u 1000 appuser
