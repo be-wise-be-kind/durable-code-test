@@ -115,7 +115,7 @@ jobs:
           for i in {1..30}; do
             echo "  Attempt $i/30: Checking infrastructure readiness..."
             # Check if ALB exists and is active
-            if aws elbv2 describe-load-balancers --names "durableai-${ENV}-alb" --region "$AWS_REGION" >/dev/null 2>&1; then
+            if aws elbv2 describe-load-balancers --names "durable-code-${ENV}-alb" --region "$AWS_REGION" >/dev/null 2>&1; then
               echo "✅ Infrastructure is ready!"
               break
             fi
@@ -150,7 +150,7 @@ jobs:
           echo "🏥 Verifying application health..."
 
           # Get ALB DNS name from AWS directly
-          ALB_DNS=$(aws elbv2 describe-load-balancers --names "durableai-${ENV}-alb" --region "$AWS_REGION" --query 'LoadBalancers[0].DNSName' --output text 2>/dev/null || echo "")
+          ALB_DNS=$(aws elbv2 describe-load-balancers --names "durable-code-${ENV}-alb" --region "$AWS_REGION" --query 'LoadBalancers[0].DNSName' --output text 2>/dev/null || echo "")
 
           if [[ -z "$ALB_DNS" ]]; then
             echo "⚠️ Could not retrieve ALB DNS name"
@@ -204,7 +204,7 @@ jobs:
           echo ""
 
           if [[ "${{ job.status }}" == "success" && "${{ inputs.dry_run }}" != "true" ]]; then
-            ALB_DNS=$(aws elbv2 describe-load-balancers --names "durableai-${ENV}-alb" --region "$AWS_REGION" --query 'LoadBalancers[0].DNSName' --output text 2>/dev/null || echo "")
+            ALB_DNS=$(aws elbv2 describe-load-balancers --names "durable-code-${ENV}-alb" --region "$AWS_REGION" --query 'LoadBalancers[0].DNSName' --output text 2>/dev/null || echo "")
             if [[ -n "$ALB_DNS" ]]; then
               echo "🌐 Application URLs:"
               echo "  - Frontend: http://$ALB_DNS"
