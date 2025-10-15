@@ -170,7 +170,7 @@ lint SCOPE="all":
     @echo -e "{{GREEN}}✅ Linting checks passed!{{NC}}"
 
 # Internal: Execute linting based on scope
-@_run-lint SCOPE:
+_run-lint SCOPE:
     #!/usr/bin/env bash
     set -e
 
@@ -426,7 +426,7 @@ _infra-dispatch SUBCOMMAND *ARGS:
     esac
 
 # Internal: Check AWS credentials
-@_infra-check-aws:
+_infra-check-aws:
     #!/usr/bin/env bash
     echo -e "{{CYAN}}Checking AWS credentials...{{NC}}"
     echo -e "{{YELLOW}}AWS Profile: {{AWS_PROFILE}}{{NC}}"
@@ -454,7 +454,7 @@ _infra-status:
     @just _check-workspace-status runtime
 
 # Internal: Initialize for specific scope
-@_infra-init-scope SCOPE:
+_infra-init-scope SCOPE:
     #!/usr/bin/env bash
     set -euo pipefail
     if [ "{{SCOPE}}" = "all" ]; then
@@ -465,7 +465,7 @@ _infra-status:
     fi
 
 # Internal: Plan for specific scope
-@_infra-plan-scope SCOPE:
+_infra-plan-scope SCOPE:
     #!/usr/bin/env bash
     if [ "{{SCOPE}}" = "all" ]; then
         echo -e "{{CYAN}}--- Planning base ---{{NC}}"
@@ -477,7 +477,7 @@ _infra-status:
     fi
 
 # Internal: Apply for specific scope
-@_infra-apply-scope SCOPE AUTO:
+_infra-apply-scope SCOPE AUTO:
     #!/usr/bin/env bash
     if [ "{{SCOPE}}" = "all" ]; then
         echo -e "{{CYAN}}--- Deploying base ---{{NC}}"
@@ -489,7 +489,7 @@ _infra-status:
     fi
 
 # Internal: Destroy for specific scope
-@_infra-destroy-scope SCOPE CONFIRM:
+_infra-destroy-scope SCOPE CONFIRM:
     #!/usr/bin/env bash
     # Confirmation checks
     if [ "{{SCOPE}}" = "bootstrap" ] && [ "{{CONFIRM}}" != "destroy-bootstrap" ]; then
@@ -511,7 +511,7 @@ _infra-status:
     fi
 
 # Internal: Validate for specific scope
-@_infra-validate-scope SCOPE:
+_infra-validate-scope SCOPE:
     #!/usr/bin/env bash
     if [ "{{SCOPE}}" = "all" ]; then
         just _infra-do-validate base
@@ -521,7 +521,7 @@ _infra-status:
     fi
 
 # Internal: Output for specific scope
-@_infra-output-scope SCOPE FORMAT:
+_infra-output-scope SCOPE FORMAT:
     #!/usr/bin/env bash
     if [ "{{SCOPE}}" = "all" ]; then
         echo -e "{{CYAN}}--- Base outputs ---{{NC}}"
@@ -533,7 +533,7 @@ _infra-status:
     fi
 
 # Internal: Actual Terraform init operation
-@_infra-do-init SCOPE:
+_infra-do-init SCOPE:
     #!/usr/bin/env bash
     set -euo pipefail
     SCOPE="{{SCOPE}}"
@@ -550,7 +550,7 @@ _infra-status:
     echo -e "{{GREEN}}✓ Terraform initialized for $SCOPE{{NC}}"
 
 # Internal: Actual Terraform plan operation
-@_infra-do-plan SCOPE:
+_infra-do-plan SCOPE:
     #!/usr/bin/env bash
     SCOPE="{{SCOPE}}"
     TERRAFORM_DIR="infra/terraform/workspaces/$SCOPE"
@@ -574,7 +574,7 @@ _infra-status:
     echo -e "{{GREEN}}✓ Plan complete for $SCOPE{{NC}}"
 
 # Internal: Actual Terraform apply operation
-@_infra-do-apply SCOPE AUTO:
+_infra-do-apply SCOPE AUTO:
     #!/usr/bin/env bash
     SCOPE="{{SCOPE}}"
     AUTO="{{AUTO}}"
@@ -605,7 +605,7 @@ _infra-status:
     echo -e "{{GREEN}}✓ Apply complete for $SCOPE{{NC}}"
 
 # Internal: Actual Terraform destroy operation
-@_infra-do-destroy SCOPE:
+_infra-do-destroy SCOPE:
     #!/usr/bin/env bash
     SCOPE="{{SCOPE}}"
     TERRAFORM_DIR="infra/terraform/workspaces/$SCOPE"
@@ -629,7 +629,7 @@ _infra-status:
     echo -e "{{GREEN}}✓ Destroy complete for $SCOPE{{NC}}"
 
 # Internal: Actual Terraform validate operation
-@_infra-do-validate SCOPE:
+_infra-do-validate SCOPE:
     #!/usr/bin/env bash
     SCOPE="{{SCOPE}}"
     TERRAFORM_DIR="infra/terraform/workspaces/$SCOPE"
@@ -642,7 +642,7 @@ _infra-status:
     echo -e "{{GREEN}}✓ Validation passed for $SCOPE{{NC}}"
 
 # Internal: Actual Terraform output operation
-@_infra-do-output SCOPE FORMAT:
+_infra-do-output SCOPE FORMAT:
     #!/usr/bin/env bash
     SCOPE="{{SCOPE}}"
     FORMAT="{{FORMAT}}"
