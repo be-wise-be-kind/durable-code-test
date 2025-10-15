@@ -149,7 +149,7 @@ resource "aws_lb_listener_rule" "backend_http" {
 
   condition {
     path_pattern {
-      values = ["/api/*", "/docs", "/docs/*", "/openapi.json", "/redoc", "/health"]
+      values = ["/api/*", "/docs*", "/openapi.json", "/redoc", "/health"]
     }
   }
 
@@ -178,7 +178,7 @@ resource "aws_lb_listener_rule" "backend_https" {
 
   condition {
     path_pattern {
-      values = ["/api/*", "/docs", "/docs/*", "/openapi.json", "/redoc", "/health"]
+      values = ["/api/*", "/docs*", "/openapi.json", "/redoc", "/health"]
     }
   }
 
