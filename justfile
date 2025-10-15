@@ -246,7 +246,7 @@ lint SCOPE="all":
 # Internal: Infrastructure linting
 @_lint-infra:
     echo -e "{{YELLOW}}━━━ Infrastructure Linters ━━━{{NC}}"
-    printf '%-30s' "• Terraform format" && (just infra-fmt >/dev/null 2>&1 && echo -e "{{GREEN}}✓{{NC}}" || exit 1)
+    printf '%-30s' "• Terraform format" && (just _infra-fmt >/dev/null 2>&1 && echo -e "{{GREEN}}✓{{NC}}" || exit 1)
     printf '%-30s' "• Shellcheck" && (shellcheck infra/scripts/*.sh scripts/*.sh 2>/dev/null && echo -e "{{GREEN}}✓{{NC}}" || echo -e "{{YELLOW}}⚠ (not installed){{NC}}")
     echo -e "{{GREEN}}✓ Infrastructure linting passed{{NC}}"
 
