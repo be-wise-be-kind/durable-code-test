@@ -1,438 +1,335 @@
-# How to Run Linting - Updated for Dedicated Containers
+# How to Run Linting
 
-**Purpose**: Guide for running linting and code quality checks using dedicated Docker containers and Just targets
+**Purpose**: Guide for running linting and code quality checks using poetry and npm via Just targets
 
-**Scope**: Code quality analysis, linting automation, style enforcement, design linter execution
+**Scope**: Code quality analysis, linting automation, style enforcement
 
-**Overview**: Linting is now performed using dedicated Docker containers separate from development containers.
-    This provides better performance, tool isolation, and cleaner separation of concerns.
-    All existing Just targets have been preserved for a seamless developer experience.
+**Overview**: Linting is performed using native tooling (poetry for Python, npm for frontend) via Just task runner.
+    This provides fast execution with dependency caching and parallel execution capabilities.
 
-**Dependencies**: Make build system, dedicated linting Docker containers, design linters, code quality frameworks
+**Dependencies**: Poetry, Node.js, Just task runner, linting tools (Ruff, ESLint, MyPy, etc.)
 
 **Exports**: Linting workflows, quality check procedures, automated enforcement patterns
 
-**Related**: Design linting framework, code quality standards, Docker linting architecture
+**Related**: Code quality standards, justfile targets, pre-commit hooks
 
-**Implementation**: Make-based linting automation with dedicated containers, parallel execution capabilities
+**Implementation**: Just-based linting automation with poetry run and npm run
 
 ---
 
-## 🚀 New Architecture Overview
-
-Linting has been separated into dedicated Docker containers for improved performance and maintainability:
-
-- **Python Linting Container**: Contains all Python linting tools (Black, Ruff, MyPy, Pylint, Flake8, Bandit, Xenon)
-- **JavaScript Linting Container**: Contains all frontend linting tools (ESLint, Prettier, TypeScript, HTMLHint, Stylelint)
-- **Development Containers**: Now contain only runtime dependencies (30-50% faster startup)
-
-### Key Benefits
-- ⚡ **30-50% faster** development container startup
-- 🎯 **Parallel linting** execution capability
-- 🔧 **Independent tool updates** without rebuilding dev containers
-- 💾 **Better CI caching** and improved build times
-- 🔒 **Reduced attack surface** in production containers
-
-## Quick Commands (Unchanged)
+## Quick Commands
 
 ```bash
-# Run all linting rules
-just lint-all
+# Run all linting (Python + frontend + infrastructure)
+just lint
 
-# Run custom design linters only
-just lint-custom
+# Run specific scope
+just lint python      # Python only (Ruff, MyPy, Pylint, Bandit, Xenon)
+just lint frontend    # Frontend only (TypeScript, ESLint, Stylelint, Prettier)
+just lint security    # Security tools only (Bandit)
+just lint infra       # Infrastructure only (Terraform fmt, Shellcheck)
 
 # Auto-fix issues where possible
 just lint-fix
 
-# List available rules
-just lint-list-rules
-
-# Check container status (new)
-just lint-containers-status
+# Install linting dependencies
+just install
 ```
 
-> **Note**: All existing Just targets work exactly as before. The dedicated containers are managed automatically.
+## Getting Started
 
-## Important: Always Check Available Make Targets First
-
+### First Time Setup
 ```bash
-# Get basic list of available commands
-just help
-
-# Get comprehensive list of all just targets (recommended)
-just help-full
+# Install all dependencies (poetry, npm, pre-commit)
+just install
 ```
 
-## Make Target Details
+This installs:
+- Python linting tools via Poetry
+- Frontend linting tools via npm
+- Pre-commit hooks
+
+## Linting Targets
 
 ### Complete Linting Suite
 ```bash
-just lint-all
+just lint
+# or
+just lint all
 ```
-**What it runs** (now in dedicated containers):
-- Python linting (Black, isort, Ruff, Flake8, MyPy, Pylint, Bandit, Xenon)
-- TypeScript/React linting (ESLint, Prettier, TypeScript, Stylelint, HTMLHint)
-- Custom design linters (SOLID, Style, Literals, Logging, Loguru, Security, Error handling)
-- Infrastructure linting (TFLint, ShellCheck)
 
-**Container management**: Automatically starts and stops dedicated linting containers
-
-### Custom Design Linters
-```bash
-just lint-custom
-```
 **What it runs**:
-- SOLID principle enforcement
-- Magic number detection
-- Print statement detection
-- Code complexity analysis
-- Logging best practices
-- Security rules
-- Error handling patterns
-- Testing practices
+- **Python linting**: Ruff (format + lint), Flake8, MyPy, Pylint, Bandit, Xenon
+- **Frontend linting**: TypeScript compiler, ESLint, Stylelint, Prettier
+- **Infrastructure linting**: Terraform fmt, Shellcheck
+
+**Execution**: Python and frontend linting run in parallel for faster execution.
+
+### Python-Only Linting
+```bash
+just lint python
+```
+
+**Tools run**:
+- **Ruff format**: Python code formatting
+- **Ruff lint**: Fast Python linting
+- **Flake8**: Style guide enforcement
+- **MyPy**: Static type checking
+- **Pylint**: Code analysis and patterns
+- **Bandit**: Security issue detection
+- **Xenon**: Complexity analysis
+
+### Frontend-Only Linting
+```bash
+just lint frontend
+```
+
+**Tools run**:
+- **TypeScript**: Type checking
+- **ESLint**: JavaScript/TypeScript linting
+- **Stylelint**: CSS linting
+- **Prettier**: Code formatting check
+
+### Security Linting
+```bash
+just lint security
+```
+
+**Tools run**:
+- **Bandit**: Python security scanner
+
+### Infrastructure Linting
+```bash
+just lint infra
+```
+
+**Tools run**:
+- **Terraform fmt**: Terraform file formatting
+- **Shellcheck**: Shell script analysis (if installed)
 
 ### Auto-fix Linting Issues
 ```bash
 just lint-fix
 ```
+
 **What it fixes**:
-- Code formatting (Black, Prettier)
-- Import sorting (isort)
-- Simple style violations (Ruff, ESLint)
-- CSS formatting (Stylelint)
-- Trailing whitespace
+- Python code formatting (Ruff)
+- Python simple violations (Ruff with --fix)
+- Frontend formatting (Prettier)
+- Frontend auto-fixable issues (ESLint with --fix)
+- CSS formatting (Stylelint with --fix)
 
-### Rule Discovery
+## Direct Tool Usage
+
+If you need to run tools directly:
+
+### Python Tools (via Poetry)
 ```bash
-just lint-list-rules
+# From backend directory
+cd durable-code-app/backend
+
+# Ruff
+poetry run ruff format app  # Format code
+poetry run ruff check app   # Lint code
+
+# MyPy
+poetry run mypy .
+
+# Pylint
+poetry run pylint app
+
+# Bandit
+poetry run bandit -r app
 ```
-**Output**: All available linting rules organized by category
 
-## Container Management (Advanced)
-
-While Just targets handle containers automatically, you can manage them manually if needed:
-
-### Container Status
+### Frontend Tools (via npm)
 ```bash
-# Check linting container status
-just lint-containers-status
-```
+# From frontend directory
+cd durable-code-app/frontend
 
-### Manual Container Operations
-```bash
-# Start linting containers manually
-docker-compose -f docker-compose.lint.yml up -d
+# TypeScript
+npm run typecheck
 
-# Check container logs
-docker-compose -f docker-compose.lint.yml logs
+# ESLint
+npm run lint
+npm run lint:fix  # Auto-fix
 
-# Stop containers manually
-docker-compose -f docker-compose.lint.yml down
-```
+# Prettier
+npm run format:check
+npm run format  # Auto-fix
 
-### Direct Container Execution (Advanced)
-```bash
-# Run Python linting directly in container
-docker exec durable-code-python-linter-$(git branch --show-current) bash -c "cd /workspace && poetry run black --check backend"
-
-# Run JavaScript linting directly in container
-docker exec durable-code-js-linter-$(git branch --show-current) sh -c "cd /workspace/frontend && npm run lint"
-```
-
-## Design Linter Framework
-
-### Via Make Targets (Recommended)
-```bash
-# Run all custom design linters
-just lint-custom
-
-# Run with categories
-just lint-categories
-```
-
-### Direct CLI Usage (in Container)
-```bash
-# Basic usage
-docker exec durable-code-python-linter-$(git branch --show-current) bash -c "cd /workspace && PYTHONPATH=/workspace/tools python -m design_linters --format text --recursive backend"
-
-# Specific rules
-docker exec durable-code-python-linter-$(git branch --show-current) bash -c "cd /workspace && PYTHONPATH=/workspace/tools python -m design_linters --rules solid.srp.too-many-methods,literals.magic-number --format text backend"
-
-# JSON output
-docker exec durable-code-python-linter-$(git branch --show-current) bash -c "cd /workspace && PYTHONPATH=/workspace/tools python -m design_linters --format json --output /tmp/lint-report.json backend"
-```
-
-### Configuration File
-**Location**: `.design-lint.yml`
-
-```yaml
-rules:
-  solid.srp.too-many-methods:
-    max_methods: 15
-  literals.magic-number:
-    allowed_numbers: [0, 1, -1, 2, 100]
-    ignore_test_files: true
-
-categories:
-  - solid
-  - literals
-  - style
-  - logging
-
-exclude_patterns:
-  - "*/test_*"
-  - "*/migrations/*"
-```
-
-## Linting Categories
-
-### SOLID Principles
-**Rules**:
-- `solid.srp.too-many-methods`: Class method count limits
-- `solid.srp.class-too-big`: Class size analysis
-
-### Style Rules
-**Rules**:
-- `style.print-statement`: Print statement detection
-- `style.nesting-level`: Excessive nesting detection
-- `style.file-header`: File header enforcement
-
-### Literals
-**Rules**:
-- `literals.magic-number`: Hardcoded number detection
-
-### Logging
-**Rules**:
-- `logging.general`: General logging patterns
-- `logging.loguru`: Loguru-specific rules
-
-### Security
-**Rules**:
-- `security.patterns`: Security best practices
-
-### Error Handling
-**Rules**:
-- `error_handling.patterns`: Proper exception handling
-
-### Testing
-**Rules**:
-- `testing.practices`: Test code best practices
-
-## Output Formats
-
-### Text Output (Default)
-```
-tools/design_linters/cli.py:45: [ERROR] solid.srp.too-many-methods
-  Class 'ArgumentParser' has 12 methods, exceeds limit of 10
-  Consider splitting into smaller, focused classes
-
-tools/example.py:23: [WARNING] literals.magic-number
-  Magic number '42' detected
-  Consider using a named constant
-```
-
-### JSON Output
-```bash
-just lint-custom-json
-```
-
-### SARIF Output
-```bash
-just lint-custom-sarif
-```
-
-## Frontend Linting
-
-All frontend linting now runs in the dedicated JavaScript linting container:
-
-### ESLint
-```bash
-# Via Make target (recommended)
-just lint-all
-
-# Direct execution in container
-docker exec durable-code-js-linter-$(git branch --show-current) sh -c "cd /workspace/frontend && npm run lint"
-```
-
-### Prettier
-```bash
-# Check formatting
-docker exec durable-code-js-linter-$(git branch --show-current) sh -c "cd /workspace/frontend && npm run format:check"
-
-# Auto-format via Make
-just lint-fix
-```
-
-### TypeScript Checking
-```bash
-# Via Make target
-just lint-all
-
-# Direct execution
-docker exec durable-code-js-linter-$(git branch --show-current) sh -c "cd /workspace/frontend && npm run typecheck"
-```
-
-## Python Linting
-
-All Python linting now runs in the dedicated Python linting container:
-
-### Black (Formatting)
-```bash
-# Via Make target
-just lint-all
-
-# Direct execution
-docker exec durable-code-python-linter-$(git branch --show-current) bash -c "cd /workspace && poetry run black --check backend"
-```
-
-### Ruff
-```bash
-# Check
-docker exec durable-code-python-linter-$(git branch --show-current) bash -c "cd /workspace && poetry run ruff check backend"
-
-# Auto-fix
-just lint-fix
-```
-
-### MyPy (Type Checking)
-```bash
-docker exec durable-code-python-linter-$(git branch --show-current) bash -c "cd /workspace && MYPY_CACHE_DIR=/tmp/mypy_cache poetry run mypy backend"
+# Stylelint
+npm run lint:css
+npm run lint:css:fix  # Auto-fix
 ```
 
 ## Pre-commit Hooks
 
-Pre-commit hooks have been updated to use dedicated linting containers:
+Pre-commit hooks automatically run linting on changed files:
 
 ### Configuration
 **Location**: `.pre-commit-config.yaml`
 
 ### Manual Execution
 ```bash
-# Run all hooks (uses dedicated containers)
+# Run all hooks on staged files
+pre-commit run
+
+# Run all hooks on all files
 pre-commit run --all-files
 
 # Run specific hook
-pre-commit run black --all-files
-
-# Run on staged files only
-pre-commit run
+pre-commit run python-ruff --all-files
 ```
+
+### Hook Workflow
+1. **Auto-fix**: `just lint-fix` runs first and auto-fixes issues
+2. **Per-file checks**: Individual linters run on changed files only
+3. **Parallel execution**: Multiple hooks run concurrently
 
 ## CI/CD Integration
 
 ### GitHub Actions
-The CI/CD pipeline now uses dedicated linting containers for:
-- Improved Docker layer caching
-- Faster build times (~20-30% improvement)
-- Better resource utilization
-- Parallel linting execution
+Linting runs in CI using the same `just lint` command:
 
 **Location**: `.github/workflows/lint.yml`
 
-## Performance Benefits
+**Features**:
+- Poetry dependency caching
+- npm dependency caching
+- Parallel Python and frontend linting
+- Fast execution (~2-3 minutes)
 
-### Development Experience
-- **Container Startup**: 30-50% faster development container startup
-- **Tool Updates**: Update linting tools without rebuilding dev environment
-- **Resource Usage**: 20-30% reduction in memory usage during development
-- **Parallel Execution**: Run multiple linting types simultaneously
+## Linting Output
 
-### CI/CD Pipeline
-- **Build Time**: ~20-30% faster CI linting execution
-- **Cache Efficiency**: Linting tools cached separately from application code
-- **Fault Isolation**: Linting failures don't affect other CI steps
+### Success
+```
+╔════════════════════════════════════════════════════════════╗
+║              Running Linting: all                          ║
+╚════════════════════════════════════════════════════════════╝
+
+Running all linters in parallel...
+━━━ Python Linters ━━━
+• Ruff format...
+• Ruff lint...
+• Flake8...
+• MyPy...
+• Pylint...
+• Bandit...
+• Xenon...
+✓ Python linting passed
+
+━━━ TypeScript/React Linters ━━━
+• TypeScript...
+• ESLint...
+• Stylelint...
+• Prettier...
+✓ Frontend linting passed
+
+━━━ Infrastructure Linters ━━━
+• Terraform format             ✓
+• Shellcheck                   ✓
+✓ Infrastructure linting passed
+
+✅ Linting checks passed!
+```
+
+### Failure
+Linting will fail with detailed error messages showing:
+- File and line number
+- Rule that failed
+- Description of the issue
+- Suggestion for fixing (when available)
 
 ## Troubleshooting
 
-### Containers Won't Start
+### Tools Not Found
 ```bash
-# Check container logs
-docker-compose -f docker-compose.lint.yml logs
+# Reinstall dependencies
+just install
 
-# Rebuild containers
-docker-compose -f docker-compose.lint.yml build --no-cache
+# Verify Poetry installation
+cd durable-code-app/backend && poetry install
 
-# Check Docker status
-docker system info
+# Verify npm installation
+cd durable-code-app/frontend && npm ci
 ```
 
-### Linting Tools Not Found
+### Linting Failures
 ```bash
-# Verify tools in Python container
-docker exec durable-code-python-linter-$(git branch --show-current) which black
+# Try auto-fix first
+just lint-fix
 
-# Verify tools in JS container
-docker exec durable-code-js-linter-$(git branch --show-current) which eslint
+# Run specific scope to isolate issue
+just lint python
+just lint frontend
 
-# Rebuild if needed
-docker-compose -f docker-compose.lint.yml build
+# Check specific tool directly
+cd durable-code-app/backend && poetry run ruff check app
+cd durable-code-app/frontend && npm run lint
 ```
 
-### Volume Mount Issues
+### Pre-commit Hook Issues
 ```bash
-# Check mounts in Python container
-docker exec durable-code-python-linter-$(git branch --show-current) ls -la /workspace/
+# Reinstall hooks
+pre-commit install
+pre-commit install --hook-type pre-push
 
-# Check mounts in JS container
-docker exec durable-code-js-linter-$(git branch --show-current) ls -la /workspace/frontend/
+# Clear pre-commit cache
+pre-commit clean
 
-# Verify source files exist
-ls -la durable-code-app/backend/
-ls -la durable-code-app/frontend/
+# Update hooks
+pre-commit autoupdate
 ```
 
 ### Performance Issues
 ```bash
-# Check resource usage
-docker stats | grep linter
+# Lint specific scope instead of all
+just lint python  # Faster than 'just lint'
 
-# Adjust resource limits in docker-compose.lint.yml if needed
-```
-
-### Container Cleanup
-```bash
-# Stop and remove linting containers
-docker-compose -f docker-compose.lint.yml down
-
-# Remove linting images
-docker-compose -f docker-compose.lint.yml down --rmi all
-
-# Clean up all unused containers
-docker system prune -f
+# Skip pre-push hooks temporarily (not recommended)
+PRE_PUSH_SKIP=1 git push
 ```
 
 ## Best Practices
 
 ### Development Workflow
-1. **Use Just targets**: Always use `just lint-all`, `just lint-fix`, etc.
-2. **Containers are automatic**: Just targets handle container lifecycle
+1. **Run lint-fix first**: `just lint-fix` before committing
+2. **Commit incrementally**: Small commits = faster pre-commit hooks
 3. **Fix promptly**: Address linting issues as they arise
-4. **Full validation**: Run `just lint-all` before commits
+4. **Full validation**: Run `just lint` before pushing
 
 ### Performance Tips
-- **Containers stay running**: Just targets keep containers alive for faster subsequent runs
-- **Parallel execution**: Multiple linting types run simultaneously
-- **Cached results**: CI uses Docker layer caching effectively
-- **Resource limits**: Containers have appropriate CPU/memory limits
+- Use scoped linting (`just lint python`) when working on specific code
+- Pre-commit hooks only run on changed files for speed
+- CI caches dependencies for fast subsequent runs
 
-### Migration Notes
-- All existing Just targets work identically
-- No changes required to developer workflow
-- Linting output format unchanged
-- Pre-commit hooks automatically use dedicated containers
+### Migration from Docker
+If you previously used Docker for linting:
+- Replace `docker exec ... poetry run ruff` with `cd durable-code-app/backend && poetry run ruff`
+- Replace `docker exec ... npm run lint` with `cd durable-code-app/frontend && npm run lint`
+- All `just lint*` targets now use poetry/npm directly
 
-## Legacy Compatibility
+## Advanced Usage
 
-All existing commands and workflows continue to work:
+### Custom Linting Scripts
+You can add custom linting scripts to `justfile`:
 
-```bash
-# These all work exactly as before
-just lint-all
-just lint-fix
-just lint-custom
-just lint-categories
-just lint-list-rules
+```just
+# Example: Lint only modified files
+lint-changed:
+    @git diff --name-only --cached | grep '\.py$' | xargs poetry run ruff check
 ```
 
-The only difference is better performance and cleaner architecture behind the scenes!
+### Linting in CI
+The CI workflow uses the same commands:
+
+```yaml
+- name: Install dependencies
+  run: just install
+
+- name: Run linting
+  run: just lint
+```
+
+This ensures parity between local and CI environments.

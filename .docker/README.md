@@ -14,9 +14,8 @@ This directory contains all Docker-related configuration files for the durable-c
 
 ### `compose/`
 Docker Compose orchestration files:
-- `dev.yml` - Complete development environment with hot reloading
-- `prod.yml` - Production environment optimized for performance and security
-- `lint.yml` - Dedicated linting containers for code quality checks
+- `app.yml` - Complete development environment with hot reloading
+- `test.yml` - Testing environment with test containers
 
 ### `dockerfiles/`
 Container definitions organized by component:
@@ -28,10 +27,6 @@ Container definitions organized by component:
 #### `frontend/`
 - `Dockerfile.dev` - Frontend development container with hot reloading
 - `Dockerfile.prod` - Optimized frontend container with static file serving
-
-#### `linting/`
-- `Dockerfile.python-lint` - Python code quality tools (ruff, mypy, pylint, etc.)
-- `Dockerfile.js-lint` - JavaScript/TypeScript linting tools (ESLint, Prettier, etc.)
 
 #### `testing/`
 - `Dockerfile.playwright` - End-to-end testing with Playwright browser automation
@@ -55,11 +50,12 @@ make dev-stop
 
 ### Linting and Code Quality
 ```bash
-# Run all linting checks
-make lint-all
+# Run all linting checks (uses poetry and npm, not Docker)
+just lint
 
 # Run specific linting
-docker-compose -f .docker/compose/lint.yml up python-linter
+just lint python
+just lint frontend
 ```
 
 ### Production Builds

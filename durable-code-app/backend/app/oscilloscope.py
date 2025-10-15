@@ -409,32 +409,48 @@ async def _run_stream_loop(
             await asyncio.sleep(IDLE_SLEEP_DURATION)
 
 
+async def _cleanup_connection(state_machine: WebSocketStateMachine, client_ip: str) -> None:
+    """Clean up connection state and release resources."""
+    if not state_machine.is_disconnected():
+        # First transition to disconnecting state if not already
+        state_machine.disconnect()
+        # Then complete the disconnect
+        if not state_machine.is_disconnected():
+            state_machine.complete_disconnect()
+    _websocket_rate_limiter.release_connection(client_ip)
+
+
+async def _dispatch_exception_handler(
+    exception: Exception, websocket: WebSocket, state_machine: WebSocketStateMachine, client_ip: str
+) -> None:
+    """Dispatch exception to appropriate handler based on type."""
+    if isinstance(exception, TimeoutError):
+        await _handle_timeout_error(websocket, state_machine, client_ip)
+    elif isinstance(exception, WebSocketDisconnect):
+        _handle_disconnect_error(state_machine, client_ip)
+    elif isinstance(exception, OSError):
+        await _handle_connection_error(websocket, state_machine, client_ip, exception)
+    elif isinstance(exception, (ValueError, TypeError)):
+        await _handle_data_processing_error(websocket, state_machine, client_ip, exception)
+
+
 async def _handle_stream_errors(
     websocket: WebSocket, generator: WaveformGenerator, state_machine: WebSocketStateMachine, client_ip: str
 ) -> None:
     """Handle WebSocket stream errors with specific error handlers."""
     try:
-        # Wrap the entire stream in a timeout
         async with asyncio.timeout(WEBSOCKET_TIMEOUT):
             await _run_stream_loop(websocket, generator, state_machine)
-
-    except TimeoutError:
-        await _handle_timeout_error(websocket, state_machine, client_ip)
-    except WebSocketDisconnect:
-        _handle_disconnect_error(state_machine, client_ip)
-    except OSError as e:
-        await _handle_connection_error(websocket, state_machine, client_ip, e)
-    except (ValueError, TypeError) as e:
-        await _handle_data_processing_error(websocket, state_machine, client_ip, e)
     except asyncio.CancelledError:
         _handle_cancellation_error(state_machine, client_ip)
-        raise  # Re-raise to allow proper cleanup
+        # Don't re-raise - let cleanup happen in finally block
+    except TimeoutError:
+        # Handle timeout from asyncio.timeout context manager
+        await _handle_timeout_error(websocket, state_machine, client_ip)
+    except (WebSocketDisconnect, OSError, ValueError, TypeError) as exception:
+        await _dispatch_exception_handler(exception, websocket, state_machine, client_ip)
     finally:
-        # Ensure state machine is fully disconnected
-        if not state_machine.is_disconnected():
-            state_machine.complete_disconnect()
-        # Release rate limit slot when connection closes
-        _websocket_rate_limiter.release_connection(client_ip)
+        await _cleanup_connection(state_machine, client_ip)
 
 
 @router.websocket("/stream")

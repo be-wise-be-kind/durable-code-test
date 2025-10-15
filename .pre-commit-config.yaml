@@ -22,7 +22,7 @@ repos:
         stages: [pre-commit]
         always_run: true
 
-      # Auto-fix linting issues first (ensures containers are running)
+      # Auto-fix linting issues first
       - id: just-lint-fix
         name: Auto-fix linting issues
         entry: bash -c 'just lint-fix && git add -u'
@@ -31,10 +31,10 @@ repos:
         stages: [pre-commit]
         verbose: true
 
-      # Python Linters - run in linting container on changed files only
+      # Python Linters - run on changed files only
       - id: python-ruff
         name: Ruff (Python format + lint)
-        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.py$" | grep -E "^(app|tools)/" || true); if [ -n "$files" ]; then just lint-ensure-containers >/dev/null 2>&1; docker exec durable-code-python-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") bash -c "cd /workspace && ruff format --check $files && ruff check $files"; fi'
+        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^durable-code-app/backend/.*\.py$" | sed "s|^durable-code-app/backend/||" | tr "\n" " " || true); if [ -n "$files" ]; then cd durable-code-app/backend && poetry run ruff format --check $files && poetry run ruff check $files; fi'
         language: system
         files: \.(py)$
         pass_filenames: false
@@ -42,7 +42,7 @@ repos:
 
       - id: python-flake8
         name: Flake8 (Python style)
-        entry: bash -c 'app_files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^app/.*\.py$" || true); tools_files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^tools/.*\.py$" || true); if [ -n "$app_files" ]; then just lint-ensure-containers >/dev/null 2>&1; docker exec durable-code-python-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") bash -c "cd /workspace && flake8 $app_files"; fi; if [ -n "$tools_files" ]; then docker exec durable-code-python-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") bash -c "cd /workspace && flake8 $tools_files --config tools/.flake8"; fi'
+        entry: bash -c 'app_files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^durable-code-app/backend/app/.*\.py$" || true); tools_files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^tools/.*\.py$" || true); if [ -n "$app_files" ]; then cd durable-code-app/backend && poetry run flake8 $app_files; fi; if [ -n "$tools_files" ]; then cd durable-code-app/backend && poetry run flake8 $tools_files --config ../../tools/.flake8; fi'
         language: system
         files: \.(py)$
         pass_filenames: false
@@ -50,7 +50,7 @@ repos:
 
       - id: python-mypy
         name: MyPy (Python type checking)
-        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^durable-code-app/backend/.*\.py$" | sed "s|^durable-code-app/backend/||" | tr "\n" " " || true); if [ -n "$files" ]; then just lint-ensure-containers >/dev/null 2>&1; docker exec durable-code-python-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") bash -c "cd /workspace/backend && MYPY_CACHE_DIR=/tmp/mypy_cache mypy $files"; fi'
+        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^durable-code-app/backend/.*\.py$" | sed "s|^durable-code-app/backend/||" | tr "\n" " " || true); if [ -n "$files" ]; then cd durable-code-app/backend && poetry run mypy $files; fi'
         language: system
         files: \.(py)$
         pass_filenames: false
@@ -58,7 +58,7 @@ repos:
 
       - id: python-pylint
         name: Pylint (Python code analysis)
-        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.py$" | grep -E "^(app|tools)/" || true); if [ -n "$files" ]; then just lint-ensure-containers >/dev/null 2>&1; docker exec durable-code-python-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") bash -c "cd /workspace && pylint --max-line-length=120 $files"; fi'
+        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^durable-code-app/backend/.*\.py$" | sed "s|^durable-code-app/backend/||" | tr "\n" " " || true); if [ -n "$files" ]; then cd durable-code-app/backend && poetry run pylint --max-line-length=120 $files; fi'
         language: system
         files: \.(py)$
         pass_filenames: false
@@ -66,7 +66,7 @@ repos:
 
       - id: python-bandit
         name: Bandit (Python security)
-        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "\.py$" | grep -E "^(app|tools)/" || true); if [ -n "$files" ]; then just lint-ensure-containers >/dev/null 2>&1; docker exec durable-code-python-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") bash -c "cd /workspace && bandit $files"; fi'
+        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^durable-code-app/backend/.*\.py$" | sed "s|^durable-code-app/backend/||" | tr "\n" " " || true); if [ -n "$files" ]; then cd durable-code-app/backend && poetry run bandit $files; fi'
         language: system
         files: \.(py)$
         pass_filenames: false
@@ -74,42 +74,42 @@ repos:
 
       - id: python-xenon
         name: Xenon (Python complexity)
-        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^app/.*\.py$" || true); if [ -n "$files" ]; then just lint-ensure-containers >/dev/null 2>&1; docker exec durable-code-python-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") bash -c "cd /workspace && xenon --max-absolute B --max-modules B --max-average A $files"; fi'
+        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^durable-code-app/backend/app/.*\.py$" || true); if [ -n "$files" ]; then cd durable-code-app/backend && poetry run xenon --max-absolute B --max-modules B --max-average A $files; fi'
         language: system
-        files: ^app/.*\.py$
+        files: ^durable-code-app/backend/app/.*\.py$
         pass_filenames: false
         stages: [pre-commit]
 
-      # TypeScript/JavaScript Linters - run in linting container on changed files only
+      # TypeScript/JavaScript Linters - run on changed files only
       - id: typescript-check
         name: TypeScript type checking
-        entry: bash -c 'if git diff --cached --name-only --diff-filter=ACM | grep -qE "frontend/.*\.(ts|tsx)$"; then just lint-ensure-containers >/dev/null 2>&1; docker exec durable-code-js-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") sh -c "cd /workspace/frontend && npm run typecheck"; fi'
+        entry: bash -c 'if git diff --cached --name-only --diff-filter=ACM | grep -qE "durable-code-app/frontend/.*\.(ts|tsx)$"; then cd durable-code-app/frontend && npm run typecheck; fi'
         language: system
-        files: ^frontend/.*\.(ts|tsx)$
+        files: ^durable-code-app/frontend/.*\.(ts|tsx)$
         pass_filenames: false
         stages: [pre-commit]
 
       - id: eslint
         name: ESLint (JavaScript/TypeScript)
-        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^frontend/.*\.(ts|tsx|js|jsx)$" | sed "s|^frontend/||" || true); if [ -n "$files" ]; then just lint-ensure-containers >/dev/null 2>&1; docker exec durable-code-js-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") sh -c "cd /workspace/frontend && npm run lint -- $files"; fi'
+        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^durable-code-app/frontend/.*\.(ts|tsx|js|jsx)$" | sed "s|^durable-code-app/frontend/||" || true); if [ -n "$files" ]; then cd durable-code-app/frontend && npm run lint -- $files; fi'
         language: system
-        files: ^frontend/.*\.(ts|tsx|js|jsx)$
+        files: ^durable-code-app/frontend/.*\.(ts|tsx|js|jsx)$
         pass_filenames: false
         stages: [pre-commit]
 
       - id: stylelint
         name: Stylelint (CSS)
-        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^frontend/.*\.css$" | sed "s|^frontend/||" || true); if [ -n "$files" ]; then just lint-ensure-containers >/dev/null 2>&1; docker exec durable-code-js-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") sh -c "cd /workspace/frontend && npm run lint:css -- $files"; fi'
+        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^durable-code-app/frontend/.*\.css$" | sed "s|^durable-code-app/frontend/||" || true); if [ -n "$files" ]; then cd durable-code-app/frontend && npm run lint:css -- $files; fi'
         language: system
-        files: ^frontend/.*\.css$
+        files: ^durable-code-app/frontend/.*\.css$
         pass_filenames: false
         stages: [pre-commit]
 
       - id: prettier-check
         name: Prettier (Frontend formatting)
-        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^frontend/.*\.(ts|tsx|js|jsx|css)$" | sed "s|^frontend/||" || true); if [ -n "$files" ]; then just lint-ensure-containers >/dev/null 2>&1; docker exec durable-code-js-linter-$(git rev-parse --abbrev-ref HEAD | tr "/" "-" | tr "[:upper:]" "[:lower:]") sh -c "cd /workspace/frontend && npm run format:check -- $files"; fi'
+        entry: bash -c 'files=$(git diff --cached --name-only --diff-filter=ACM | grep -E "^durable-code-app/frontend/.*\.(ts|tsx|js|jsx|css)$" | sed "s|^durable-code-app/frontend/||" || true); if [ -n "$files" ]; then cd durable-code-app/frontend && npm run format:check -- $files; fi'
         language: system
-        files: ^frontend/.*\.(ts|tsx|js|jsx|css)$
+        files: ^durable-code-app/frontend/.*\.(ts|tsx|js|jsx|css)$
         pass_filenames: false
         stages: [pre-commit]
 
