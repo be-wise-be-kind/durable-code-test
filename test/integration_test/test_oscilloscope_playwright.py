@@ -23,7 +23,8 @@ Implementation: Uses Playwright to automate browser interactions and validate th
 import asyncio
 import json
 import os
-from typing import Any, AsyncGenerator
+from collections.abc import AsyncGenerator
+from typing import Any
 
 import pytest
 import pytest_asyncio
@@ -31,7 +32,12 @@ from loguru import logger
 
 # Conditional import to prevent import errors when playwright is not available
 try:
-    from playwright.async_api import Page, WebSocket, async_playwright  # type: ignore[import-not-found,import-untyped,unused-ignore]
+    from playwright.async_api import (  # type: ignore[import-not-found,import-untyped,unused-ignore]
+        Page,
+        WebSocket,
+        async_playwright,
+    )
+
     PLAYWRIGHT_AVAILABLE = True
 except ImportError as e:
     logger.debug("Playwright not available", error=str(e))
@@ -72,14 +78,18 @@ class TestOscilloscopeIntegration:
     @property
     def frontend_url(self) -> str:
         """Get the frontend URL based on environment variables."""
-        # For Docker-based tests, use the container name
-        # These tests should run in a special playwright container with network access
-        branch_name = os.getenv("BRANCH_NAME", "fix-integration-tests-branch-ports")
+        # Check if using host network (local dev) or bridge network (CI)
+        use_host_network = os.getenv("USE_HOST_NETWORK", "false").lower() == "true"
+        frontend_port = os.getenv("FRONTEND_PORT", "5173")
 
-        # When running inside Docker, use the container hostname
-        container_base = "durable-code-frontend"
-        container_name = f"{container_base}-{branch_name}-dev"
-        return f"http://{container_name}:5173"
+        if use_host_network:
+            # Local development with --network host
+            return f"http://localhost:{frontend_port}"
+        else:
+            # CI with bridge network - use container name
+            branch_name = os.getenv("BRANCH_NAME", "main")
+            container_name = f"durable-code-frontend-{branch_name}-dev"
+            return f"http://{container_name}:5173"
 
     @pytest.mark.asyncio
     @pytest.mark.integration
@@ -164,7 +174,7 @@ class TestOscilloscopeIntegration:
             # If no Connect button, app might auto-connect
             logger.debug("Connect button not found, app might auto-connect", error=str(e))
             connect_button = None
-            await page.wait_for_selector('canvas', timeout=3000)
+            await page.wait_for_selector("canvas", timeout=3000)
 
         # Click Connect button if present
 
@@ -189,7 +199,7 @@ class TestOscilloscopeIntegration:
         frequency_input = await page.query_selector('input[type="range"]')
         if frequency_input:
             # Adjust frequency using evaluate for range inputs
-            await page.evaluate('(el) => el.value = 5', frequency_input)
+            await page.evaluate("(el) => el.value = 5", frequency_input)
             await page.evaluate('(el) => el.dispatchEvent(new Event("input", { bubbles: true }))', frequency_input)
             await asyncio.sleep(0.5)
 

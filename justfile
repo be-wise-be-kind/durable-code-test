@@ -309,11 +309,12 @@ test-playwright: dev-start test-playwright-build
     #!/usr/bin/env bash
     echo -e "{{CYAN}}Running Playwright integration tests...{{NC}}"
     if [ "$CI" = "true" ]; then
-        docker run --rm --network compose_durable-network-dev \
+        docker run --rm --network durable-network-dev \
             -e PLAYWRIGHT_BROWSERS_PATH=/ms-playwright \
             -e BRANCH_NAME="{{BRANCH_NAME}}" \
             -e FRONTEND_PORT="{{FRONTEND_PORT}}" \
             -e BACKEND_PORT="{{BACKEND_PORT}}" \
+            -e RUN_PLAYWRIGHT_TESTS=true \
             -e USE_HOST_NETWORK=false \
             playwright-tests
     else
@@ -322,6 +323,7 @@ test-playwright: dev-start test-playwright-build
             -e BRANCH_NAME="{{BRANCH_NAME}}" \
             -e FRONTEND_PORT="{{FRONTEND_PORT}}" \
             -e BACKEND_PORT="{{BACKEND_PORT}}" \
+            -e RUN_PLAYWRIGHT_TESTS=true \
             -e USE_HOST_NETWORK=true \
             playwright-tests
     fi
