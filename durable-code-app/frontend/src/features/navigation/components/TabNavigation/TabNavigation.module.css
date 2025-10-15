@@ -52,13 +52,6 @@
   white-space: nowrap;
 }
 
-.dropdownIcon {
-  margin-left: 0.25rem;
-  font-size: 0.625rem;
-  opacity: 0.6;
-  transition: transform 0.2s ease;
-}
-
 @media (max-width: 768px) {
   .navigation {
     gap: var(--space-2);
