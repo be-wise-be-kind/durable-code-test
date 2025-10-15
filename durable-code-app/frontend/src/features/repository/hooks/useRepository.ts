@@ -71,7 +71,7 @@ export function useRepository(): UseRepositoryReturn {
           links: [
             {
               text: 'View Full Layout Config',
-              url: 'https://github.com/steve-e-jackson/durable-code-test/blob/main/.ai/layout.yaml',
+              url: 'https://github.com/be-wise-be-kind/durable-code-test/blob/main/.ai/layout.yaml',
             },
           ],
         },
@@ -125,7 +125,7 @@ export function useRepository(): UseRepositoryReturn {
           links: [
             {
               text: 'Explore Linting Framework',
-              url: 'https://github.com/steve-e-jackson/durable-code-test/tree/main/tools/design_linters',
+              url: 'https://github.com/be-wise-be-kind/durable-code-test/tree/main/tools/design_linters',
             },
           ],
         },
@@ -174,7 +174,7 @@ export function useRepository(): UseRepositoryReturn {
           links: [
             {
               text: 'View All Make Targets',
-              url: 'https://github.com/steve-e-jackson/durable-code-test/blob/main/Makefile',
+              url: 'https://github.com/be-wise-be-kind/durable-code-test/blob/main/Makefile',
             },
           ],
         },
@@ -224,7 +224,7 @@ export function useRepository(): UseRepositoryReturn {
           links: [
             {
               text: 'View Docker Configuration',
-              url: 'https://github.com/steve-e-jackson/durable-code-test/blob/main/docker-compose.yml',
+              url: 'https://github.com/be-wise-be-kind/durable-code-test/blob/main/docker-compose.yml',
             },
           ],
         },
@@ -279,7 +279,7 @@ repos:
           links: [
             {
               text: 'View Pre-commit Config',
-              url: 'https://github.com/steve-e-jackson/durable-code-test/blob/main/.pre-commit-config.yaml',
+              url: 'https://github.com/be-wise-be-kind/durable-code-test/blob/main/.pre-commit-config.yaml',
             },
           ],
         },
@@ -335,7 +335,7 @@ repos:
           links: [
             {
               text: 'Browse How-To Guides',
-              url: 'https://github.com/steve-e-jackson/durable-code-test/tree/main/.ai/howto',
+              url: 'https://github.com/be-wise-be-kind/durable-code-test/tree/main/.ai/howto',
             },
           ],
         },
@@ -386,7 +386,7 @@ repos:
           links: [
             {
               text: 'File Header Standards',
-              url: 'https://github.com/steve-e-jackson/durable-code-test/blob/main/.ai/docs/FILE_HEADER_STANDARDS.md',
+              url: 'https://github.com/be-wise-be-kind/durable-code-test/blob/main/.ai/docs/FILE_HEADER_STANDARDS.md',
             },
           ],
         },
@@ -441,7 +441,7 @@ commands:
           links: [
             {
               text: 'View Full Index',
-              url: 'https://github.com/steve-e-jackson/durable-code-test/blob/main/.ai/index.yaml',
+              url: 'https://github.com/be-wise-be-kind/durable-code-test/blob/main/.ai/index.yaml',
             },
           ],
         },
@@ -496,7 +496,7 @@ def test_input_validation(input, expected):
           links: [
             {
               text: 'Testing Infrastructure',
-              url: 'https://github.com/steve-e-jackson/durable-code-test/blob/main/Makefile.test',
+              url: 'https://github.com/be-wise-be-kind/durable-code-test/blob/main/Makefile.test',
             },
           ],
         },
@@ -537,7 +537,7 @@ def test_input_validation(input, expected):
           links: [
             {
               text: 'Browse Templates',
-              url: 'https://github.com/steve-e-jackson/durable-code-test/tree/main/.ai/templates',
+              url: 'https://github.com/be-wise-be-kind/durable-code-test/tree/main/.ai/templates',
             },
           ],
         },
@@ -578,11 +578,11 @@ def test_input_validation(input, expected):
           links: [
             {
               text: 'Exception Hierarchy',
-              url: 'https://github.com/steve-e-jackson/durable-code-test/blob/main/durable-code-app/backend/app/core/exceptions.py',
+              url: 'https://github.com/be-wise-be-kind/durable-code-test/blob/main/durable-code-app/backend/app/core/exceptions.py',
             },
             {
               text: 'Retry Implementation',
-              url: 'https://github.com/steve-e-jackson/durable-code-test/blob/main/durable-code-app/backend/app/core/retry.py',
+              url: 'https://github.com/be-wise-be-kind/durable-code-test/blob/main/durable-code-app/backend/app/core/retry.py',
             },
           ],
         },
@@ -633,7 +633,7 @@ resource "aws_s3_bucket" "main" {
           links: [
             {
               text: 'View Terraform Standards',
-              url: 'https://github.com/steve-e-jackson/durable-code-test/blob/main/.ai/docs/TERRAFORM_STANDARDS.md',
+              url: 'https://github.com/be-wise-be-kind/durable-code-test/blob/main/.ai/docs/TERRAFORM_STANDARDS.md',
             },
           ],
         },
@@ -969,7 +969,7 @@ resource "aws_s3_bucket" "main" {
     (): ActionLink[] => [
       {
         id: 'ai-repository',
-        url: 'https://github.com/steve-e-jackson/durable-code-test/tree/main/.ai',
+        url: 'https://github.com/be-wise-be-kind/durable-code-test/tree/main/.ai',
         text: 'Explore .ai Repository',
         icon: '📂',
         type: 'primary',
@@ -977,7 +977,7 @@ resource "aws_s3_bucket" "main" {
       },
       {
         id: 'make-targets',
-        url: 'https://github.com/steve-e-jackson/durable-code-test/blob/main/Makefile.lint',
+        url: 'https://github.com/be-wise-be-kind/durable-code-test/blob/main/Makefile.lint',
         text: 'View Make Targets',
         icon: '🔧',
         type: 'secondary',
@@ -985,7 +985,7 @@ resource "aws_s3_bucket" "main" {
       },
       {
         id: 'custom-linters',
-        url: 'https://github.com/steve-e-jackson/durable-code-test/tree/main/tools/design_linters',
+        url: 'https://github.com/be-wise-be-kind/durable-code-test/tree/main/tools/design_linters',
         text: 'Custom Linters',
         icon: '🎯',
         type: 'secondary',
@@ -993,7 +993,7 @@ resource "aws_s3_bucket" "main" {
       },
       {
         id: 'precommit-config',
-        url: 'https://github.com/steve-e-jackson/durable-code-test/blob/main/.pre-commit-config.yaml',
+        url: 'https://github.com/be-wise-be-kind/durable-code-test/blob/main/.pre-commit-config.yaml',
         text: 'Pre-commit Config',
         icon: '🔒',
         type: 'secondary',
