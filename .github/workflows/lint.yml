@@ -67,6 +67,17 @@ jobs:
           cache: 'npm'
           cache-dependency-path: durable-code-app/frontend/package-lock.json
 
+      # Setup Terraform for infrastructure linting
+      - name: Setup Terraform via tfenv
+        run: |
+          # Install tfenv
+          git clone --depth=1 https://github.com/tfutils/tfenv.git ~/.tfenv
+          echo "$HOME/.tfenv/bin" >> $GITHUB_PATH
+
+          # Install and use Terraform 1.9.8
+          ~/.tfenv/bin/tfenv install 1.9.8
+          ~/.tfenv/bin/tfenv use 1.9.8
+
       # Install dependencies
       - name: Install dependencies
         run: just install
