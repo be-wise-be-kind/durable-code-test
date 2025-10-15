@@ -11,18 +11,25 @@ interface AppState {
 }
 
 // Conditionally apply devtools middleware only in development
-const middleware = import.meta.env.DEV ? devtools : <T>(f: T) => f;
-
-export const useAppStore = create<AppState>()(
-  middleware(
-    (set) => ({
+export const useAppStore = import.meta.env.DEV
+  ? create<AppState>()(
+      devtools(
+        (set) => ({
+          theme: 'light',
+          isLoading: false,
+          error: null,
+          setTheme: (theme: 'light' | 'dark') => set({ theme }),
+          setLoading: (isLoading: boolean) => set({ isLoading }),
+          setError: (error: string | null) => set({ error }),
+        }),
+        { name: 'app-store' },
+      ),
+    )
+  : create<AppState>()((set) => ({
       theme: 'light',
       isLoading: false,
       error: null,
-      setTheme: (theme) => set({ theme }),
-      setLoading: (isLoading) => set({ isLoading }),
-      setError: (error) => set({ error }),
-    }),
-    { name: 'app-store' },
-  ),
-);
+      setTheme: (theme: 'light' | 'dark') => set({ theme }),
+      setLoading: (isLoading: boolean) => set({ isLoading }),
+      setError: (error: string | null) => set({ error }),
+    }));
