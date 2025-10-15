@@ -239,7 +239,6 @@ jobs:
           echo "### 🐳 Dedicated Linting Containers Used:" >> $GITHUB_STEP_SUMMARY
           echo "- **Python Linter Container**: \`durable-code-python-linter\`" >> $GITHUB_STEP_SUMMARY
           echo "  - Ruff, Flake8, MyPy, Pylint, Bandit, Xenon" >> $GITHUB_STEP_SUMMARY
-          echo "  - Custom design linters (SOLID, Style, Literals, Logging, Loguru)" >> $GITHUB_STEP_SUMMARY
           echo "- **JavaScript Linter Container**: \`durable-code-js-linter\`" >> $GITHUB_STEP_SUMMARY
           echo "  - ESLint, Prettier, TypeScript, HTMLHint" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY

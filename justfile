@@ -165,7 +165,6 @@ lint: lint-ensure-containers
     @echo ""
     @just _lint-python &
     @just _lint-js &
-    @just _lint-design &
     @wait
     @just _lint-infra
     @echo ""
@@ -195,22 +194,6 @@ lint: lint-ensure-containers
         echo '• HTMLHint...' && htmlhint 'public/**/*.html' 'src/**/*.html' '*.html' --config /.htmlhintrc"
     echo -e "{{GREEN}}✓ Frontend linting passed{{NC}}"
 
-# Internal: Custom design linters
-@_lint-design:
-    echo -e "{{YELLOW}}━━━ Custom Design Linters ━━━{{NC}}"
-    docker exec durable-code-python-linter-{{BRANCH_NAME}} bash -c "cd /workspace && \
-        echo '• File headers...' && PYTHONPATH=/workspace/tools python -m design_linters --rules style.file-header --format text --recursive --fail-on-error backend tools test && \
-        echo '• SOLID principles...' && PYTHONPATH=/workspace/tools python -m design_linters --categories solid --format text --recursive --fail-on-error backend tools && \
-        echo '• Style rules...' && PYTHONPATH=/workspace/tools python -m design_linters --categories style --format text --recursive --fail-on-error backend tools test && \
-        echo '• Magic literals...' && PYTHONPATH=/workspace/tools python -m design_linters --categories literals --format text --recursive --fail-on-error backend tools test && \
-        echo '• Logging practices...' && PYTHONPATH=/workspace/tools python -m design_linters --categories logging --format text --recursive --fail-on-error backend tools test && \
-        echo '• Loguru usage...' && PYTHONPATH=/workspace/tools python -m design_linters --categories loguru --format text --recursive --fail-on-error backend tools test && \
-        echo '• Security rules...' && PYTHONPATH=/workspace/tools python -m design_linters --categories security --format text --recursive --fail-on-error backend tools test && \
-        echo '• Error handling...' && PYTHONPATH=/workspace/tools python -m design_linters --categories error_handling --format text --recursive --fail-on-error backend tools test && \
-        echo '• Testing practices...' && PYTHONPATH=/workspace/tools python -m design_linters --categories testing --format text --recursive --fail-on-error test && \
-        echo '• Enforcement...' && PYTHONPATH=/workspace/tools python -m design_linters --categories enforcement --format text --recursive --fail-on-error backend tools infra"
-    echo -e "{{GREEN}}✓ Custom design linting passed{{NC}}"
-
 # Internal: Infrastructure linting
 @_lint-infra:
     echo -e "{{YELLOW}}━━━ Infrastructure Linters ━━━{{NC}}"
@@ -237,34 +220,6 @@ lint-fix: lint-ensure-containers
         npm run lint:fix && npm run lint:css:fix && npm run format"
     @echo -e "{{GREEN}}✅ Auto-fix complete!{{NC}}"
 
-# Run custom design linters only
-lint-custom: lint-ensure-containers
-    @echo -e "{{CYAN}}╔════════════════════════════════════════════════════════════╗{{NC}}"
-    @echo -e "{{CYAN}}║                Custom Design Linters                      ║{{NC}}"
-    @echo -e "{{CYAN}}╚════════════════════════════════════════════════════════════╝{{NC}}"
-    @docker exec durable-code-python-linter-{{BRANCH_NAME}} bash -c "cd /workspace && PYTHONPATH=/workspace/tools python -m design_linters --format text --recursive backend tools test"
-    @echo -e "{{GREEN}}✓ Custom linting complete{{NC}}"
-
-# Run thailint only (magic numbers, nesting, SRP, file placement, DRY)
-lint-thailint: lint-ensure-containers
-    @echo -e "{{CYAN}}╔════════════════════════════════════════════════════════════╗{{NC}}"
-    @echo -e "{{CYAN}}║                      Thailint                             ║{{NC}}"
-    @echo -e "{{CYAN}}╚════════════════════════════════════════════════════════════╝{{NC}}"
-    @docker exec durable-code-python-linter-{{BRANCH_NAME}} bash -c "cd /workspace && echo '• Magic numbers...' && thailint --config /workspace/root/.thailint.yaml magic-numbers backend/app tools && echo '• Nesting depth...' && thailint --config /workspace/root/.thailint.yaml nesting backend/app tools && echo '• Single Responsibility...' && thailint --config /workspace/root/.thailint.yaml srp backend/app tools && echo '• DRY violations...' && thailint --config /workspace/root/.thailint.yaml dry backend/app tools"
-    @echo -e "{{GREEN}}✓ Thailint complete{{NC}}"
-
-# Run enforcement linting on specific files
-lint-enforcement FILES:
-    @just lint-ensure-containers
-    @docker exec durable-code-python-linter-{{BRANCH_NAME}} bash -c "cd /workspace && PYTHONPATH=/workspace/tools python -m design_linters --categories enforcement --format text --fail-on-error {{FILES}}"
-
-# List all custom linter categories
-lint-categories: lint-ensure-containers
-    @echo -e "{{CYAN}}╔════════════════════════════════════════════════════════════╗{{NC}}"
-    @echo -e "{{CYAN}}║                 Custom Rule Categories                    ║{{NC}}"
-    @echo -e "{{CYAN}}╚════════════════════════════════════════════════════════════╝{{NC}}"
-    @docker exec durable-code-python-linter-{{BRANCH_NAME}} bash -c "cd /workspace && PYTHONPATH=/workspace/tools python -m design_linters --list-categories"
-
 ################################################################################
 # Testing Targets
 ################################################################################
@@ -286,7 +241,7 @@ test: test-ensure-containers
 # Run backend tests with coverage
 test-backend: test-ensure-containers
     @echo -e "{{CYAN}}Backend Tests with Coverage{{NC}}"
-    @docker exec durable-code-backend-{{BRANCH_NAME}}-dev bash -c "cd /app && PYTHONPATH=/app:/app/tools poetry config virtualenvs.create false && poetry run pytest test/ --cov=app --cov=tools/design_linters --cov-report=term --cov-report=term:skip-covered --tb=short -v"
+    @docker exec durable-code-backend-{{BRANCH_NAME}}-dev bash -c "cd /app && PYTHONPATH=/app:/app/tools poetry config virtualenvs.create false && poetry run pytest test/ --cov=app --cov-report=term --cov-report=term:skip-covered --tb=short -v"
     @echo -e "{{GREEN}}✓ Backend tests complete{{NC}}"
 
 # Backend coverage alias for CI

@@ -289,7 +289,9 @@ def _handle_start_command(
         amplitude=command.amplitude or DEFAULT_AMPLITUDE,
         offset=command.offset or DEFAULT_OFFSET,
     )
-    state_machine.start_streaming()
+    # Only transition to streaming if not already streaming
+    if not state_machine.is_streaming():
+        state_machine.start_streaming()
     return f"Started streaming {command.wave_type} wave"
 
 
@@ -407,6 +409,34 @@ async def _run_stream_loop(
             await asyncio.sleep(IDLE_SLEEP_DURATION)
 
 
+async def _handle_stream_errors(
+    websocket: WebSocket, generator: WaveformGenerator, state_machine: WebSocketStateMachine, client_ip: str
+) -> None:
+    """Handle WebSocket stream errors with specific error handlers."""
+    try:
+        # Wrap the entire stream in a timeout
+        async with asyncio.timeout(WEBSOCKET_TIMEOUT):
+            await _run_stream_loop(websocket, generator, state_machine)
+
+    except TimeoutError:
+        await _handle_timeout_error(websocket, state_machine, client_ip)
+    except WebSocketDisconnect:
+        _handle_disconnect_error(state_machine, client_ip)
+    except OSError as e:
+        await _handle_connection_error(websocket, state_machine, client_ip, e)
+    except (ValueError, TypeError) as e:
+        await _handle_data_processing_error(websocket, state_machine, client_ip, e)
+    except asyncio.CancelledError:
+        _handle_cancellation_error(state_machine, client_ip)
+        raise  # Re-raise to allow proper cleanup
+    finally:
+        # Ensure state machine is fully disconnected
+        if not state_machine.is_disconnected():
+            state_machine.complete_disconnect()
+        # Release rate limit slot when connection closes
+        _websocket_rate_limiter.release_connection(client_ip)
+
+
 @router.websocket("/stream")
 async def oscilloscope_stream(websocket: WebSocket) -> None:
     """Provide WebSocket endpoint for real-time oscilloscope data streaming.
@@ -438,28 +468,7 @@ async def oscilloscope_stream(websocket: WebSocket) -> None:
     state_machine = WebSocketStateMachine(state=WebSocketState.CONNECTED)
     generator = WaveformGenerator()
 
-    try:
-        # Wrap the entire stream in a timeout
-        async with asyncio.timeout(WEBSOCKET_TIMEOUT):
-            await _run_stream_loop(websocket, generator, state_machine)
-
-    except TimeoutError:
-        await _handle_timeout_error(websocket, state_machine, client_ip)
-    except WebSocketDisconnect:
-        _handle_disconnect_error(state_machine, client_ip)
-    except OSError as e:
-        await _handle_connection_error(websocket, state_machine, client_ip, e)
-    except (ValueError, TypeError) as e:
-        await _handle_data_processing_error(websocket, state_machine, client_ip, e)
-    except asyncio.CancelledError:
-        _handle_cancellation_error(state_machine, client_ip)
-        raise  # Re-raise to allow proper cleanup
-    finally:
-        # Ensure state machine is fully disconnected
-        if not state_machine.is_disconnected():
-            state_machine.complete_disconnect()
-        # Release rate limit slot when connection closes
-        _websocket_rate_limiter.release_connection(client_ip)
+    await _handle_stream_errors(websocket, generator, state_machine, client_ip)
 
 
 def _get_stream_commands() -> dict[str, Any]:

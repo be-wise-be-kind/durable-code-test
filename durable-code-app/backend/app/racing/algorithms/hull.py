@@ -67,6 +67,47 @@ def select_best_candidate(
     return best_candidate
 
 
+def _should_close_hull(next_point: tuple[float, float], start: tuple[float, float], hull_length: int) -> bool:
+    """Check if hull should be closed."""
+    return next_point == start and hull_length > 2
+
+
+def _is_hull_too_large(hull_length: int, total_points: int) -> bool:
+    """Check if hull has grown too large (safety check)."""
+    return hull_length > total_points * 2
+
+
+def _build_hull_iteratively(
+    start: tuple[float, float],
+    points_set: set[tuple[float, float]],
+    k: int,
+    max_points: int,
+) -> list[tuple[float, float]]:
+    """Build concave hull iteratively using k-nearest neighbors."""
+    hull = [start]
+    current = start
+
+    while points_set:
+        candidates = find_k_nearest(current, points_set, k)
+        if not candidates:
+            break
+
+        prev = hull[-2] if len(hull) > 1 else None
+        next_point = select_best_candidate(candidates, current, prev)
+
+        if _should_close_hull(next_point, start, len(hull)):
+            break
+
+        hull.append(next_point)
+        current = next_point
+        points_set.discard(next_point)
+
+        if _is_hull_too_large(len(hull), max_points):
+            break
+
+    return hull
+
+
 def compute_concave_hull(points: list[tuple[float, float]], k: int = 3) -> list[tuple[float, float]]:
     """Compute concave hull of points using k-nearest neighbors approach.
 
@@ -86,30 +127,7 @@ def compute_concave_hull(points: list[tuple[float, float]], k: int = 3) -> list[
 
     # Start with leftmost point
     start = min(points, key=lambda p: (p[0], p[1]))
-    hull = [start]
-    current = start
     points_set = set(points)
     points_set.remove(start)
 
-    # Build hull by selecting best neighbor at each step
-    while points_set:
-        candidates = find_k_nearest(current, points_set, k)
-        if not candidates:
-            break
-
-        prev = hull[-2] if len(hull) > 1 else None
-        next_point = select_best_candidate(candidates, current, prev)
-
-        # Check if we've completed the loop
-        if next_point == start and len(hull) > 2:
-            break
-
-        hull.append(next_point)
-        current = next_point
-        points_set.discard(next_point)
-
-        # Safety check to prevent infinite loops
-        if len(hull) > len(points) * 2:
-            break
-
-    return hull
+    return _build_hull_iteratively(start, points_set, k, len(points))
