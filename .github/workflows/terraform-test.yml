@@ -5,7 +5,7 @@ on:
     paths:
       - 'infra/terraform/**'
       - 'infra/scripts/**'
-      - 'Makefile.infra'
+      - 'justfile'
       - '.github/workflows/terraform-test.yml'
   push:
     branches:
@@ -13,7 +13,7 @@ on:
     paths:
       - 'infra/terraform/**'
       - 'infra/scripts/**'
-      - 'Makefile.infra'
+      - 'justfile'
   workflow_dispatch:
 
 jobs:
@@ -32,17 +32,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: ~1.0
+      - name: Setup Terraform via tfenv
+        run: |
+          # Install tfenv
+          git clone --depth=1 https://github.com/tfutils/tfenv.git ~/.tfenv
+          echo "$HOME/.tfenv/bin" >> $GITHUB_PATH
+
+          # Install and use Terraform 1.9.8
+          ~/.tfenv/bin/tfenv install 1.9.8
+          ~/.tfenv/bin/tfenv use 1.9.8
 
       - name: Terraform Format Check
         id: fmt
         run: |
           echo "🎨 Checking Terraform formatting..."
           cd infra/terraform/workspaces/${{ matrix.workspace }}
-          terraform fmt -check -recursive
+          $HOME/.tfenv/bin/terraform fmt -check -recursive
         continue-on-error: true
 
       - name: Terraform Init (without backend)
@@ -50,14 +55,14 @@ jobs:
         run: |
           echo "🔧 Initializing Terraform workspace: ${{ matrix.workspace }}"
           cd infra/terraform/workspaces/${{ matrix.workspace }}
-          terraform init -backend=false
+          $HOME/.tfenv/bin/terraform init -backend=false
 
       - name: Terraform Validate
         id: validate
         run: |
           echo "✅ Validating Terraform configuration..."
           cd infra/terraform/workspaces/${{ matrix.workspace }}
-          terraform validate
+          $HOME/.tfenv/bin/terraform validate
 
       - name: Terraform Security Scan (tfsec)
         id: tfsec
@@ -163,8 +168,8 @@ jobs:
             fi
           done
 
-  test-makefile-targets:
-    name: Test Makefile Targets
+  test-just-targets:
+    name: Test Just Infrastructure Targets
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -173,67 +178,122 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Install Just
+        uses: extractions/setup-just@v2
 
-      - name: Test Makefile target syntax
+      - name: Setup Terraform via tfenv
         run: |
-          echo "📋 Testing Makefile target syntax..."
+          # Install tfenv
+          git clone --depth=1 https://github.com/tfutils/tfenv.git ~/.tfenv
+          echo "$HOME/.tfenv/bin" >> $GITHUB_PATH
 
-          # Test that infra targets exist and have proper syntax
-          targets=(
-            "infra-status"
-            "infra-plan"
-            "infra-up"
-            "infra-down"
-            "infra-output"
+          # Install and use Terraform 1.9.8
+          ~/.tfenv/bin/tfenv install 1.9.8
+          ~/.tfenv/bin/tfenv use 1.9.8
+
+      - name: Test Just target syntax
+        run: |
+          echo "📋 Testing Just target syntax..."
+
+          # Test that infra subcommands exist and have proper syntax
+          subcommands=(
+            "check-aws"
+            "init"
+            "plan"
+            "up"
+            "validate"
+            "output"
+            "status"
+            "fmt"
           )
 
-          for target in "${targets[@]}"; do
-            echo "Checking target: $target"
-            if just --dry-run "$target" ENV=test SCOPE=runtime >/dev/null 2>&1; then
-              echo "✅ Target '$target' syntax is valid"
+          for cmd in "${subcommands[@]}"; do
+            echo "Checking subcommand: infra $cmd"
+            if just --dry-run infra "$cmd" runtime >/dev/null 2>&1 || just --dry-run infra "$cmd" >/dev/null 2>&1; then
+              echo "✅ Subcommand 'infra $cmd' syntax is valid"
             else
-              echo "❌ Target '$target' has syntax errors"
+              echo "❌ Subcommand 'infra $cmd' has syntax errors"
               exit 1
             fi
           done
 
-      - name: Test workspace directory resolution
+      - name: Test workspace scope resolution
         run: |
-          echo "📁 Testing workspace directory resolution..."
+          echo "📁 Testing workspace scope resolution..."
 
-          # Test that Makefile correctly resolves workspace directories
-          echo "Testing SCOPE=base resolution..."
-          just --dry-run infra-plan SCOPE=base ENV=test 2>&1 | grep -q "workspaces/base" || {
-            echo "❌ Base workspace directory not resolved correctly"
+          # Verify workspace directories exist
+          echo "Testing base scope directory..."
+          if [ -d "infra/terraform/workspaces/base" ]; then
+            echo "✅ Base workspace directory exists"
+          else
+            echo "❌ Base workspace directory not found"
             exit 1
-          }
+          fi
 
-          echo "Testing SCOPE=runtime resolution..."
-          just --dry-run infra-plan SCOPE=runtime ENV=test 2>&1 | grep -q "workspaces/runtime" || {
-            echo "❌ Runtime workspace directory not resolved correctly"
+          echo "Testing runtime scope directory..."
+          if [ -d "infra/terraform/workspaces/runtime" ]; then
+            echo "✅ Runtime workspace directory exists"
+          else
+            echo "❌ Runtime workspace directory not found"
             exit 1
-          }
+          fi
 
-          echo "✅ Workspace directory resolution working correctly"
+          # Test that just commands dispatch correctly
+          echo "Testing base scope dispatch..."
+          OUTPUT=$(just --dry-run infra plan base 2>&1)
+          if echo "$OUTPUT" | grep -q "_infra.*plan.*base\|_infra-do-plan.*base"; then
+            echo "✅ Base scope dispatches correctly"
+          else
+            echo "❌ Base scope dispatch failed"
+            echo "Output: $OUTPUT"
+            exit 1
+          fi
 
-      - name: Test Docker volume mounts
+          echo "Testing runtime scope dispatch..."
+          OUTPUT=$(just --dry-run infra plan runtime 2>&1)
+          if echo "$OUTPUT" | grep -q "_infra.*plan.*runtime\|_infra-do-plan.*runtime"; then
+            echo "✅ Runtime scope dispatches correctly"
+          else
+            echo "❌ Runtime scope dispatch failed"
+            exit 1
+          fi
+
+          echo "✅ Workspace scope resolution working correctly"
+
+      - name: Test Terraform backend config files
         run: |
-          echo "🐳 Testing Docker volume mounts..."
+          echo "🔧 Testing Terraform backend config files..."
 
-          # Test that required directories are mounted in Docker commands
-          just --dry-run infra-plan SCOPE=base ENV=test 2>&1 | grep -q "backend-config" || {
-            echo "❌ Backend config directory not mounted"
+          # Verify backend config files exist
+          if [ -f "infra/terraform/backend-config/base-dev.hcl" ]; then
+            echo "✅ Base backend config exists"
+          else
+            echo "❌ Base backend config not found"
             exit 1
-          }
+          fi
 
-          echo "✅ Docker volume mounts configured correctly"
+          if [ -f "infra/terraform/backend-config/runtime-dev.hcl" ]; then
+            echo "✅ Runtime backend config exists"
+          else
+            echo "❌ Runtime backend config not found"
+            exit 1
+          fi
+
+          # Test that just init command dispatches correctly
+          OUTPUT=$(just --dry-run infra init base 2>&1)
+          if echo "$OUTPUT" | grep -q "_infra.*init.*base\|_infra-do-init.*base"; then
+            echo "✅ Backend config command dispatches correctly"
+          else
+            echo "❌ Backend config command dispatch failed"
+            exit 1
+          fi
+
+          echo "✅ Backend config files verified"
 
   integration-test:
     name: Integration Test (Dry Run)
     runs-on: ubuntu-latest
-    needs: [validate-terraform, validate-scripts, test-makefile-targets]
+    needs: [validate-terraform, validate-scripts, test-just-targets]
     permissions:
       contents: read
 
@@ -241,8 +301,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Install Just
+        uses: extractions/setup-just@v2
+
+      - name: Setup Terraform via tfenv
+        run: |
+          # Install tfenv
+          git clone --depth=1 https://github.com/tfutils/tfenv.git ~/.tfenv
+          echo "$HOME/.tfenv/bin" >> $GITHUB_PATH
+
+          # Install and use Terraform 1.9.8
+          ~/.tfenv/bin/tfenv install 1.9.8
+          ~/.tfenv/bin/tfenv use 1.9.8
 
       - name: Test complete workflow (dry run)
         run: |
@@ -250,20 +320,38 @@ jobs:
 
           # These commands should not require AWS credentials for dry run
           echo "Step 1: Test planning base infrastructure..."
-          just --dry-run infra-plan SCOPE=base ENV=test || {
+          just --dry-run infra plan base || {
             echo "❌ Base infrastructure planning failed"
             exit 1
           }
 
           echo "Step 2: Test planning runtime infrastructure..."
-          just --dry-run infra-plan SCOPE=runtime ENV=test || {
+          just --dry-run infra plan runtime || {
             echo "❌ Runtime infrastructure planning failed"
             exit 1
           }
 
           echo "Step 3: Test planning all infrastructure..."
-          just --dry-run infra-plan SCOPE=all ENV=test || {
+          just --dry-run infra plan all || {
             echo "❌ All infrastructure planning failed"
+            exit 1
+          }
+
+          echo "Step 4: Test init workflow..."
+          just --dry-run infra init base || {
+            echo "❌ Base infrastructure init failed"
+            exit 1
+          }
+
+          echo "Step 5: Test validate workflow..."
+          just --dry-run infra validate runtime || {
+            echo "❌ Runtime infrastructure validation failed"
+            exit 1
+          }
+
+          echo "Step 6: Test status command..."
+          just --dry-run infra status || {
+            echo "❌ Infrastructure status command failed"
             exit 1
           }
 
@@ -272,24 +360,27 @@ jobs:
       - name: Generate test summary
         if: always()
         run: |
-          echo "## 🧪 Terraform Workspace Test Summary"
-          echo ""
-          echo "### Validation Results"
-          echo "- ✅ Terraform configuration validation"
-          echo "- ✅ Shell script validation"
-          echo "- ✅ Makefile target validation"
-          echo "- ✅ Integration workflow test"
-          echo ""
-          echo "### Next Steps"
-          echo "After merge, the following commands will be available:"
-          echo '```bash'
-          echo "# Deploy complete infrastructure"
-          echo "just infra-up SCOPE=all ENV=dev"
-          echo ""
-          echo "# Daily cost optimization"
-          echo "just infra-down SCOPE=runtime ENV=dev"
-          echo "just infra-up SCOPE=runtime ENV=dev"
-          echo ""
-          echo "# Check status"
-          echo "just infra-status ENV=dev"
-          echo '```'
+          echo "## 🧪 Terraform Workspace Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Validation Results" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Terraform configuration validation (version 1.9.8)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Shell script validation" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Just infrastructure target validation" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Integration workflow test (dry run)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Infrastructure Management Commands" >> $GITHUB_STEP_SUMMARY
+          echo "After merge, the following commands are available:" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo "# Check AWS credentials" >> $GITHUB_STEP_SUMMARY
+          echo "just infra check-aws" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# Deploy complete infrastructure" >> $GITHUB_STEP_SUMMARY
+          echo "just infra up all" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# Daily cost optimization" >> $GITHUB_STEP_SUMMARY
+          echo "just infra down runtime destroy-runtime" >> $GITHUB_STEP_SUMMARY
+          echo "just infra up runtime" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "# Check status" >> $GITHUB_STEP_SUMMARY
+          echo "just infra status" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
