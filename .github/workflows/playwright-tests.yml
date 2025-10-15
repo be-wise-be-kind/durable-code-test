@@ -33,10 +33,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Start services
-        run: just dev-start
-
-      - name: Get dynamic ports
+      - name: Calculate branch and ports
         id: ports
         run: |
           # In GitHub Actions, we're in a detached HEAD state, so we need to get the branch from the event
@@ -52,6 +49,13 @@ jobs:
           echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
           echo "Using branch: $BRANCH_NAME, Frontend: $FRONTEND_PORT, Backend: $BACKEND_PORT"
 
+      - name: Start services
+        env:
+          BRANCH_NAME: ${{ steps.ports.outputs.branch_name }}
+          FRONTEND_PORT: ${{ steps.ports.outputs.frontend_port }}
+          BACKEND_PORT: ${{ steps.ports.outputs.backend_port }}
+        run: just dev-start
+
       - name: Wait for services
         run: |
           echo "Waiting for frontend on port ${{ steps.ports.outputs.frontend_port }}..."
@@ -66,6 +70,9 @@ jobs:
         env:
           CI: true
           RUN_PLAYWRIGHT_TESTS: true
+          BRANCH_NAME: ${{ steps.ports.outputs.branch_name }}
+          FRONTEND_PORT: ${{ steps.ports.outputs.frontend_port }}
+          BACKEND_PORT: ${{ steps.ports.outputs.backend_port }}
         run: just test-playwright
 
       - name: Upload test results
@@ -79,4 +86,8 @@ jobs:
 
       - name: Stop services
         if: always()
+        env:
+          BRANCH_NAME: ${{ steps.ports.outputs.branch_name }}
+          FRONTEND_PORT: ${{ steps.ports.outputs.frontend_port }}
+          BACKEND_PORT: ${{ steps.ports.outputs.backend_port }}
         run: just dev-stop
