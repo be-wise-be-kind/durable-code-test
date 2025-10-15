@@ -23,6 +23,7 @@ BACKEND_URL := "http://localhost:" + BACKEND_PORT
 
 # Terraform configuration
 TERRAFORM_VERSION := "1.9.8"
+TERRAFORM_BIN := `if [ -x "$HOME/.tfenv/bin/terraform" ]; then echo "$HOME/.tfenv/bin/terraform"; elif command -v terraform >/dev/null 2>&1; then command -v terraform; else echo "terraform"; fi`
 AWS_REGION := env_var_or_default("AWS_REGION", "us-west-2")
 AWS_PROFILE := env_var_or_default("AWS_PROFILE", "terraform-deploy")
 ENV := env_var_or_default("ENV", "dev")
@@ -57,9 +58,35 @@ help:
 # Development Targets
 ################################################################################
 
-# Initialize project (build images, install hooks)
+# Initialize project (install tools, build images, install hooks)
 init:
     @echo -e "{{CYAN}}Initializing project...{{NC}}"
+    @echo -e "{{YELLOW}}Installing tfenv (Terraform version manager)...{{NC}}"
+    @if ! command -v tfenv &> /dev/null; then \
+        if [ -d "$HOME/.tfenv" ]; then \
+            echo -e "{{GREEN}}✓ tfenv already installed at ~/.tfenv{{NC}}"; \
+        else \
+            git clone --depth=1 https://github.com/tfutils/tfenv.git ~/.tfenv && \
+            echo -e "{{GREEN}}✓ tfenv installed. Add ~/.tfenv/bin to your PATH{{NC}}" && \
+            echo -e "{{YELLOW}}  Add to ~/.bashrc: export PATH=\"\$HOME/.tfenv/bin:\$PATH\"{{NC}}"; \
+        fi; \
+    else \
+        echo -e "{{GREEN}}✓ tfenv already available{{NC}}"; \
+    fi
+    @echo -e "{{YELLOW}}Installing Terraform {{TERRAFORM_VERSION}}...{{NC}}"
+    @bash -c ' \
+        if [ -x "$$HOME/.tfenv/bin/tfenv" ]; then \
+            $$HOME/.tfenv/bin/tfenv install {{TERRAFORM_VERSION}} 2>/dev/null || echo -e "{{GREEN}}✓ Terraform {{TERRAFORM_VERSION}} already installed{{NC}}"; \
+            $$HOME/.tfenv/bin/tfenv use {{TERRAFORM_VERSION}}; \
+            echo -e "{{GREEN}}✓ Terraform {{TERRAFORM_VERSION}} configured{{NC}}"; \
+        elif command -v tfenv &> /dev/null; then \
+            tfenv install {{TERRAFORM_VERSION}} 2>/dev/null || echo -e "{{GREEN}}✓ Terraform {{TERRAFORM_VERSION}} already installed{{NC}}"; \
+            tfenv use {{TERRAFORM_VERSION}}; \
+            echo -e "{{GREEN}}✓ Terraform {{TERRAFORM_VERSION}} configured{{NC}}"; \
+        else \
+            echo -e "{{YELLOW}}⚠ tfenv not found. Install manually or add ~/.tfenv/bin to PATH{{NC}}"; \
+        fi \
+    '
     @echo -e "{{YELLOW}}Installing pre-commit framework...{{NC}}"
     @pip3 install pre-commit 2>/dev/null || pip install pre-commit 2>/dev/null || echo -e "{{YELLOW}}⚠ Pre-commit not installed{{NC}}"
     @pre-commit install 2>/dev/null || echo -e "{{YELLOW}}⚠ Pre-commit hooks not installed{{NC}}"
@@ -219,7 +246,7 @@ lint SCOPE="all":
 # Internal: Infrastructure linting
 @_lint-infra:
     echo -e "{{YELLOW}}━━━ Infrastructure Linters ━━━{{NC}}"
-    printf '%-30s' "• Terraform format" && (just infra-fmt >/dev/null 2>&1 && echo -e "{{GREEN}}✓{{NC}}" || exit 1)
+    printf '%-30s' "• Terraform format" && (just _infra-fmt >/dev/null 2>&1 && echo -e "{{GREEN}}✓{{NC}}" || exit 1)
     printf '%-30s' "• Shellcheck" && (shellcheck infra/scripts/*.sh scripts/*.sh 2>/dev/null && echo -e "{{GREEN}}✓{{NC}}" || echo -e "{{YELLOW}}⚠ (not installed){{NC}}")
     echo -e "{{GREEN}}✓ Infrastructure linting passed{{NC}}"
 
@@ -333,66 +360,89 @@ deploy-check:
     fi
 
 ################################################################################
-# Infrastructure Targets (Terraform via Docker)
+# Infrastructure Targets (Terraform Direct Execution)
 ################################################################################
 
-# Check AWS credentials
-infra-check-aws:
+# Unified infrastructure management command
+infra SUBCOMMAND *ARGS:
+    @just _infra-dispatch {{SUBCOMMAND}} {{ARGS}}
+
+# Internal: Dispatch subcommands to appropriate handlers
+_infra-dispatch SUBCOMMAND *ARGS:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    # Extract arguments from Just's ARGS
+    ARGS_ARRAY=({{ARGS}})
+    ARG1="${ARGS_ARRAY[0]:-runtime}"
+    ARG2="${ARGS_ARRAY[1]:-}"
+
+    case "{{SUBCOMMAND}}" in
+        check-aws)
+            just _infra-check-aws
+            ;;
+        init)
+            just _infra-init-scope "$ARG1"
+            ;;
+        plan)
+            just _infra-plan-scope "$ARG1"
+            ;;
+        up)
+            AUTO="${ARG2:-false}"
+            just _infra-apply-scope "$ARG1" "$AUTO"
+            ;;
+        down)
+            just _infra-destroy-scope "$ARG1" "$ARG2"
+            ;;
+        fmt)
+            just _infra-fmt
+            ;;
+        validate)
+            just _infra-validate-scope "$ARG1"
+            ;;
+        output)
+            just _infra-output-scope "$ARG1" "$ARG2"
+            ;;
+        status)
+            just _infra-status
+            ;;
+        *)
+            echo -e "{{RED}}Error: Unknown subcommand '{{SUBCOMMAND}}'{{NC}}"
+            echo ""
+            echo -e "{{CYAN}}Available subcommands:{{NC}}"
+            echo -e "  {{YELLOW}}check-aws{{NC}}           Check AWS credentials"
+            echo -e "  {{YELLOW}}init [SCOPE]{{NC}}        Initialize Terraform workspace (default: runtime)"
+            echo -e "  {{YELLOW}}plan [SCOPE]{{NC}}        Plan infrastructure changes (default: runtime)"
+            echo -e "  {{YELLOW}}up [SCOPE] [AUTO]{{NC}}   Deploy infrastructure (default: runtime, auto: false)"
+            echo -e "  {{YELLOW}}down [SCOPE] [CONF]{{NC}}  Destroy infrastructure (requires confirmation)"
+            echo -e "  {{YELLOW}}fmt{{NC}}                 Format Terraform files"
+            echo -e "  {{YELLOW}}validate [SCOPE]{{NC}}    Validate Terraform configuration (default: runtime)"
+            echo -e "  {{YELLOW}}output [SCOPE] [FMT]{{NC}} Show Terraform outputs (format: json or text)"
+            echo -e "  {{YELLOW}}status{{NC}}              Show infrastructure status"
+            exit 1
+            ;;
+    esac
+
+# Internal: Check AWS credentials
+@_infra-check-aws:
     #!/usr/bin/env bash
     echo -e "{{CYAN}}Checking AWS credentials...{{NC}}"
     echo -e "{{YELLOW}}AWS Profile: {{AWS_PROFILE}}{{NC}}"
     echo -e "{{YELLOW}}AWS Region: {{AWS_REGION}}{{NC}}"
-    if docker run --rm \
-        -v $HOME/.aws:/root/.aws:ro \
-        -e AWS_PROFILE={{AWS_PROFILE}} \
-        -e AWS_REGION={{AWS_REGION}} \
-        amazon/aws-cli:latest sts get-caller-identity >/dev/null 2>&1; then
+    if aws sts get-caller-identity --profile {{AWS_PROFILE}} --region {{AWS_REGION}} >/dev/null 2>&1; then
         echo -e "{{GREEN}}✓ AWS credentials are valid!{{NC}}"
-        docker run --rm \
-            -v $HOME/.aws:/root/.aws:ro \
-            -e AWS_PROFILE={{AWS_PROFILE}} \
-            -e AWS_REGION={{AWS_REGION}} \
-            amazon/aws-cli:latest sts get-caller-identity --output table
+        aws sts get-caller-identity --profile {{AWS_PROFILE}} --output table
     else
         echo -e "{{RED}}❌ AWS credentials check failed!{{NC}}"
         exit 1
     fi
 
-# Initialize Terraform for a scope (bootstrap, base, runtime, or all)
-infra-init SCOPE="runtime":
-    @echo -e "{{CYAN}}Initializing Terraform for {{SCOPE}}...{{NC}}"
-    @just _infra-init-scope {{SCOPE}}
+# Internal: Format Terraform files
+_infra-fmt:
+    @cd infra/terraform && {{TERRAFORM_BIN}} fmt -recursive
 
-# Plan infrastructure changes for a scope
-infra-plan SCOPE="runtime":
-    @echo -e "{{CYAN}}Planning infrastructure changes for {{SCOPE}}...{{NC}}"
-    @just _infra-plan-scope {{SCOPE}}
-
-# Apply infrastructure changes (deploy) for a scope
-infra-up SCOPE="runtime" AUTO="false":
-    @echo -e "{{CYAN}}Deploying infrastructure for {{SCOPE}}...{{NC}}"
-    @just _infra-apply-scope {{SCOPE}} {{AUTO}}
-
-# Destroy infrastructure for a scope
-infra-down SCOPE="runtime" CONFIRM="":
-    @just _infra-destroy-scope {{SCOPE}} {{CONFIRM}}
-
-# Format Terraform files
-infra-fmt:
-    @docker run --rm \
-        -v $(pwd)/infra/terraform:/terraform \
-        hashicorp/terraform:{{TERRAFORM_VERSION}} fmt -recursive
-
-# Validate Terraform configuration
-infra-validate SCOPE="runtime":
-    @just _infra-validate-scope {{SCOPE}}
-
-# Show Terraform outputs
-infra-output SCOPE="runtime" FORMAT="":
-    @just _infra-output-scope {{SCOPE}} {{FORMAT}}
-
-# Show infrastructure status
-infra-status:
+# Internal: Show infrastructure status
+_infra-status:
     @echo -e "{{CYAN}}Infrastructure Status - Environment: {{ENV}}{{NC}}"
     @echo ""
     @echo -e "{{CYAN}}=== Base Infrastructure ==={{NC}}"
@@ -404,6 +454,7 @@ infra-status:
 # Internal: Initialize for specific scope
 @_infra-init-scope SCOPE:
     #!/usr/bin/env bash
+    set -euo pipefail
     if [ "{{SCOPE}}" = "all" ]; then
         just _infra-do-init base
         just _infra-do-init runtime
@@ -482,126 +533,148 @@ infra-status:
 # Internal: Actual Terraform init operation
 @_infra-do-init SCOPE:
     #!/usr/bin/env bash
-    TERRAFORM_DIR="infra/terraform/workspaces/{{SCOPE}}"
-    VOLUME_NAME="terraform-cache-{{SCOPE}}-{{ENV}}-$(echo $(pwd) | md5sum | cut -d' ' -f1)"
+    set -euo pipefail
+    SCOPE="{{SCOPE}}"
+    TERRAFORM_DIR="infra/terraform/workspaces/$SCOPE"
+    BACKEND_CONFIG="$(pwd)/infra/terraform/backend-config/$SCOPE-{{ENV}}.hcl"
 
-    echo "Creating Docker volume: $VOLUME_NAME"
-    docker volume create $VOLUME_NAME >/dev/null 2>&1 || true
+    echo -e "{{YELLOW}}Initializing Terraform in $TERRAFORM_DIR...{{NC}}"
+    echo -e "{{YELLOW}}Using backend config: $BACKEND_CONFIG{{NC}}"
 
-    BACKEND_CONFIG="/backend-config/{{SCOPE}}-{{ENV}}.hcl"
-    echo "Using backend config: $BACKEND_CONFIG"
+    cd "$TERRAFORM_DIR"
+    AWS_PROFILE={{AWS_PROFILE}} AWS_REGION={{AWS_REGION}} \
+        {{TERRAFORM_BIN}} init -backend-config="$BACKEND_CONFIG" -reconfigure
 
-    docker run --rm \
-        -v $(pwd)/$TERRAFORM_DIR:/terraform \
-        -v $(pwd)/infra/environments:/environments:ro \
-        -v $(pwd)/infra/terraform/backend-config:/backend-config:ro \
-        -v $VOLUME_NAME:/terraform/.terraform \
-        -v $HOME/.aws:/root/.aws:ro \
-        -w /terraform \
-        -e AWS_PROFILE={{AWS_PROFILE}} \
-        -e AWS_REGION={{AWS_REGION}} \
-        hashicorp/terraform:{{TERRAFORM_VERSION}} init -backend-config=$BACKEND_CONFIG
+    echo -e "{{GREEN}}✓ Terraform initialized for $SCOPE{{NC}}"
 
 # Internal: Actual Terraform plan operation
 @_infra-do-plan SCOPE:
     #!/usr/bin/env bash
-    TERRAFORM_DIR="infra/terraform/workspaces/{{SCOPE}}"
-    VOLUME_NAME="terraform-cache-{{SCOPE}}-{{ENV}}-$(echo $(pwd) | md5sum | cut -d' ' -f1)"
-    WORKSPACE_NAME="{{SCOPE}}-{{ENV}}"
+    SCOPE="{{SCOPE}}"
+    TERRAFORM_DIR="infra/terraform/workspaces/$SCOPE"
+    WORKSPACE_NAME="$SCOPE-{{ENV}}"
+    TFVARS_FILE="$(pwd)/infra/environments/{{ENV}}.tfvars"
 
-    docker run --rm \
-        -v $(pwd)/$TERRAFORM_DIR:/terraform \
-        -v $(pwd)/infra/environments:/environments:ro \
-        -v $VOLUME_NAME:/terraform/.terraform \
-        -v $HOME/.aws:/root/.aws:ro \
-        -w /terraform \
-        -e AWS_PROFILE={{AWS_PROFILE}} \
-        -e AWS_REGION={{AWS_REGION}} \
-        hashicorp/terraform:{{TERRAFORM_VERSION}} \
-        sh -c "terraform workspace select $WORKSPACE_NAME 2>/dev/null || terraform workspace new $WORKSPACE_NAME; terraform plan -var-file=/environments/{{ENV}}.tfvars"
+    echo -e "{{YELLOW}}Planning infrastructure for $SCOPE in workspace $WORKSPACE_NAME...{{NC}}"
+
+    cd "$TERRAFORM_DIR"
+
+    # Select or create workspace
+    if ! AWS_PROFILE={{AWS_PROFILE}} {{TERRAFORM_BIN}} workspace select "$WORKSPACE_NAME" 2>/dev/null; then
+        echo -e "{{YELLOW}}Creating new workspace: $WORKSPACE_NAME{{NC}}"
+        AWS_PROFILE={{AWS_PROFILE}} {{TERRAFORM_BIN}} workspace new "$WORKSPACE_NAME"
+    fi
+
+    # Run plan
+    AWS_PROFILE={{AWS_PROFILE}} AWS_REGION={{AWS_REGION}} \
+        {{TERRAFORM_BIN}} plan -var-file="$TFVARS_FILE"
+
+    echo -e "{{GREEN}}✓ Plan complete for $SCOPE{{NC}}"
 
 # Internal: Actual Terraform apply operation
 @_infra-do-apply SCOPE AUTO:
     #!/usr/bin/env bash
-    TERRAFORM_DIR="infra/terraform/workspaces/{{SCOPE}}"
-    VOLUME_NAME="terraform-cache-{{SCOPE}}-{{ENV}}-$(echo $(pwd) | md5sum | cut -d' ' -f1)"
-    WORKSPACE_NAME="{{SCOPE}}-{{ENV}}"
+    SCOPE="{{SCOPE}}"
+    AUTO="{{AUTO}}"
+    TERRAFORM_DIR="infra/terraform/workspaces/$SCOPE"
+    WORKSPACE_NAME="$SCOPE-{{ENV}}"
+    TFVARS_FILE="$(pwd)/infra/environments/{{ENV}}.tfvars"
 
-    if [ "{{AUTO}}" = "true" ]; then
+    if [ "$AUTO" = "true" ]; then
         APPROVE_FLAG="-auto-approve"
     else
         APPROVE_FLAG=""
     fi
 
-    docker run --rm -it \
-        -v $(pwd)/$TERRAFORM_DIR:/terraform \
-        -v $(pwd)/infra/environments:/environments:ro \
-        -v $VOLUME_NAME:/terraform/.terraform \
-        -v $HOME/.aws:/root/.aws:ro \
-        -w /terraform \
-        -e AWS_PROFILE={{AWS_PROFILE}} \
-        -e AWS_REGION={{AWS_REGION}} \
-        hashicorp/terraform:{{TERRAFORM_VERSION}} \
-        sh -c "terraform workspace select $WORKSPACE_NAME 2>/dev/null || terraform workspace new $WORKSPACE_NAME; terraform apply -var-file=/environments/{{ENV}}.tfvars $APPROVE_FLAG"
+    echo -e "{{YELLOW}}Applying infrastructure for $SCOPE in workspace $WORKSPACE_NAME...{{NC}}"
+
+    cd "$TERRAFORM_DIR"
+
+    # Select or create workspace
+    if ! AWS_PROFILE={{AWS_PROFILE}} {{TERRAFORM_BIN}} workspace select "$WORKSPACE_NAME" 2>/dev/null; then
+        echo -e "{{YELLOW}}Creating new workspace: $WORKSPACE_NAME{{NC}}"
+        AWS_PROFILE={{AWS_PROFILE}} {{TERRAFORM_BIN}} workspace new "$WORKSPACE_NAME"
+    fi
+
+    # Run apply
+    AWS_PROFILE={{AWS_PROFILE}} AWS_REGION={{AWS_REGION}} \
+        {{TERRAFORM_BIN}} apply -var-file="$TFVARS_FILE" $APPROVE_FLAG
+
+    echo -e "{{GREEN}}✓ Apply complete for $SCOPE{{NC}}"
 
 # Internal: Actual Terraform destroy operation
 @_infra-do-destroy SCOPE:
     #!/usr/bin/env bash
-    TERRAFORM_DIR="infra/terraform/workspaces/{{SCOPE}}"
-    VOLUME_NAME="terraform-cache-{{SCOPE}}-{{ENV}}-$(echo $(pwd) | md5sum | cut -d' ' -f1)"
-    WORKSPACE_NAME="{{SCOPE}}-{{ENV}}"
+    SCOPE="{{SCOPE}}"
+    TERRAFORM_DIR="infra/terraform/workspaces/$SCOPE"
+    WORKSPACE_NAME="$SCOPE-{{ENV}}"
+    TFVARS_FILE="$(pwd)/infra/environments/{{ENV}}.tfvars"
 
-    docker run --rm -it \
-        -v $(pwd)/$TERRAFORM_DIR:/terraform \
-        -v $(pwd)/infra/environments:/environments:ro \
-        -v $VOLUME_NAME:/terraform/.terraform \
-        -v $HOME/.aws:/root/.aws:ro \
-        -w /terraform \
-        -e AWS_PROFILE={{AWS_PROFILE}} \
-        -e AWS_REGION={{AWS_REGION}} \
-        hashicorp/terraform:{{TERRAFORM_VERSION}} \
-        sh -c "terraform workspace select $WORKSPACE_NAME 2>/dev/null || exit 0; terraform destroy -var-file=/environments/{{ENV}}.tfvars"
+    echo -e "{{RED}}Destroying infrastructure for $SCOPE in workspace $WORKSPACE_NAME...{{NC}}"
+
+    cd "$TERRAFORM_DIR"
+
+    # Select workspace (exit gracefully if doesn't exist)
+    if ! AWS_PROFILE={{AWS_PROFILE}} {{TERRAFORM_BIN}} workspace select "$WORKSPACE_NAME" 2>/dev/null; then
+        echo -e "{{YELLOW}}Workspace $WORKSPACE_NAME does not exist, nothing to destroy{{NC}}"
+        exit 0
+    fi
+
+    # Run destroy
+    AWS_PROFILE={{AWS_PROFILE}} AWS_REGION={{AWS_REGION}} \
+        {{TERRAFORM_BIN}} destroy -var-file="$TFVARS_FILE"
+
+    echo -e "{{GREEN}}✓ Destroy complete for $SCOPE{{NC}}"
 
 # Internal: Actual Terraform validate operation
 @_infra-do-validate SCOPE:
     #!/usr/bin/env bash
-    TERRAFORM_DIR="infra/terraform/workspaces/{{SCOPE}}"
-    VOLUME_NAME="terraform-cache-{{SCOPE}}-{{ENV}}-$(echo $(pwd) | md5sum | cut -d' ' -f1)"
+    SCOPE="{{SCOPE}}"
+    TERRAFORM_DIR="infra/terraform/workspaces/$SCOPE"
 
-    docker run --rm \
-        -v $(pwd)/$TERRAFORM_DIR:/terraform \
-        -v $VOLUME_NAME:/terraform/.terraform \
-        -w /terraform \
-        hashicorp/terraform:{{TERRAFORM_VERSION}} validate
+    echo -e "{{YELLOW}}Validating Terraform configuration for $SCOPE...{{NC}}"
+
+    cd "$TERRAFORM_DIR"
+    {{TERRAFORM_BIN}} validate
+
+    echo -e "{{GREEN}}✓ Validation passed for $SCOPE{{NC}}"
 
 # Internal: Actual Terraform output operation
 @_infra-do-output SCOPE FORMAT:
     #!/usr/bin/env bash
-    TERRAFORM_DIR="infra/terraform/workspaces/{{SCOPE}}"
-    VOLUME_NAME="terraform-cache-{{SCOPE}}-{{ENV}}-$(echo $(pwd) | md5sum | cut -d' ' -f1)"
-    WORKSPACE_NAME="{{SCOPE}}-{{ENV}}"
+    SCOPE="{{SCOPE}}"
+    FORMAT="{{FORMAT}}"
+    TERRAFORM_DIR="infra/terraform/workspaces/$SCOPE"
+    WORKSPACE_NAME="$SCOPE-{{ENV}}"
 
-    if [ "{{FORMAT}}" = "json" ]; then
+    if [ "$FORMAT" = "json" ]; then
         OUTPUT_FLAG="-json"
     else
         OUTPUT_FLAG=""
     fi
 
-    docker run --rm \
-        -v $(pwd)/$TERRAFORM_DIR:/terraform \
-        -v $VOLUME_NAME:/terraform/.terraform \
-        -v $HOME/.aws:/root/.aws:ro \
-        -w /terraform \
-        -e AWS_PROFILE={{AWS_PROFILE}} \
-        hashicorp/terraform:{{TERRAFORM_VERSION}} \
-        sh -c "terraform workspace select $WORKSPACE_NAME && terraform output $OUTPUT_FLAG"
+    echo -e "{{YELLOW}}Fetching outputs for $SCOPE from workspace $WORKSPACE_NAME...{{NC}}"
+
+    cd "$TERRAFORM_DIR"
+
+    # Select workspace
+    AWS_PROFILE={{AWS_PROFILE}} {{TERRAFORM_BIN}} workspace select "$WORKSPACE_NAME"
+
+    # Get outputs
+    AWS_PROFILE={{AWS_PROFILE}} {{TERRAFORM_BIN}} output $OUTPUT_FLAG
 
 # Internal: Check workspace status
-@_check-workspace-status SCOPE:
+_check-workspace-status SCOPE:
     #!/usr/bin/env bash
-    VOLUME_NAME="terraform-cache-{{SCOPE}}-{{ENV}}-$(echo $(pwd) | md5sum | cut -d' ' -f1)"
-    if docker volume inspect $VOLUME_NAME >/dev/null 2>&1; then
+    TERRAFORM_DIR="infra/terraform/workspaces/{{SCOPE}}"
+    WORKSPACE_NAME="{{SCOPE}}-{{ENV}}"
+
+    if [ -d "$TERRAFORM_DIR/.terraform" ]; then
         echo -e "{{GREEN}}✓ {{SCOPE}} workspace initialized{{NC}}"
+        # Try to show current workspace if possible
+        if cd "$TERRAFORM_DIR" 2>/dev/null && {{TERRAFORM_BIN}} workspace show 2>/dev/null | grep -q "$WORKSPACE_NAME"; then
+            echo -e "{{GREEN}}  Current workspace: $WORKSPACE_NAME{{NC}}"
+        fi
     else
         echo -e "{{YELLOW}}⚠ {{SCOPE}} workspace not initialized{{NC}}"
     fi

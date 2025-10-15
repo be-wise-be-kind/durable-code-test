@@ -117,7 +117,7 @@ resource "aws_wafv2_web_acl_association" "main" {
 
 # CloudWatch Log Group for WAF
 resource "aws_cloudwatch_log_group" "waf" {
-  name              = "/aws/wafv2/${var.project_name}-${local.environment}"
+  name              = "aws-waf-logs-${var.project_name}-${local.environment}"
   retention_in_days = lookup(var.log_retention_days, var.environment, 7)
   kms_key_id        = data.terraform_remote_state.base.outputs.kms_logs_key_arn
 
@@ -135,5 +135,5 @@ resource "aws_cloudwatch_log_group" "waf" {
 # WAF Logging Configuration
 resource "aws_wafv2_web_acl_logging_configuration" "main" {
   resource_arn            = aws_wafv2_web_acl.main.arn
-  log_destination_configs = [aws_cloudwatch_log_group.waf.arn]
+  log_destination_configs = ["${aws_cloudwatch_log_group.waf.arn}:*"]
 }

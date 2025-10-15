@@ -289,16 +289,31 @@ just build-prod
 ### Infrastructure
 ```bash
 # Check AWS credentials
-just infra-check-aws
+just infra check-aws
+
+# Initialize Terraform workspaces
+just infra init [SCOPE]
 
 # Plan infrastructure changes
-just infra-plan
+just infra plan [SCOPE]
 
-# Apply infrastructure changes
-just infra-apply
+# Apply infrastructure changes (deploy)
+just infra up [SCOPE] [AUTO]
 
 # Destroy infrastructure
-just infra-destroy
+just infra down [SCOPE] [CONFIRM]
+
+# Format Terraform files
+just infra fmt
+
+# Validate Terraform configuration
+just infra validate [SCOPE]
+
+# Show Terraform outputs
+just infra output [SCOPE] [FORMAT]
+
+# Show infrastructure status
+just infra status
 ```
 
 ## Git Workflow
