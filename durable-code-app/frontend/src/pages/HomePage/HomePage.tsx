@@ -110,7 +110,7 @@ export default function HomePage(): ReactElement {
               </li>
               <li>
                 <a
-                  href="https://github.com/be-wise-be-kind/durable-code-test/blob/main/README.md"
+                  href={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/docs`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >

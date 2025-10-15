@@ -50,6 +50,7 @@ services:
     restart: unless-stopped
     environment:
       - NODE_ENV=development
+      - VITE_API_URL=http://localhost:${BACKEND_PORT:-8000}
 
 networks:
   durable-network-dev:

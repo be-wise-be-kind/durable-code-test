@@ -55,7 +55,10 @@ RATE_LIMITER = Limiter(key_func=get_remote_address, default_limits=["100 per min
 # Security headers configuration - Using built-in security headers
 SECURITY_HEADERS = {
     "Content-Security-Policy": (
-        "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+        "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+        "img-src 'self' data: https://fastapi.tiangolo.com"
     ),
     "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
     "X-Frame-Options": "DENY",
