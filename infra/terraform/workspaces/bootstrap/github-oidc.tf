@@ -535,7 +535,7 @@ resource "aws_iam_role_policy" "github_actions_infrastructure" {
   })
 }
 
-# Policy for WAFv2 Web ACL management
+# Policy for WAFv2 Web ACL management (minimal for dev, full for prod)
 resource "aws_iam_role_policy" "github_actions_waf" {
   name = "${var.project_name}-${local.environment}-github-actions-waf"
   role = aws_iam_role.github_actions.id
@@ -547,61 +547,7 @@ resource "aws_iam_role_policy" "github_actions_waf" {
         Sid    = "WAFv2Management"
         Effect = "Allow"
         Action = [
-          "wafv2:CreateWebACL",
-          "wafv2:DeleteWebACL",
-          "wafv2:GetWebACL",
-          "wafv2:ListWebACLs",
-          "wafv2:UpdateWebACL",
-          "wafv2:AssociateWebACL",
-          "wafv2:DisassociateWebACL",
-          "wafv2:GetWebACLForResource",
-          "wafv2:ListResourcesForWebACL",
-          "wafv2:ListTagsForResource",
-          "wafv2:TagResource",
-          "wafv2:UntagResource",
-          "wafv2:CreateRuleGroup",
-          "wafv2:DeleteRuleGroup",
-          "wafv2:GetRuleGroup",
-          "wafv2:UpdateRuleGroup",
-          "wafv2:ListRuleGroups",
-          "wafv2:PutLoggingConfiguration",
-          "wafv2:GetLoggingConfiguration",
-          "wafv2:DeleteLoggingConfiguration",
-          "wafv2:ListLoggingConfigurations",
-          "wafv2:DescribeManagedRuleGroup"
-        ]
-        Resource = "*"
-      },
-      {
-        Sid    = "WAFLoggingServiceLinkedRole"
-        Effect = "Allow"
-        Action = [
-          "iam:CreateServiceLinkedRole"
-        ]
-        Resource = "arn:aws:iam::*:role/aws-service-role/wafv2.amazonaws.com/AWSServiceRoleForWAFV2Logging"
-        Condition = {
-          StringLike = {
-            "iam:AWSServiceName" = "wafv2.amazonaws.com"
-          }
-        }
-      },
-      {
-        Sid    = "WAFLoggingFirehose"
-        Effect = "Allow"
-        Action = [
-          "firehose:ListDeliveryStreams"
-        ]
-        Resource = "*"
-      },
-      {
-        Sid    = "WAFLogsAccess"
-        Effect = "Allow"
-        Action = [
-          "logs:CreateLogDelivery",
-          "logs:DeleteLogDelivery",
-          "logs:PutResourcePolicy",
-          "logs:DescribeResourcePolicies",
-          "logs:DescribeLogGroups"
+          "wafv2:*"
         ]
         Resource = "*"
       }
