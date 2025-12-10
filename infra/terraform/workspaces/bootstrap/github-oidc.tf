@@ -312,6 +312,8 @@ resource "aws_iam_role_policy" "github_actions_terraform_state" {
           "s3:GetBucketEncryption",
           "s3:PutBucketEncryption",
           "s3:DeleteBucketEncryption",
+          "s3:GetEncryptionConfiguration",
+          "s3:PutEncryptionConfiguration",
           "s3:GetReplicationConfiguration",
           "s3:PutReplicationConfiguration",
           "s3:DeleteReplicationConfiguration",
@@ -319,7 +321,18 @@ resource "aws_iam_role_policy" "github_actions_terraform_state" {
           "s3:PutBucketNotification",
           "s3:GetObjectLockConfiguration",
           "s3:PutObjectLockConfiguration",
-          "s3:GetBucketObjectLockConfiguration"
+          "s3:GetBucketObjectLockConfiguration",
+          "s3:GetIntelligentTieringConfiguration",
+          "s3:PutIntelligentTieringConfiguration",
+          "s3:GetBucketInventoryConfiguration",
+          "s3:PutBucketInventoryConfiguration",
+          "s3:DeleteBucketInventoryConfiguration",
+          "s3:GetAnalyticsConfiguration",
+          "s3:PutAnalyticsConfiguration",
+          "s3:DeleteAnalyticsConfiguration",
+          "s3:GetMetricsConfiguration",
+          "s3:PutMetricsConfiguration",
+          "s3:DeleteMetricsConfiguration"
         ]
         Resource = [
           "arn:aws:s3:::${var.project_name}-*",
