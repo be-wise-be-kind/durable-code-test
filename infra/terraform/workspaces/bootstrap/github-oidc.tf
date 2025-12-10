@@ -311,7 +311,15 @@ resource "aws_iam_role_policy" "github_actions_terraform_state" {
           "s3:PutBucketOwnershipControls",
           "s3:GetBucketEncryption",
           "s3:PutBucketEncryption",
-          "s3:DeleteBucketEncryption"
+          "s3:DeleteBucketEncryption",
+          "s3:GetReplicationConfiguration",
+          "s3:PutReplicationConfiguration",
+          "s3:DeleteReplicationConfiguration",
+          "s3:GetBucketNotification",
+          "s3:PutBucketNotification",
+          "s3:GetObjectLockConfiguration",
+          "s3:PutObjectLockConfiguration",
+          "s3:GetBucketObjectLockConfiguration"
         ]
         Resource = [
           "arn:aws:s3:::${var.project_name}-*",
