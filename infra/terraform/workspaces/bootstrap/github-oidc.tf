@@ -152,9 +152,10 @@ resource "aws_iam_role_policy" "github_actions_ecs" {
           "ecs:UpdateClusterSettings",
           "ecs:PutClusterCapacityProviders"
         ]
-        # Scope to project clusters only
+        # Scope to project clusters only (both product_domain and project_name prefixes)
         Resource = [
-          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:cluster/${var.product_domain}-*"
+          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:cluster/${var.product_domain}-*",
+          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:cluster/${var.project_name}-*"
         ]
       },
       {
@@ -169,7 +170,8 @@ resource "aws_iam_role_policy" "github_actions_ecs" {
         ]
         # Scope to project services only (format: cluster/service)
         Resource = [
-          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:service/${var.product_domain}-*/*"
+          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:service/${var.product_domain}-*/*",
+          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:service/${var.project_name}-*/*"
         ]
       },
       {
@@ -181,7 +183,8 @@ resource "aws_iam_role_policy" "github_actions_ecs" {
         ]
         # Scope to project tasks only
         Resource = [
-          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:task/${var.product_domain}-*/*"
+          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:task/${var.product_domain}-*/*",
+          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:task/${var.project_name}-*/*"
         ]
       },
       {
@@ -194,9 +197,13 @@ resource "aws_iam_role_policy" "github_actions_ecs" {
         # Allow tagging of project resources (clusters, services, tasks, task definitions)
         Resource = [
           "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:cluster/${var.product_domain}-*",
+          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:cluster/${var.project_name}-*",
           "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:service/${var.product_domain}-*/*",
+          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:service/${var.project_name}-*/*",
           "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:task/${var.product_domain}-*/*",
-          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:task-definition/${var.product_domain}-*:*"
+          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:task/${var.project_name}-*/*",
+          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:task-definition/${var.product_domain}-*:*",
+          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:task-definition/${var.project_name}-*:*"
         ]
       },
       {
@@ -205,10 +212,12 @@ resource "aws_iam_role_policy" "github_actions_ecs" {
         Action = [
           "iam:PassRole"
         ]
-        # Scope to specific task execution and task roles
+        # Scope to specific task execution and task roles (both naming conventions)
         Resource = [
           "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.product_domain}-${local.environment}-ecs-task-execution",
-          "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.product_domain}-${local.environment}-ecs-task"
+          "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.product_domain}-${local.environment}-ecs-task",
+          "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.project_name}-${local.environment}-ecs-task-execution",
+          "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.project_name}-${local.environment}-ecs-task"
         ]
       }
     ]
@@ -569,6 +578,39 @@ resource "aws_iam_role_policy" "github_actions_waf" {
           "wafv2:DeleteLoggingConfiguration",
           "wafv2:ListLoggingConfigurations",
           "wafv2:DescribeManagedRuleGroup"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "WAFLoggingServiceLinkedRole"
+        Effect = "Allow"
+        Action = [
+          "iam:CreateServiceLinkedRole"
+        ]
+        Resource = "arn:aws:iam::*:role/aws-service-role/wafv2.amazonaws.com/AWSServiceRoleForWAFV2Logging"
+        Condition = {
+          StringLike = {
+            "iam:AWSServiceName" = "wafv2.amazonaws.com"
+          }
+        }
+      },
+      {
+        Sid    = "WAFLoggingFirehose"
+        Effect = "Allow"
+        Action = [
+          "firehose:ListDeliveryStreams"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "WAFLogsAccess"
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogDelivery",
+          "logs:DeleteLogDelivery",
+          "logs:PutResourcePolicy",
+          "logs:DescribeResourcePolicies",
+          "logs:DescribeLogGroups"
         ]
         Resource = "*"
       }
