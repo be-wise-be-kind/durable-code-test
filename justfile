@@ -631,6 +631,12 @@ _infra-apply-scope SCOPE AUTO:
         just _infra-do-apply base {{AUTO}}
         echo -e "{{CYAN}}--- Deploying runtime ---{{NC}}"
         just _infra-do-apply runtime {{AUTO}}
+        echo -e "{{CYAN}}--- Deploying application ---{{NC}}"
+        just deploy
+    elif [ "{{SCOPE}}" = "runtime" ]; then
+        just _infra-do-apply {{SCOPE}} {{AUTO}}
+        echo -e "{{CYAN}}--- Deploying application ---{{NC}}"
+        just deploy
     else
         just _infra-do-apply {{SCOPE}} {{AUTO}}
     fi
@@ -699,20 +705,13 @@ _infra-do-plan SCOPE:
     #!/usr/bin/env bash
     SCOPE="{{SCOPE}}"
     TERRAFORM_DIR="infra/terraform/workspaces/$SCOPE"
-    WORKSPACE_NAME="$SCOPE-{{ENV}}"
     TFVARS_FILE="$(pwd)/infra/environments/{{ENV}}.tfvars"
 
-    echo -e "{{YELLOW}}Planning infrastructure for $SCOPE in workspace $WORKSPACE_NAME...{{NC}}"
+    echo -e "{{YELLOW}}Planning infrastructure for $SCOPE ({{ENV}})...{{NC}}"
 
     cd "$TERRAFORM_DIR"
 
-    # Select or create workspace
-    if ! AWS_PROFILE={{AWS_PROFILE}} {{TERRAFORM_BIN}} workspace select "$WORKSPACE_NAME" 2>/dev/null; then
-        echo -e "{{YELLOW}}Creating new workspace: $WORKSPACE_NAME{{NC}}"
-        AWS_PROFILE={{AWS_PROFILE}} {{TERRAFORM_BIN}} workspace new "$WORKSPACE_NAME"
-    fi
-
-    # Run plan
+    # Run plan - backend-config determines state path, no workspace needed
     AWS_PROFILE={{AWS_PROFILE}} AWS_REGION={{AWS_REGION}} \
         {{TERRAFORM_BIN}} plan -var-file="$TFVARS_FILE"
 
@@ -725,7 +724,6 @@ _infra-do-apply SCOPE AUTO:
     SCOPE="{{SCOPE}}"
     AUTO="{{AUTO}}"
     TERRAFORM_DIR="infra/terraform/workspaces/$SCOPE"
-    WORKSPACE_NAME="$SCOPE-{{ENV}}"
     TFVARS_FILE="$(pwd)/infra/environments/{{ENV}}.tfvars"
 
     if [ "$AUTO" = "true" ]; then
@@ -734,17 +732,11 @@ _infra-do-apply SCOPE AUTO:
         APPROVE_FLAG=""
     fi
 
-    echo -e "{{YELLOW}}Applying infrastructure for $SCOPE in workspace $WORKSPACE_NAME...{{NC}}"
+    echo -e "{{YELLOW}}Applying infrastructure for $SCOPE ({{ENV}})...{{NC}}"
 
     cd "$TERRAFORM_DIR"
 
-    # Select or create workspace
-    if ! AWS_PROFILE={{AWS_PROFILE}} {{TERRAFORM_BIN}} workspace select "$WORKSPACE_NAME" 2>/dev/null; then
-        echo -e "{{YELLOW}}Creating new workspace: $WORKSPACE_NAME{{NC}}"
-        AWS_PROFILE={{AWS_PROFILE}} {{TERRAFORM_BIN}} workspace new "$WORKSPACE_NAME"
-    fi
-
-    # Run apply (with error handling)
+    # Run apply - backend-config determines state path, no workspace needed
     if ! AWS_PROFILE={{AWS_PROFILE}} AWS_REGION={{AWS_REGION}} \
         {{TERRAFORM_BIN}} apply -var-file="$TFVARS_FILE" $APPROVE_FLAG; then
         echo -e "{{RED}}✗ Apply failed for $SCOPE{{NC}}"
@@ -758,20 +750,13 @@ _infra-do-destroy SCOPE:
     #!/usr/bin/env bash
     SCOPE="{{SCOPE}}"
     TERRAFORM_DIR="infra/terraform/workspaces/$SCOPE"
-    WORKSPACE_NAME="$SCOPE-{{ENV}}"
     TFVARS_FILE="$(pwd)/infra/environments/{{ENV}}.tfvars"
 
-    echo -e "{{RED}}Destroying infrastructure for $SCOPE in workspace $WORKSPACE_NAME...{{NC}}"
+    echo -e "{{RED}}Destroying infrastructure for $SCOPE ({{ENV}})...{{NC}}"
 
     cd "$TERRAFORM_DIR"
 
-    # Select workspace (exit gracefully if doesn't exist)
-    if ! AWS_PROFILE={{AWS_PROFILE}} {{TERRAFORM_BIN}} workspace select "$WORKSPACE_NAME" 2>/dev/null; then
-        echo -e "{{YELLOW}}Workspace $WORKSPACE_NAME does not exist, nothing to destroy{{NC}}"
-        exit 0
-    fi
-
-    # Run destroy
+    # Run destroy - backend-config determines state path, no workspace needed
     AWS_PROFILE={{AWS_PROFILE}} AWS_REGION={{AWS_REGION}} \
         {{TERRAFORM_BIN}} destroy -var-file="$TFVARS_FILE"
 
@@ -800,20 +785,14 @@ _infra-do-destroy-force SCOPE:
     #!/usr/bin/env bash
     SCOPE="{{SCOPE}}"
     TERRAFORM_DIR="infra/terraform/workspaces/$SCOPE"
-    WORKSPACE_NAME="$SCOPE-{{ENV}}"
     TFVARS_FILE="$(pwd)/infra/environments/{{ENV}}.tfvars"
 
-    echo -e "{{RED}}Force destroying infrastructure for $SCOPE in workspace $WORKSPACE_NAME...{{NC}}"
+    echo -e "{{RED}}Force destroying infrastructure for $SCOPE ({{ENV}})...{{NC}}"
 
     cd "$TERRAFORM_DIR"
 
-    # Select workspace (exit gracefully if doesn't exist)
-    if ! AWS_PROFILE={{AWS_PROFILE}} {{TERRAFORM_BIN}} workspace select "$WORKSPACE_NAME" 2>/dev/null; then
-        echo -e "{{YELLOW}}Workspace $WORKSPACE_NAME does not exist, nothing to destroy{{NC}}"
-        exit 0
-    fi
-
     # Run destroy with -refresh=false and -auto-approve
+    # Backend-config determines state path, no workspace needed
     AWS_PROFILE={{AWS_PROFILE}} AWS_REGION={{AWS_REGION}} \
         {{TERRAFORM_BIN}} destroy -var-file="$TFVARS_FILE" -refresh=false -auto-approve
 
@@ -838,7 +817,6 @@ _infra-do-output SCOPE FORMAT:
     SCOPE="{{SCOPE}}"
     FORMAT="{{FORMAT}}"
     TERRAFORM_DIR="infra/terraform/workspaces/$SCOPE"
-    WORKSPACE_NAME="$SCOPE-{{ENV}}"
 
     if [ "$FORMAT" = "json" ]; then
         OUTPUT_FLAG="-json"
@@ -846,30 +824,22 @@ _infra-do-output SCOPE FORMAT:
         OUTPUT_FLAG=""
     fi
 
-    echo -e "{{YELLOW}}Fetching outputs for $SCOPE from workspace $WORKSPACE_NAME...{{NC}}"
+    echo -e "{{YELLOW}}Fetching outputs for $SCOPE ({{ENV}})...{{NC}}"
 
     cd "$TERRAFORM_DIR"
 
-    # Select workspace
-    AWS_PROFILE={{AWS_PROFILE}} {{TERRAFORM_BIN}} workspace select "$WORKSPACE_NAME"
-
-    # Get outputs
+    # Get outputs - backend-config determines state path, no workspace needed
     AWS_PROFILE={{AWS_PROFILE}} {{TERRAFORM_BIN}} output $OUTPUT_FLAG
 
 # Internal: Check workspace status
 _check-workspace-status SCOPE:
     #!/usr/bin/env bash
     TERRAFORM_DIR="infra/terraform/workspaces/{{SCOPE}}"
-    WORKSPACE_NAME="{{SCOPE}}-{{ENV}}"
 
     if [ -d "$TERRAFORM_DIR/.terraform" ]; then
-        echo -e "{{GREEN}}✓ {{SCOPE}} workspace initialized{{NC}}"
-        # Try to show current workspace if possible
-        if cd "$TERRAFORM_DIR" 2>/dev/null && {{TERRAFORM_BIN}} workspace show 2>/dev/null | grep -q "$WORKSPACE_NAME"; then
-            echo -e "{{GREEN}}  Current workspace: $WORKSPACE_NAME{{NC}}"
-        fi
+        echo -e "{{GREEN}}✓ {{SCOPE}} initialized for {{ENV}}{{NC}}"
     else
-        echo -e "{{YELLOW}}⚠ {{SCOPE}} workspace not initialized{{NC}}"
+        echo -e "{{YELLOW}}⚠ {{SCOPE}} not initialized{{NC}}"
     fi
 
 # Internal: Force unlock Terraform state
@@ -878,7 +848,6 @@ _infra-force-unlock SCOPE LOCK_ID:
     SCOPE="{{SCOPE}}"
     LOCK_ID="{{LOCK_ID}}"
     TERRAFORM_DIR="infra/terraform/workspaces/$SCOPE"
-    WORKSPACE_NAME="$SCOPE-{{ENV}}"
 
     if [ -z "$LOCK_ID" ]; then
         echo -e "{{RED}}Error: LOCK_ID is required{{NC}}"
@@ -886,7 +855,7 @@ _infra-force-unlock SCOPE LOCK_ID:
         exit 1
     fi
 
-    echo -e "{{RED}}⚠️  WARNING: Force unlocking Terraform state for $SCOPE{{NC}}"
+    echo -e "{{RED}}⚠️  WARNING: Force unlocking Terraform state for $SCOPE ({{ENV}}){{NC}}"
     echo -e "{{YELLOW}}Lock ID: $LOCK_ID{{NC}}"
     echo -e "{{YELLOW}}Only proceed if you are certain no Terraform operations are running!{{NC}}"
     echo -e "{{YELLOW}}Press Ctrl+C to cancel or wait 5 seconds...{{NC}}"
@@ -895,13 +864,7 @@ _infra-force-unlock SCOPE LOCK_ID:
 
     cd "$TERRAFORM_DIR"
 
-    # Select workspace
-    if ! AWS_PROFILE={{AWS_PROFILE}} {{TERRAFORM_BIN}} workspace select "$WORKSPACE_NAME" 2>/dev/null; then
-        echo -e "{{YELLOW}}Workspace $WORKSPACE_NAME does not exist{{NC}}"
-        exit 0
-    fi
-
-    # Force unlock
+    # Force unlock - backend-config determines state path, no workspace needed
     AWS_PROFILE={{AWS_PROFILE}} {{TERRAFORM_BIN}} force-unlock -force "$LOCK_ID"
 
     echo -e "{{GREEN}}✓ State unlocked for $SCOPE{{NC}}"
@@ -911,19 +874,12 @@ _infra-state-list SCOPE:
     #!/usr/bin/env bash
     SCOPE="{{SCOPE}}"
     TERRAFORM_DIR="infra/terraform/workspaces/$SCOPE"
-    WORKSPACE_NAME="$SCOPE-{{ENV}}"
 
-    echo -e "{{YELLOW}}Listing Terraform state for $SCOPE in workspace $WORKSPACE_NAME...{{NC}}"
+    echo -e "{{YELLOW}}Listing Terraform state for $SCOPE ({{ENV}})...{{NC}}"
 
     cd "$TERRAFORM_DIR"
 
-    # Select workspace
-    if ! AWS_PROFILE={{AWS_PROFILE}} {{TERRAFORM_BIN}} workspace select "$WORKSPACE_NAME" 2>/dev/null; then
-        echo -e "{{YELLOW}}Workspace $WORKSPACE_NAME does not exist{{NC}}"
-        exit 0
-    fi
-
-    # List state
+    # List state - backend-config determines state path, no workspace needed
     AWS_PROFILE={{AWS_PROFILE}} {{TERRAFORM_BIN}} state list
 
 ################################################################################

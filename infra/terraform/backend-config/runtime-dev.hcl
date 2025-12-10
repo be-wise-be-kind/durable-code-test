@@ -7,8 +7,9 @@
 # Dependencies: S3 bucket and DynamoDB table must exist for state storage
 # Environment: Development environment runtime workspace
 
-bucket         = "durable-code-terraform-state"
-key            = "runtime/dev/terraform.tfstate"
-region         = "us-west-2"
-encrypt        = true
-dynamodb_table = "durable-code-terraform-locks"
+bucket               = "durable-code-terraform-state"
+key                  = "runtime/dev/terraform.tfstate"
+region               = "us-west-2"
+encrypt              = true
+dynamodb_table       = "durable-code-terraform-locks"
+workspace_key_prefix = ""  # Disable env:/ prefixing for predictable state paths

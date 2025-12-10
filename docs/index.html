@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Durable Code - Infrastructure Documentation</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #64748b;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Navigation */
+        nav {
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        nav .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 24px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+
+        .nav-links a.active {
+            color: var(--primary);
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 80px 0;
+            text-align: center;
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            color: white;
+        }
+
+        .hero h1 {
+            font-size: 2.5rem;
+            margin-bottom: 16px;
+        }
+
+        .hero p {
+            font-size: 1.125rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Cards Grid */
+        .cards-section {
+            padding: 60px 0;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            margin-bottom: 32px;
+            color: var(--text);
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 24px;
+            border: 1px solid var(--border);
+            text-decoration: none;
+            color: inherit;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0,0,0,0.1);
+        }
+
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--primary);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .card h3 {
+            font-size: 1.125rem;
+            margin-bottom: 8px;
+        }
+
+        .card p {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        /* Quick Reference */
+        .quick-ref {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 32px;
+            border: 1px solid var(--border);
+            margin-top: 40px;
+        }
+
+        .quick-ref h2 {
+            font-size: 1.25rem;
+            margin-bottom: 24px;
+        }
+
+        .workspace-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .workspace-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .workspace {
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .workspace.bootstrap {
+            border-left: 4px solid var(--secondary);
+        }
+
+        .workspace.base {
+            border-left: 4px solid var(--success);
+        }
+
+        .workspace.runtime {
+            border-left: 4px solid var(--warning);
+        }
+
+        .workspace h4 {
+            font-size: 1rem;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .workspace-badge {
+            font-size: 0.625rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .workspace.bootstrap .workspace-badge {
+            background: #f1f5f9;
+            color: var(--secondary);
+        }
+
+        .workspace.base .workspace-badge {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .workspace.runtime .workspace-badge {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .workspace ul {
+            list-style: none;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .workspace li {
+            padding: 4px 0;
+        }
+
+        /* Status Section */
+        .status-section {
+            padding: 40px 0;
+            border-top: 1px solid var(--border);
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        @media (max-width: 768px) {
+            .status-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .status-item {
+            background: var(--card-bg);
+            padding: 16px 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .status-dot.active {
+            background: var(--success);
+        }
+
+        .status-dot.inactive {
+            background: var(--secondary);
+        }
+
+        /* Footer */
+        footer {
+            padding: 40px 0;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            border-top: 1px solid var(--border);
+        }
+
+        /* Architecture Diagram */
+        .architecture-preview {
+            margin-top: 40px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 32px;
+            border: 1px solid var(--border);
+        }
+
+        .architecture-preview h2 {
+            font-size: 1.25rem;
+            margin-bottom: 24px;
+        }
+
+        .diagram {
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            line-height: 1.4;
+            overflow-x: auto;
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 24px;
+            border-radius: 8px;
+        }
+
+        .diagram .comment {
+            color: #94a3b8;
+        }
+
+        .diagram .highlight {
+            color: #fbbf24;
+        }
+
+        .diagram .success {
+            color: #4ade80;
+        }
+
+        .diagram .primary {
+            color: #60a5fa;
+        }
+
+        /* Print Styles */
+        @media print {
+            nav, .hero {
+                background: none !important;
+                color: black !important;
+            }
+
+            .card:hover {
+                transform: none;
+                box-shadow: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="container">
+            <a href="index.html" class="logo">Durable Code Infra</a>
+            <ul class="nav-links">
+                <li><a href="index.html" class="active">Home</a></li>
+                <li><a href="terraform-architecture.html">Architecture</a></li>
+                <li><a href="terraform-resources.html">Resources</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="container">
+            <h1>Infrastructure Documentation</h1>
+            <p>Complete guide to the Durable Code AWS infrastructure managed with Terraform. Understand the architecture, resources, and operational workflows.</p>
+        </div>
+    </section>
+
+    <section class="cards-section">
+        <div class="container">
+            <h2 class="section-title">Documentation</h2>
+            <div class="cards-grid">
+                <a href="terraform-architecture.html" class="card">
+                    <div class="card-icon">&#128736;</div>
+                    <h3>Architecture Overview</h3>
+                    <p>Understand the 3-workspace design pattern: bootstrap, base, and runtime. See how state management works and the up/down workflow.</p>
+                </a>
+
+                <a href="terraform-resources.html" class="card">
+                    <div class="card-icon">&#128451;</div>
+                    <h3>Resource Inventory</h3>
+                    <p>Complete list of AWS resources by workspace. VPC, ECS, ALB, security groups, and more with their dependencies.</p>
+                </a>
+
+                <a href="terraform-state-fix.html" class="card">
+                    <div class="card-icon">&#128295;</div>
+                    <h3>State Management Fix</h3>
+                    <p>Documentation of the workspace state path issue and the migration to clean, predictable state file locations.</p>
+                </a>
+            </div>
+
+            <div class="quick-ref">
+                <h2>Workspace Quick Reference</h2>
+                <div class="workspace-grid">
+                    <div class="workspace bootstrap">
+                        <h4>Bootstrap <span class="workspace-badge">Permanent</span></h4>
+                        <ul>
+                            <li>GitHub OIDC Provider</li>
+                            <li>IAM Roles for CI/CD</li>
+                            <li>S3 State Bucket</li>
+                            <li>DynamoDB Lock Table</li>
+                        </ul>
+                    </div>
+
+                    <div class="workspace base">
+                        <h4>Base <span class="workspace-badge">Persistent</span></h4>
+                        <ul>
+                            <li>VPC &amp; Subnets</li>
+                            <li>Security Groups</li>
+                            <li>ECR Repositories</li>
+                            <li>Route53 &amp; ACM</li>
+                            <li>KMS Keys</li>
+                        </ul>
+                    </div>
+
+                    <div class="workspace runtime">
+                        <h4>Runtime <span class="workspace-badge">Ephemeral</span></h4>
+                        <ul>
+                            <li>NAT Gateway</li>
+                            <li>Application Load Balancer</li>
+                            <li>ECS Cluster &amp; Services</li>
+                            <li>WAF Web ACL</li>
+                            <li>CloudWatch Logs</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="architecture-preview">
+                <h2>Architecture at a Glance</h2>
+                <svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto; max-width: 800px; display: block; margin: 0 auto;">
+                    <!-- Background -->
+                    <defs>
+                        <linearGradient id="githubGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#1e40af"/>
+                            <stop offset="100%" style="stop-color:#3b82f6"/>
+                        </linearGradient>
+                        <linearGradient id="bootstrapGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#475569"/>
+                            <stop offset="100%" style="stop-color:#64748b"/>
+                        </linearGradient>
+                        <linearGradient id="baseGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#16a34a"/>
+                            <stop offset="100%" style="stop-color:#22c55e"/>
+                        </linearGradient>
+                        <linearGradient id="runtimeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" style="stop-color:#d97706"/>
+                            <stop offset="100%" style="stop-color:#f59e0b"/>
+                        </linearGradient>
+                        <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                            <feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity="0.15"/>
+                        </filter>
+                        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8"/>
+                        </marker>
+                    </defs>
+
+                    <!-- GitHub Actions Box -->
+                    <rect x="300" y="20" width="200" height="60" rx="8" fill="url(#githubGrad)" filter="url(#shadow)"/>
+                    <text x="400" y="45" text-anchor="middle" fill="white" font-family="system-ui" font-size="14" font-weight="600">GitHub Actions</text>
+                    <text x="400" y="65" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-family="system-ui" font-size="11">OIDC Auth</text>
+
+                    <!-- Connection Lines from GitHub -->
+                    <path d="M400 80 L400 110 L150 110 L150 140" stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+                    <path d="M400 80 L400 140" stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+                    <path d="M400 80 L400 110 L650 110 L650 140" stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+
+                    <!-- Bootstrap Workspace -->
+                    <rect x="50" y="140" width="200" height="180" rx="8" fill="url(#bootstrapGrad)" filter="url(#shadow)"/>
+                    <text x="150" y="165" text-anchor="middle" fill="white" font-family="system-ui" font-size="14" font-weight="600">Bootstrap</text>
+                    <text x="150" y="182" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-family="system-ui" font-size="10">PERMANENT</text>
+                    <line x1="70" y1="195" x2="230" y2="195" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+                    <text x="80" y="215" fill="rgba(255,255,255,0.9)" font-family="system-ui" font-size="12">OIDC Provider</text>
+                    <text x="80" y="235" fill="rgba(255,255,255,0.9)" font-family="system-ui" font-size="12">IAM Roles</text>
+                    <text x="80" y="255" fill="rgba(255,255,255,0.9)" font-family="system-ui" font-size="12">State Bucket</text>
+                    <text x="80" y="275" fill="rgba(255,255,255,0.9)" font-family="system-ui" font-size="12">Lock Table</text>
+
+                    <!-- Base Workspace -->
+                    <rect x="300" y="140" width="200" height="180" rx="8" fill="url(#baseGrad)" filter="url(#shadow)"/>
+                    <text x="400" y="165" text-anchor="middle" fill="white" font-family="system-ui" font-size="14" font-weight="600">Base</text>
+                    <text x="400" y="182" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-family="system-ui" font-size="10">PERSISTENT</text>
+                    <line x1="320" y1="195" x2="480" y2="195" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+                    <text x="330" y="215" fill="rgba(255,255,255,0.9)" font-family="system-ui" font-size="12">VPC &amp; Subnets</text>
+                    <text x="330" y="235" fill="rgba(255,255,255,0.9)" font-family="system-ui" font-size="12">Security Groups</text>
+                    <text x="330" y="255" fill="rgba(255,255,255,0.9)" font-family="system-ui" font-size="12">ECR Repositories</text>
+                    <text x="330" y="275" fill="rgba(255,255,255,0.9)" font-family="system-ui" font-size="12">Route53 &amp; ACM</text>
+                    <text x="330" y="295" fill="rgba(255,255,255,0.9)" font-family="system-ui" font-size="12">KMS Keys</text>
+
+                    <!-- Runtime Workspace -->
+                    <rect x="550" y="140" width="200" height="180" rx="8" fill="url(#runtimeGrad)" filter="url(#shadow)"/>
+                    <text x="650" y="165" text-anchor="middle" fill="white" font-family="system-ui" font-size="14" font-weight="600">Runtime</text>
+                    <text x="650" y="182" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-family="system-ui" font-size="10">EPHEMERAL</text>
+                    <line x1="570" y1="195" x2="730" y2="195" stroke="rgba(255,255,255,0.3)" stroke-width="1"/>
+                    <text x="580" y="215" fill="rgba(255,255,255,0.9)" font-family="system-ui" font-size="12">NAT Gateway</text>
+                    <text x="580" y="235" fill="rgba(255,255,255,0.9)" font-family="system-ui" font-size="12">Load Balancer</text>
+                    <text x="580" y="255" fill="rgba(255,255,255,0.9)" font-family="system-ui" font-size="12">ECS Cluster</text>
+                    <text x="580" y="275" fill="rgba(255,255,255,0.9)" font-family="system-ui" font-size="12">WAF Web ACL</text>
+                    <text x="580" y="295" fill="rgba(255,255,255,0.9)" font-family="system-ui" font-size="12">CloudWatch Logs</text>
+
+                    <!-- Connection Lines to S3 -->
+                    <path d="M150 320 L150 360" stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+                    <path d="M400 320 L400 360" stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+                    <path d="M650 320 L650 360" stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+
+                    <!-- S3 State Bucket -->
+                    <rect x="50" y="360" width="700" height="100" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2" filter="url(#shadow)"/>
+                    <text x="400" y="390" text-anchor="middle" fill="#1e293b" font-family="system-ui" font-size="14" font-weight="600">S3 State Bucket</text>
+
+                    <!-- State paths -->
+                    <rect x="80" y="410" width="180" height="30" rx="4" fill="#f1f5f9"/>
+                    <text x="170" y="430" text-anchor="middle" fill="#64748b" font-family="monospace" font-size="11">bootstrap/dev/</text>
+
+                    <rect x="310" y="410" width="180" height="30" rx="4" fill="#f1f5f9"/>
+                    <text x="400" y="430" text-anchor="middle" fill="#64748b" font-family="monospace" font-size="11">base/dev/</text>
+
+                    <rect x="540" y="410" width="180" height="30" rx="4" fill="#f1f5f9"/>
+                    <text x="630" y="430" text-anchor="middle" fill="#64748b" font-family="monospace" font-size="11">runtime/dev/</text>
+                </svg>
+            </div>
+        </div>
+    </section>
+
+    <section class="status-section">
+        <div class="container">
+            <h2 class="section-title">Environment Status</h2>
+            <div class="status-grid">
+                <div class="status-item">
+                    <span>Development</span>
+                    <span class="status-dot active" title="Active"></span>
+                </div>
+                <div class="status-item">
+                    <span>Staging</span>
+                    <span class="status-dot inactive" title="Not deployed"></span>
+                </div>
+                <div class="status-item">
+                    <span>Production</span>
+                    <span class="status-dot inactive" title="Not deployed"></span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <p>Durable Code Infrastructure Documentation | Last Updated: December 2025</p>
+        </div>
+    </footer>
+</body>
+</html>

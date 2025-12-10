@@ -106,17 +106,17 @@ jobs:
           echo "🔥 Executing infrastructure teardown..."
           SCOPE="${{ inputs.scope || 'runtime' }}"
 
-          # In CI, don't use AWS_PROFILE - OIDC sets environment variables directly
-          # Add confirmation for base/all scope destruction
+          # In CI, use down-force which includes -auto-approve (no interactive prompt)
           if [[ "$SCOPE" == "all" ]]; then
-            echo "⚠️ Destroying all infrastructure"
-            just infra down "$SCOPE" destroy-all
+            echo "⚠️ Destroying all infrastructure (runtime + base)"
+            just infra down-force runtime
+            just infra down-force base
           elif [[ "$SCOPE" == "base" ]]; then
             echo "⚠️ Destroying base infrastructure"
-            just infra down "$SCOPE" destroy-base
+            just infra down-force base
           else
             echo "Destroying runtime infrastructure"
-            just infra down "$SCOPE"
+            just infra down-force runtime
           fi
 
       - name: Check infrastructure status (after)

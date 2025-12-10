@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resource Inventory - Durable Code</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #64748b;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Navigation */
+        nav {
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        nav .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 24px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            color: var(--primary);
+        }
+
+        /* Page Header */
+        .page-header {
+            padding: 48px 0 32px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .page-header h1 {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        .page-header p {
+            color: var(--text-muted);
+            font-size: 1.125rem;
+        }
+
+        /* Content */
+        .content {
+            padding: 48px 0;
+        }
+
+        .section {
+            margin-bottom: 48px;
+        }
+
+        .section h2 {
+            font-size: 1.5rem;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--primary);
+            display: inline-block;
+        }
+
+        .section h3 {
+            font-size: 1.125rem;
+            margin: 24px 0 12px;
+        }
+
+        .section p {
+            margin-bottom: 16px;
+        }
+
+        /* Workspace Sections */
+        .workspace-section {
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            margin: 24px 0;
+            overflow: hidden;
+        }
+
+        .workspace-header {
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .workspace-header.bootstrap {
+            background: linear-gradient(135deg, #475569 0%, #64748b 100%);
+            color: white;
+        }
+
+        .workspace-header.base {
+            background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);
+            color: white;
+        }
+
+        .workspace-header.runtime {
+            background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+            color: white;
+        }
+
+        .workspace-header h3 {
+            font-size: 1.25rem;
+            margin: 0;
+            color: white;
+        }
+
+        .workspace-header .badge {
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+
+        .workspace-content {
+            padding: 24px;
+        }
+
+        /* Resource Grid */
+        .resource-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .resource-card {
+            background: var(--bg);
+            border-radius: 8px;
+            padding: 16px;
+            border: 1px solid var(--border);
+        }
+
+        .resource-card h4 {
+            font-size: 0.875rem;
+            color: var(--text);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .resource-card .icon {
+            width: 24px;
+            height: 24px;
+            background: var(--primary);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.75rem;
+        }
+
+        .resource-card p {
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+            margin-bottom: 0;
+        }
+
+        .resource-card code {
+            background: #f1f5f9;
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-size: 0.75rem;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            font-size: 0.875rem;
+        }
+
+        th, td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: #f1f5f9;
+            font-weight: 600;
+            font-size: 0.8125rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-bootstrap {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .badge-base {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge-runtime {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        /* Dependency Diagram */
+        .diagram-container {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 32px;
+            border: 1px solid var(--border);
+            margin: 24px 0;
+        }
+
+        /* Footer */
+        footer {
+            padding: 40px 0;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            border-top: 1px solid var(--border);
+        }
+
+        /* Print Styles */
+        @media print {
+            nav {
+                position: relative;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="container">
+            <a href="index.html" class="logo">Durable Code Infra</a>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="terraform-architecture.html">Architecture</a></li>
+                <li><a href="terraform-resources.html" class="active">Resources</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="page-header">
+        <div class="container">
+            <h1>Resource Inventory</h1>
+            <p>Complete catalog of AWS resources organized by Terraform workspace</p>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="container">
+            <!-- Summary -->
+            <section class="section">
+                <h2>Overview</h2>
+                <p>This page documents all AWS resources managed by Terraform across the three workspaces. Use this as a reference when debugging or planning infrastructure changes.</p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Workspace</th>
+                            <th>Resource Count</th>
+                            <th>Primary Services</th>
+                            <th>Lifecycle</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="badge badge-bootstrap">Bootstrap</span></td>
+                            <td>~8</td>
+                            <td>IAM, S3, DynamoDB</td>
+                            <td>Permanent</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-base">Base</span></td>
+                            <td>~25</td>
+                            <td>VPC, ECR, Route53, ACM, KMS</td>
+                            <td>Persistent</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-runtime">Runtime</span></td>
+                            <td>~20</td>
+                            <td>ECS, ALB, NAT, WAF, CloudWatch</td>
+                            <td>Ephemeral</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Bootstrap Workspace -->
+            <section class="section">
+                <div class="workspace-section">
+                    <div class="workspace-header bootstrap">
+                        <h3>Bootstrap Workspace</h3>
+                        <span class="badge">PERMANENT</span>
+                    </div>
+                    <div class="workspace-content">
+                        <p>Foundation infrastructure that enables CI/CD and state management. Created once and never destroyed.</p>
+
+                        <div class="resource-grid">
+                            <div class="resource-card">
+                                <h4><span class="icon">ID</span> GitHub OIDC Provider</h4>
+                                <p>Enables GitHub Actions to authenticate with AWS without storing long-lived credentials.</p>
+                                <p><code>aws_iam_openid_connect_provider</code></p>
+                            </div>
+
+                            <div class="resource-card">
+                                <h4><span class="icon">R</span> Terraform Deploy Role</h4>
+                                <p>IAM role assumed by GitHub Actions for infrastructure deployments.</p>
+                                <p><code>aws_iam_role.terraform_deploy</code></p>
+                            </div>
+
+                            <div class="resource-card">
+                                <h4><span class="icon">P</span> Terraform Policy</h4>
+                                <p>IAM policy granting permissions for Terraform operations.</p>
+                                <p><code>aws_iam_role_policy</code></p>
+                            </div>
+
+                            <div class="resource-card">
+                                <h4><span class="icon">S3</span> State Bucket</h4>
+                                <p>S3 bucket storing all Terraform state files with versioning enabled.</p>
+                                <p><code>durable-code-terraform-state</code></p>
+                            </div>
+
+                            <div class="resource-card">
+                                <h4><span class="icon">DB</span> Lock Table</h4>
+                                <p>DynamoDB table for Terraform state locking to prevent concurrent modifications.</p>
+                                <p><code>durable-code-terraform-locks</code></p>
+                            </div>
+                        </div>
+
+                        <h3>File Locations</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>File</th>
+                                    <th>Purpose</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>workspaces/bootstrap/main.tf</code></td>
+                                    <td>Provider configuration and backend</td>
+                                </tr>
+                                <tr>
+                                    <td><code>workspaces/bootstrap/iam.tf</code></td>
+                                    <td>OIDC provider and IAM roles</td>
+                                </tr>
+                                <tr>
+                                    <td><code>workspaces/bootstrap/state.tf</code></td>
+                                    <td>S3 bucket and DynamoDB table</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Base Workspace -->
+            <section class="section">
+                <div class="workspace-section">
+                    <div class="workspace-header base">
+                        <h3>Base Workspace</h3>
+                        <span class="badge">PERSISTENT</span>
+                    </div>
+                    <div class="workspace-content">
+                        <p>Core networking and supporting services. Created once per environment, rarely modified.</p>
+
+                        <h3>Networking</h3>
+                        <div class="resource-grid">
+                            <div class="resource-card">
+                                <h4><span class="icon">VPC</span> Virtual Private Cloud</h4>
+                                <p>Isolated network with CIDR <code>10.0.0.0/16</code>. DNS hostnames and resolution enabled.</p>
+                                <p><code>aws_vpc.main</code></p>
+                            </div>
+
+                            <div class="resource-card">
+                                <h4><span class="icon">SN</span> Public Subnets (2)</h4>
+                                <p>Subnets for ALB and NAT Gateway. <code>10.0.1.0/24</code>, <code>10.0.2.0/24</code></p>
+                                <p><code>aws_subnet.public</code></p>
+                            </div>
+
+                            <div class="resource-card">
+                                <h4><span class="icon">SN</span> Private Subnets (2)</h4>
+                                <p>Subnets for ECS tasks. <code>10.0.10.0/24</code>, <code>10.0.11.0/24</code></p>
+                                <p><code>aws_subnet.private</code></p>
+                            </div>
+
+                            <div class="resource-card">
+                                <h4><span class="icon">IG</span> Internet Gateway</h4>
+                                <p>Enables internet access for public subnets.</p>
+                                <p><code>aws_internet_gateway.main</code></p>
+                            </div>
+
+                            <div class="resource-card">
+                                <h4><span class="icon">RT</span> Route Tables</h4>
+                                <p>Public route table with IGW route, private route tables for NAT.</p>
+                                <p><code>aws_route_table</code></p>
+                            </div>
+                        </div>
+
+                        <h3>Security</h3>
+                        <div class="resource-grid">
+                            <div class="resource-card">
+                                <h4><span class="icon">SG</span> ALB Security Group</h4>
+                                <p>Allows inbound HTTP (80) and HTTPS (443) from anywhere.</p>
+                                <p><code>aws_security_group.alb</code></p>
+                            </div>
+
+                            <div class="resource-card">
+                                <h4><span class="icon">SG</span> ECS Security Group</h4>
+                                <p>Allows inbound traffic from ALB security group only.</p>
+                                <p><code>aws_security_group.ecs_tasks</code></p>
+                            </div>
+                        </div>
+
+                        <h3>Container Registry</h3>
+                        <div class="resource-grid">
+                            <div class="resource-card">
+                                <h4><span class="icon">ECR</span> Backend Repository</h4>
+                                <p>Docker images for Python/FastAPI backend service.</p>
+                                <p><code>durable-code-dev-backend</code></p>
+                            </div>
+
+                            <div class="resource-card">
+                                <h4><span class="icon">ECR</span> Frontend Repository</h4>
+                                <p>Docker images for React/Vite frontend service.</p>
+                                <p><code>durable-code-dev-frontend</code></p>
+                            </div>
+                        </div>
+
+                        <h3>DNS &amp; Certificates</h3>
+                        <div class="resource-grid">
+                            <div class="resource-card">
+                                <h4><span class="icon">R53</span> Hosted Zone</h4>
+                                <p>Route53 zone for environment subdomain.</p>
+                                <p><code>dev.durableaicoding.net</code></p>
+                            </div>
+
+                            <div class="resource-card">
+                                <h4><span class="icon">ACM</span> SSL Certificate</h4>
+                                <p>Wildcard certificate for HTTPS.</p>
+                                <p><code>*.dev.durableaicoding.net</code></p>
+                            </div>
+                        </div>
+
+                        <h3>Encryption</h3>
+                        <div class="resource-grid">
+                            <div class="resource-card">
+                                <h4><span class="icon">KMS</span> Encryption Key</h4>
+                                <p>Customer-managed key for encrypting logs and secrets.</p>
+                                <p><code>aws_kms_key.main</code></p>
+                            </div>
+                        </div>
+
+                        <h3>File Locations</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>File</th>
+                                    <th>Purpose</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>workspaces/base/vpc.tf</code></td>
+                                    <td>VPC, subnets, internet gateway, route tables</td>
+                                </tr>
+                                <tr>
+                                    <td><code>workspaces/base/security-groups.tf</code></td>
+                                    <td>ALB and ECS security groups</td>
+                                </tr>
+                                <tr>
+                                    <td><code>workspaces/base/ecr.tf</code></td>
+                                    <td>Container repositories with lifecycle policies</td>
+                                </tr>
+                                <tr>
+                                    <td><code>workspaces/base/route53.tf</code></td>
+                                    <td>Hosted zone and DNS records</td>
+                                </tr>
+                                <tr>
+                                    <td><code>workspaces/base/acm.tf</code></td>
+                                    <td>SSL certificate with DNS validation</td>
+                                </tr>
+                                <tr>
+                                    <td><code>workspaces/base/kms.tf</code></td>
+                                    <td>Encryption key and alias</td>
+                                </tr>
+                                <tr>
+                                    <td><code>workspaces/base/outputs.tf</code></td>
+                                    <td>Exported values for runtime workspace</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Runtime Workspace -->
+            <section class="section">
+                <div class="workspace-section">
+                    <div class="workspace-header runtime">
+                        <h3>Runtime Workspace</h3>
+                        <span class="badge">EPHEMERAL</span>
+                    </div>
+                    <div class="workspace-content">
+                        <p>Application workloads and expensive resources. Destroyed nightly, recreated on demand.</p>
+
+                        <h3>Networking</h3>
+                        <div class="resource-grid">
+                            <div class="resource-card">
+                                <h4><span class="icon">NAT</span> NAT Gateway</h4>
+                                <p>Enables private subnet internet access. <strong>$45/month</strong></p>
+                                <p><code>aws_nat_gateway.main</code></p>
+                            </div>
+
+                            <div class="resource-card">
+                                <h4><span class="icon">EIP</span> Elastic IP</h4>
+                                <p>Static IP address for NAT Gateway.</p>
+                                <p><code>aws_eip.nat</code></p>
+                            </div>
+                        </div>
+
+                        <h3>Load Balancing</h3>
+                        <div class="resource-grid">
+                            <div class="resource-card">
+                                <h4><span class="icon">ALB</span> Application Load Balancer</h4>
+                                <p>Distributes traffic to ECS services. <strong>$18/month</strong></p>
+                                <p><code>aws_lb.main</code></p>
+                            </div>
+
+                            <div class="resource-card">
+                                <h4><span class="icon">TG</span> Target Groups</h4>
+                                <p>Backend and frontend target groups with health checks.</p>
+                                <p><code>aws_lb_target_group</code></p>
+                            </div>
+
+                            <div class="resource-card">
+                                <h4><span class="icon">LN</span> Listeners</h4>
+                                <p>HTTP (redirect to HTTPS) and HTTPS listeners with path-based routing.</p>
+                                <p><code>aws_lb_listener</code></p>
+                            </div>
+                        </div>
+
+                        <h3>Container Services</h3>
+                        <div class="resource-grid">
+                            <div class="resource-card">
+                                <h4><span class="icon">ECS</span> ECS Cluster</h4>
+                                <p>Fargate cluster with Container Insights enabled.</p>
+                                <p><code>aws_ecs_cluster.main</code></p>
+                            </div>
+
+                            <div class="resource-card">
+                                <h4><span class="icon">TD</span> Task Definitions</h4>
+                                <p>Backend and frontend task definitions with CPU/memory configs.</p>
+                                <p><code>aws_ecs_task_definition</code></p>
+                            </div>
+
+                            <div class="resource-card">
+                                <h4><span class="icon">SV</span> ECS Services</h4>
+                                <p>Backend and frontend services with auto-scaling.</p>
+                                <p><code>aws_ecs_service</code></p>
+                            </div>
+
+                            <div class="resource-card">
+                                <h4><span class="icon">R</span> Task Execution Role</h4>
+                                <p>IAM role for ECS to pull images and write logs.</p>
+                                <p><code>aws_iam_role.ecs_execution</code></p>
+                            </div>
+
+                            <div class="resource-card">
+                                <h4><span class="icon">R</span> Task Role</h4>
+                                <p>IAM role for application code to access AWS services.</p>
+                                <p><code>aws_iam_role.ecs_task</code></p>
+                            </div>
+                        </div>
+
+                        <h3>Security</h3>
+                        <div class="resource-grid">
+                            <div class="resource-card">
+                                <h4><span class="icon">WAF</span> Web ACL</h4>
+                                <p>AWS WAFv2 with managed rules for common attacks.</p>
+                                <p><code>aws_wafv2_web_acl.main</code></p>
+                            </div>
+
+                            <div class="resource-card">
+                                <h4><span class="icon">WAF</span> WAF Association</h4>
+                                <p>Associates WAF with ALB.</p>
+                                <p><code>aws_wafv2_web_acl_association</code></p>
+                            </div>
+                        </div>
+
+                        <h3>Logging</h3>
+                        <div class="resource-grid">
+                            <div class="resource-card">
+                                <h4><span class="icon">CW</span> Log Groups</h4>
+                                <p>CloudWatch log groups for ECS containers.</p>
+                                <p><code>/ecs/durable-code-dev/*</code></p>
+                            </div>
+
+                            <div class="resource-card">
+                                <h4><span class="icon">S3</span> ALB Logs Bucket</h4>
+                                <p>S3 bucket for ALB access logs with lifecycle policy.</p>
+                                <p><code>durable-code-dev-alb-logs</code></p>
+                            </div>
+                        </div>
+
+                        <h3>File Locations</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>File</th>
+                                    <th>Purpose</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>workspaces/runtime/data.tf</code></td>
+                                    <td>Remote state references to base workspace</td>
+                                </tr>
+                                <tr>
+                                    <td><code>workspaces/runtime/nat.tf</code></td>
+                                    <td>NAT Gateway and Elastic IP</td>
+                                </tr>
+                                <tr>
+                                    <td><code>workspaces/runtime/alb.tf</code></td>
+                                    <td>Load balancer and S3 logs bucket</td>
+                                </tr>
+                                <tr>
+                                    <td><code>workspaces/runtime/alb-listeners.tf</code></td>
+                                    <td>Listeners, target groups, routing rules</td>
+                                </tr>
+                                <tr>
+                                    <td><code>workspaces/runtime/ecs.tf</code></td>
+                                    <td>Cluster, task definitions, services</td>
+                                </tr>
+                                <tr>
+                                    <td><code>workspaces/runtime/ecs-iam.tf</code></td>
+                                    <td>Execution and task roles</td>
+                                </tr>
+                                <tr>
+                                    <td><code>workspaces/runtime/waf.tf</code></td>
+                                    <td>WAF Web ACL and rules</td>
+                                </tr>
+                                <tr>
+                                    <td><code>workspaces/runtime/cloudwatch.tf</code></td>
+                                    <td>Log groups with retention policies</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Resource Dependencies -->
+            <section class="section">
+                <h2>Resource Dependencies</h2>
+                <p>This diagram shows how resources depend on each other across workspaces:</p>
+
+                <div class="diagram-container">
+                    <svg viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto; max-width: 800px; display: block; margin: 0 auto;">
+                        <defs>
+                            <linearGradient id="baseGrad3" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" style="stop-color:#16a34a"/>
+                                <stop offset="100%" style="stop-color:#22c55e"/>
+                            </linearGradient>
+                            <linearGradient id="runtimeGrad3" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" style="stop-color:#d97706"/>
+                                <stop offset="100%" style="stop-color:#f59e0b"/>
+                            </linearGradient>
+                            <filter id="shadow3" x="-20%" y="-20%" width="140%" height="140%">
+                                <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.1"/>
+                            </filter>
+                            <marker id="arrow3" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8"/>
+                            </marker>
+                        </defs>
+
+                        <!-- Base Resources -->
+                        <text x="150" y="25" text-anchor="middle" fill="#16a34a" font-family="system-ui" font-size="14" font-weight="600">Base Workspace</text>
+
+                        <rect x="50" y="40" width="90" height="35" rx="4" fill="url(#baseGrad3)" filter="url(#shadow3)"/>
+                        <text x="95" y="62" text-anchor="middle" fill="white" font-family="system-ui" font-size="10">VPC</text>
+
+                        <rect x="155" y="40" width="90" height="35" rx="4" fill="url(#baseGrad3)" filter="url(#shadow3)"/>
+                        <text x="200" y="62" text-anchor="middle" fill="white" font-family="system-ui" font-size="10">Subnets</text>
+
+                        <rect x="50" y="90" width="90" height="35" rx="4" fill="url(#baseGrad3)" filter="url(#shadow3)"/>
+                        <text x="95" y="112" text-anchor="middle" fill="white" font-family="system-ui" font-size="10">Security Grps</text>
+
+                        <rect x="155" y="90" width="90" height="35" rx="4" fill="url(#baseGrad3)" filter="url(#shadow3)"/>
+                        <text x="200" y="112" text-anchor="middle" fill="white" font-family="system-ui" font-size="10">ECR</text>
+
+                        <rect x="50" y="140" width="90" height="35" rx="4" fill="url(#baseGrad3)" filter="url(#shadow3)"/>
+                        <text x="95" y="162" text-anchor="middle" fill="white" font-family="system-ui" font-size="10">Route53</text>
+
+                        <rect x="155" y="140" width="90" height="35" rx="4" fill="url(#baseGrad3)" filter="url(#shadow3)"/>
+                        <text x="200" y="162" text-anchor="middle" fill="white" font-family="system-ui" font-size="10">ACM Cert</text>
+
+                        <!-- Runtime Resources -->
+                        <text x="600" y="25" text-anchor="middle" fill="#d97706" font-family="system-ui" font-size="14" font-weight="600">Runtime Workspace</text>
+
+                        <rect x="500" y="40" width="90" height="35" rx="4" fill="url(#runtimeGrad3)" filter="url(#shadow3)"/>
+                        <text x="545" y="62" text-anchor="middle" fill="white" font-family="system-ui" font-size="10">NAT Gateway</text>
+
+                        <rect x="605" y="40" width="90" height="35" rx="4" fill="url(#runtimeGrad3)" filter="url(#shadow3)"/>
+                        <text x="650" y="62" text-anchor="middle" fill="white" font-family="system-ui" font-size="10">ALB</text>
+
+                        <rect x="500" y="90" width="90" height="35" rx="4" fill="url(#runtimeGrad3)" filter="url(#shadow3)"/>
+                        <text x="545" y="112" text-anchor="middle" fill="white" font-family="system-ui" font-size="10">ECS Cluster</text>
+
+                        <rect x="605" y="90" width="90" height="35" rx="4" fill="url(#runtimeGrad3)" filter="url(#shadow3)"/>
+                        <text x="650" y="112" text-anchor="middle" fill="white" font-family="system-ui" font-size="10">ECS Services</text>
+
+                        <rect x="500" y="140" width="90" height="35" rx="4" fill="url(#runtimeGrad3)" filter="url(#shadow3)"/>
+                        <text x="545" y="162" text-anchor="middle" fill="white" font-family="system-ui" font-size="10">WAF</text>
+
+                        <rect x="605" y="140" width="90" height="35" rx="4" fill="url(#runtimeGrad3)" filter="url(#shadow3)"/>
+                        <text x="650" y="162" text-anchor="middle" fill="white" font-family="system-ui" font-size="10">DNS Records</text>
+
+                        <!-- Dependency Arrows -->
+                        <path d="M245 57 L500 57" stroke="#94a3b8" stroke-width="1.5" fill="none" marker-end="url(#arrow3)"/>
+                        <path d="M245 57 L500 107" stroke="#94a3b8" stroke-width="1.5" fill="none" marker-end="url(#arrow3)"/>
+                        <path d="M140 107 L500 65" stroke="#94a3b8" stroke-width="1.5" fill="none" marker-end="url(#arrow3)"/>
+                        <path d="M140 107 L500 107" stroke="#94a3b8" stroke-width="1.5" fill="none" marker-end="url(#arrow3)"/>
+                        <path d="M245 107 L605 107" stroke="#94a3b8" stroke-width="1.5" fill="none" marker-end="url(#arrow3)"/>
+                        <path d="M140 157 L605 157" stroke="#94a3b8" stroke-width="1.5" fill="none" marker-end="url(#arrow3)"/>
+                        <path d="M245 157 L605 65" stroke="#94a3b8" stroke-width="1.5" fill="none" marker-end="url(#arrow3)"/>
+
+                        <!-- Internal Runtime Dependencies -->
+                        <rect x="300" y="220" width="200" height="200" rx="8" fill="#fefce8" stroke="#fef3c7" stroke-width="2"/>
+                        <text x="400" y="245" text-anchor="middle" fill="#92400e" font-family="system-ui" font-size="12" font-weight="600">Runtime Internal Dependencies</text>
+
+                        <rect x="320" y="260" width="70" height="30" rx="4" fill="url(#runtimeGrad3)" filter="url(#shadow3)"/>
+                        <text x="355" y="280" text-anchor="middle" fill="white" font-family="system-ui" font-size="9">ALB</text>
+
+                        <rect x="410" y="260" width="70" height="30" rx="4" fill="url(#runtimeGrad3)" filter="url(#shadow3)"/>
+                        <text x="445" y="280" text-anchor="middle" fill="white" font-family="system-ui" font-size="9">Target Grp</text>
+
+                        <rect x="320" y="310" width="70" height="30" rx="4" fill="url(#runtimeGrad3)" filter="url(#shadow3)"/>
+                        <text x="355" y="330" text-anchor="middle" fill="white" font-family="system-ui" font-size="9">Listeners</text>
+
+                        <rect x="410" y="310" width="70" height="30" rx="4" fill="url(#runtimeGrad3)" filter="url(#shadow3)"/>
+                        <text x="445" y="330" text-anchor="middle" fill="white" font-family="system-ui" font-size="9">ECS Svc</text>
+
+                        <rect x="365" y="360" width="70" height="30" rx="4" fill="url(#runtimeGrad3)" filter="url(#shadow3)"/>
+                        <text x="400" y="380" text-anchor="middle" fill="white" font-family="system-ui" font-size="9">Task Def</text>
+
+                        <!-- Internal arrows -->
+                        <path d="M390 275 L410 275" stroke="#94a3b8" stroke-width="1" fill="none" marker-end="url(#arrow3)"/>
+                        <path d="M355 290 L355 310" stroke="#94a3b8" stroke-width="1" fill="none" marker-end="url(#arrow3)"/>
+                        <path d="M445 290 L445 310" stroke="#94a3b8" stroke-width="1" fill="none" marker-end="url(#arrow3)"/>
+                        <path d="M390 325 L410 325" stroke="#94a3b8" stroke-width="1" fill="none" marker-end="url(#arrow3)"/>
+                        <path d="M445 340 L420 360" stroke="#94a3b8" stroke-width="1" fill="none" marker-end="url(#arrow3)"/>
+                    </svg>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>Durable Code Infrastructure Documentation | Last Updated: December 2025</p>
+        </div>
+    </footer>
+</body>
+</html>
