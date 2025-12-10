@@ -137,17 +137,17 @@ jobs:
             sleep 20
           done
 
-      # Note: Application deployment is now automatic as part of 'just infra up runtime'
-      # The deploy_app input is kept for documentation but deploy runs automatically
-      - name: Deploy status
-        if: ${{ inputs.dry_run != true }}
+      - name: Deploy application
+        if: ${{ inputs.deploy_app == true && inputs.dry_run != true }}
         env:
           ENV: ${{ inputs.environment || 'dev' }}
           AWS_PROFILE: ""
         run: |
+          echo "🚀 Deploying application..."
           SCOPE="${{ inputs.scope || 'runtime' }}"
           if [[ "$SCOPE" == "runtime" || "$SCOPE" == "all" ]]; then
-            echo "✅ Application deployment completed as part of infrastructure startup"
+            echo "📦 Starting application deployment..."
+            just deploy
           else
             echo "ℹ️ Application deployment skipped (scope: $SCOPE)"
           fi

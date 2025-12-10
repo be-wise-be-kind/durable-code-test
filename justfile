@@ -624,6 +624,8 @@ _infra-plan-scope SCOPE:
     fi
 
 # Internal: Apply for specific scope
+# Note: Auto-deploy removed - use explicit `just deploy` after apply
+# This ensures deploy works correctly in CI environments (GitHub Actions)
 _infra-apply-scope SCOPE AUTO:
     #!/usr/bin/env bash
     if [ "{{SCOPE}}" = "all" ]; then
@@ -631,12 +633,6 @@ _infra-apply-scope SCOPE AUTO:
         just _infra-do-apply base {{AUTO}}
         echo -e "{{CYAN}}--- Deploying runtime ---{{NC}}"
         just _infra-do-apply runtime {{AUTO}}
-        echo -e "{{CYAN}}--- Deploying application ---{{NC}}"
-        just deploy
-    elif [ "{{SCOPE}}" = "runtime" ]; then
-        just _infra-do-apply {{SCOPE}} {{AUTO}}
-        echo -e "{{CYAN}}--- Deploying application ---{{NC}}"
-        just deploy
     else
         just _infra-do-apply {{SCOPE}} {{AUTO}}
     fi
