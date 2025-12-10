@@ -76,6 +76,16 @@ jobs:
           echo "📊 Infrastructure status before teardown:"
           just infra status || echo "Status check failed - continuing with teardown"
 
+      - name: Initialize Terraform
+        env:
+          ENV: ${{ inputs.environment || 'dev' }}
+          AWS_PROFILE: ""
+        run: |
+          echo "🔧 Initializing Terraform..."
+          SCOPE="${{ inputs.scope || 'runtime' }}"
+          just infra init "$SCOPE"
+          echo "✅ Terraform initialized"
+
       - name: Plan infrastructure teardown
         if: ${{ inputs.dry_run == true }}
         env:
