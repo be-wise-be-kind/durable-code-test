@@ -383,6 +383,9 @@ _infra-dispatch SUBCOMMAND *ARGS:
         --list|list|help)
             just _infra-help
             ;;
+        login)
+            just _infra-aws-login
+            ;;
         check-aws)
             just _infra-check-aws
             ;;
@@ -437,6 +440,7 @@ _infra-help:
     @echo -e "{{GREEN}}Usage:{{NC}} just infra <subcommand> [arguments]"
     @echo ""
     @echo -e "{{GREEN}}Subcommands:{{NC}}"
+    @echo -e "  {{YELLOW}}login{{NC}}                    Login to AWS via SSO (opens browser)"
     @echo -e "  {{YELLOW}}check-aws{{NC}}                Check AWS credentials and configuration"
     @echo -e "  {{YELLOW}}status{{NC}}                   Show current infrastructure status"
     @echo -e "  {{YELLOW}}state [SCOPE]{{NC}}            List Terraform state resources"
@@ -478,6 +482,95 @@ _infra-help:
     @echo -e "{{YELLOW}}Note:{{NC}} Terraform will prompt for confirmation before destroying resources"
     @echo ""
 
+# Internal: AWS Login - Configure credentials from .env
+_infra-aws-login:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    # Colors
+    CYAN='\033[0;36m'
+    GREEN='\033[0;32m'
+    YELLOW='\033[0;33m'
+    RED='\033[0;31m'
+    NC='\033[0m'
+
+    PROFILE_NAME="{{AWS_PROFILE}}"
+    DEFAULT_REGION="{{AWS_REGION}}"
+    AWS_CREDENTIALS="$HOME/.aws/credentials"
+    AWS_CONFIG="$HOME/.aws/config"
+
+    echo -e "${CYAN}AWS Login - Configure Profile${NC}"
+    echo -e "${YELLOW}Profile: $PROFILE_NAME${NC}"
+    echo -e "${YELLOW}Region: $DEFAULT_REGION${NC}"
+    echo ""
+
+    # Check if .env has credentials
+    if [ -f ".env" ]; then
+        source .env 2>/dev/null || true
+    fi
+
+    if [ -z "${TERRAFORM_AWS_ACCESS_KEY_ID:-}" ] || [ -z "${TERRAFORM_AWS_SECRET_ACCESS_KEY:-}" ]; then
+        echo -e "${RED}❌ AWS credentials not found in .env${NC}"
+        echo -e "${YELLOW}Please set TERRAFORM_AWS_ACCESS_KEY_ID and TERRAFORM_AWS_SECRET_ACCESS_KEY in .env${NC}"
+        exit 1
+    fi
+
+    # Ensure ~/.aws directory exists
+    mkdir -p "$HOME/.aws"
+
+    # Create/update credentials file
+    echo -e "${YELLOW}Configuring AWS credentials for profile '$PROFILE_NAME'...${NC}"
+
+    # Check if profile section exists in credentials, if not add it
+    if ! grep -q "^\[$PROFILE_NAME\]" "$AWS_CREDENTIALS" 2>/dev/null; then
+        {
+            echo ""
+            echo "[$PROFILE_NAME]"
+            echo "aws_access_key_id = $TERRAFORM_AWS_ACCESS_KEY_ID"
+            echo "aws_secret_access_key = $TERRAFORM_AWS_SECRET_ACCESS_KEY"
+        } >> "$AWS_CREDENTIALS"
+        echo -e "${GREEN}✓ Credentials added to $AWS_CREDENTIALS${NC}"
+    else
+        # Update existing profile using a temp file
+        TEMP_FILE=$(mktemp)
+        awk -v profile="$PROFILE_NAME" -v key="$TERRAFORM_AWS_ACCESS_KEY_ID" -v secret="$TERRAFORM_AWS_SECRET_ACCESS_KEY" '
+            BEGIN { in_profile=0 }
+            /^\[/ { in_profile=0 }
+            $0 ~ "^\\[" profile "\\]" { in_profile=1; print; next }
+            in_profile && /^aws_access_key_id/ { print "aws_access_key_id = " key; next }
+            in_profile && /^aws_secret_access_key/ { print "aws_secret_access_key = " secret; next }
+            { print }
+        ' "$AWS_CREDENTIALS" > "$TEMP_FILE"
+        mv "$TEMP_FILE" "$AWS_CREDENTIALS"
+        echo -e "${GREEN}✓ Credentials updated in $AWS_CREDENTIALS${NC}"
+    fi
+
+    # Ensure config has the profile with region
+    if ! grep -q "^\[profile $PROFILE_NAME\]" "$AWS_CONFIG" 2>/dev/null; then
+        {
+            echo ""
+            echo "[profile $PROFILE_NAME]"
+            echo "region = $DEFAULT_REGION"
+            echo "output = json"
+        } >> "$AWS_CONFIG"
+        echo -e "${GREEN}✓ Profile config added to $AWS_CONFIG${NC}"
+    fi
+
+    chmod 600 "$AWS_CREDENTIALS"
+    echo ""
+
+    # Verify credentials work
+    echo -e "${CYAN}Verifying credentials...${NC}"
+    if aws sts get-caller-identity --profile "$PROFILE_NAME" --output table; then
+        echo ""
+        echo -e "${GREEN}✓ AWS credentials configured and verified!${NC}"
+    else
+        echo ""
+        echo -e "${RED}❌ AWS credential verification failed${NC}"
+        echo -e "${YELLOW}Check your access keys in .env${NC}"
+        exit 1
+    fi
+
 # Internal: Check AWS credentials
 _infra-check-aws:
     #!/usr/bin/env bash
@@ -489,6 +582,7 @@ _infra-check-aws:
         aws sts get-caller-identity --profile {{AWS_PROFILE}} --output table
     else
         echo -e "{{RED}}❌ AWS credentials check failed!{{NC}}"
+        echo -e "{{YELLOW}}Try: just infra login{{NC}}"
         exit 1
     fi
 
