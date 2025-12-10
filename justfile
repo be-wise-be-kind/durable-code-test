@@ -159,7 +159,7 @@ shell-frontend:
 # Linting Targets
 ################################################################################
 
-# Run linting with optional scope parameter (all, python, frontend, security, infra)
+# Run linting (Examples: lint, lint python, lint frontend, lint infra, lint security)
 lint SCOPE="all":
     @echo -e "{{CYAN}}╔════════════════════════════════════════════════════════════╗{{NC}}"
     @echo -e "{{CYAN}}║              Running Linting: {{SCOPE}}                    ║{{NC}}"
@@ -365,7 +365,7 @@ deploy-check:
 # Infrastructure Targets (Terraform Direct Execution)
 ################################################################################
 
-# Unified infrastructure management command
+# Infrastructure management (Examples: infra plan runtime, infra up all, infra down runtime destroy-runtime, infra status)
 infra SUBCOMMAND *ARGS:
     @just _infra-dispatch {{SUBCOMMAND}} {{ARGS}}
 
@@ -380,6 +380,9 @@ _infra-dispatch SUBCOMMAND *ARGS:
     ARG2="${ARGS_ARRAY[1]:-}"
 
     case "{{SUBCOMMAND}}" in
+        --list|list|help)
+            just _infra-help
+            ;;
         check-aws)
             just _infra-check-aws
             ;;
@@ -394,7 +397,10 @@ _infra-dispatch SUBCOMMAND *ARGS:
             just _infra-apply-scope "$ARG1" "$AUTO"
             ;;
         down)
-            just _infra-destroy-scope "$ARG1" "$ARG2"
+            just _infra-destroy-scope "$ARG1"
+            ;;
+        down-force)
+            just _infra-destroy-force-scope "$ARG1"
             ;;
         fmt)
             just _infra-fmt
@@ -408,22 +414,69 @@ _infra-dispatch SUBCOMMAND *ARGS:
         status)
             just _infra-status
             ;;
+        state)
+            just _infra-state-list "$ARG1"
+            ;;
+        unlock)
+            just _infra-force-unlock "$ARG1" "$ARG2"
+            ;;
         *)
             echo -e "{{RED}}Error: Unknown subcommand '{{SUBCOMMAND}}'{{NC}}"
             echo ""
-            echo -e "{{CYAN}}Available subcommands:{{NC}}"
-            echo -e "  {{YELLOW}}check-aws{{NC}}           Check AWS credentials"
-            echo -e "  {{YELLOW}}init [SCOPE]{{NC}}        Initialize Terraform workspace (default: runtime)"
-            echo -e "  {{YELLOW}}plan [SCOPE]{{NC}}        Plan infrastructure changes (default: runtime)"
-            echo -e "  {{YELLOW}}up [SCOPE] [AUTO]{{NC}}   Deploy infrastructure (default: runtime, auto: false)"
-            echo -e "  {{YELLOW}}down [SCOPE] [CONF]{{NC}}  Destroy infrastructure (requires confirmation)"
-            echo -e "  {{YELLOW}}fmt{{NC}}                 Format Terraform files"
-            echo -e "  {{YELLOW}}validate [SCOPE]{{NC}}    Validate Terraform configuration (default: runtime)"
-            echo -e "  {{YELLOW}}output [SCOPE] [FMT]{{NC}} Show Terraform outputs (format: json or text)"
-            echo -e "  {{YELLOW}}status{{NC}}              Show infrastructure status"
+            just _infra-help
             exit 1
             ;;
     esac
+
+# Internal: Show infrastructure command help
+_infra-help:
+    @echo -e "{{CYAN}}╔════════════════════════════════════════════════════════════╗{{NC}}"
+    @echo -e "{{CYAN}}║          Infrastructure Management Commands               ║{{NC}}"
+    @echo -e "{{CYAN}}╚════════════════════════════════════════════════════════════╝{{NC}}"
+    @echo ""
+    @echo -e "{{GREEN}}Usage:{{NC}} just infra <subcommand> [arguments]"
+    @echo ""
+    @echo -e "{{GREEN}}Subcommands:{{NC}}"
+    @echo -e "  {{YELLOW}}check-aws{{NC}}                Check AWS credentials and configuration"
+    @echo -e "  {{YELLOW}}status{{NC}}                   Show current infrastructure status"
+    @echo -e "  {{YELLOW}}state [SCOPE]{{NC}}            List Terraform state resources"
+    @echo -e "  {{YELLOW}}unlock [SCOPE] [LOCK_ID]{{NC}} Force unlock Terraform state (use with caution)"
+    @echo -e "  {{YELLOW}}fmt{{NC}}                      Format all Terraform files"
+    @echo ""
+    @echo -e "  {{YELLOW}}init [SCOPE]{{NC}}             Initialize Terraform workspace"
+    @echo -e "  {{YELLOW}}validate [SCOPE]{{NC}}         Validate Terraform configuration"
+    @echo -e "  {{YELLOW}}plan [SCOPE]{{NC}}             Plan infrastructure changes"
+    @echo -e "  {{YELLOW}}up [SCOPE] [AUTO]{{NC}}        Deploy infrastructure"
+    @echo -e "  {{YELLOW}}down [SCOPE]{{NC}}             Destroy infrastructure"
+    @echo -e "  {{YELLOW}}down-force [SCOPE]{{NC}}      Force destroy (skip refresh, auto-approve)"
+    @echo -e "  {{YELLOW}}output [SCOPE] [FORMAT]{{NC}}  Show Terraform outputs"
+    @echo ""
+    @echo -e "{{GREEN}}Scopes:{{NC}}"
+    @echo -e "  {{YELLOW}}base{{NC}}                     Base infrastructure (VPC, networking, security groups)"
+    @echo -e "  {{YELLOW}}runtime{{NC}}                  Runtime infrastructure (ECS, ALB, services) [default]"
+    @echo -e "  {{YELLOW}}all{{NC}}                      Both base and runtime (excludes bootstrap)"
+    @echo -e "  {{YELLOW}}bootstrap{{NC}}                Bootstrap infrastructure (S3 state bucket)"
+    @echo ""
+    @echo -e "{{GREEN}}Common Examples:{{NC}}"
+    @echo -e "  {{CYAN}}just infra check-aws{{NC}}                      # Verify AWS credentials"
+    @echo -e "  {{CYAN}}just infra status{{NC}}                         # Check infrastructure status"
+    @echo ""
+    @echo -e "  {{CYAN}}just infra plan runtime{{NC}}                   # Plan runtime changes"
+    @echo -e "  {{CYAN}}just infra plan all{{NC}}                       # Plan all infrastructure"
+    @echo ""
+    @echo -e "  {{CYAN}}just infra up runtime{{NC}}                     # Deploy runtime (interactive)"
+    @echo -e "  {{CYAN}}just infra up runtime true{{NC}}                # Deploy runtime (auto-approve)"
+    @echo -e "  {{CYAN}}just infra up all{{NC}}                         # Deploy base + runtime"
+    @echo ""
+    @echo -e "  {{CYAN}}just infra down runtime{{NC}}                    # Destroy runtime infrastructure"
+    @echo -e "  {{CYAN}}just infra down all{{NC}}                        # Destroy all except bootstrap"
+    @echo -e "  {{CYAN}}just infra down base{{NC}}                       # Destroy base infrastructure"
+    @echo ""
+    @echo -e "  {{CYAN}}just infra output runtime{{NC}}                 # Show runtime outputs (text)"
+    @echo -e "  {{CYAN}}just infra output runtime json{{NC}}            # Show runtime outputs (JSON)"
+    @echo ""
+    @echo -e "{{YELLOW}}Note:{{NC}} Terraform will prompt for confirmation before destroying resources"
+    @echo ""
 
 # Internal: Check AWS credentials
 _infra-check-aws:
@@ -489,21 +542,19 @@ _infra-apply-scope SCOPE AUTO:
     fi
 
 # Internal: Destroy for specific scope
-_infra-destroy-scope SCOPE CONFIRM:
+_infra-destroy-scope SCOPE:
     #!/usr/bin/env bash
-    # Confirmation checks
-    if [ "{{SCOPE}}" = "bootstrap" ] && [ "{{CONFIRM}}" != "destroy-bootstrap" ]; then
-        echo -e "{{RED}}ERROR: Bootstrap destruction requires CONFIRM=destroy-bootstrap{{NC}}"
-        exit 1
-    elif [ "{{SCOPE}}" = "base" ] && [ "{{CONFIRM}}" != "destroy-base" ]; then
-        echo -e "{{RED}}ERROR: Base destruction requires CONFIRM=destroy-base{{NC}}"
-        exit 1
-    elif [ "{{SCOPE}}" = "all" ] && [ "{{CONFIRM}}" != "destroy-all" ]; then
-        echo -e "{{RED}}ERROR: Full destruction requires CONFIRM=destroy-all{{NC}}"
-        exit 1
+    # Safety warning for bootstrap
+    if [ "{{SCOPE}}" = "bootstrap" ]; then
+        echo -e "{{RED}}⚠️  WARNING: You are about to destroy the bootstrap infrastructure!{{NC}}"
+        echo -e "{{RED}}⚠️  This contains the Terraform state bucket and will affect ALL environments.{{NC}}"
+        echo -e "{{YELLOW}}Press Ctrl+C to cancel, or Terraform will prompt for confirmation...{{NC}}"
+        echo ""
+        sleep 3
     fi
 
     if [ "{{SCOPE}}" = "all" ]; then
+        echo -e "{{YELLOW}}Destroying all infrastructure (runtime + base)...{{NC}}"
         just _infra-do-destroy runtime
         just _infra-do-destroy base
     else
@@ -628,6 +679,48 @@ _infra-do-destroy SCOPE:
 
     echo -e "{{GREEN}}✓ Destroy complete for $SCOPE{{NC}}"
 
+# Internal: Force destroy for specific scope (no refresh, auto-approve)
+_infra-destroy-force-scope SCOPE:
+    #!/usr/bin/env bash
+    # Safety warning
+    echo -e "{{RED}}⚠️  WARNING: Force destroying {{SCOPE}} (no refresh, auto-approve){{NC}}"
+    echo -e "{{YELLOW}}This skips state refresh and confirmation - use only when normal destroy fails{{NC}}"
+    echo -e "{{YELLOW}}Press Ctrl+C to cancel or wait 3 seconds...{{NC}}"
+    echo ""
+    sleep 3
+
+    if [ "{{SCOPE}}" = "all" ]; then
+        echo -e "{{YELLOW}}Force destroying all infrastructure (runtime + base)...{{NC}}"
+        just _infra-do-destroy-force runtime
+        just _infra-do-destroy-force base
+    else
+        just _infra-do-destroy-force {{SCOPE}}
+    fi
+
+# Internal: Actual force destroy operation
+_infra-do-destroy-force SCOPE:
+    #!/usr/bin/env bash
+    SCOPE="{{SCOPE}}"
+    TERRAFORM_DIR="infra/terraform/workspaces/$SCOPE"
+    WORKSPACE_NAME="$SCOPE-{{ENV}}"
+    TFVARS_FILE="$(pwd)/infra/environments/{{ENV}}.tfvars"
+
+    echo -e "{{RED}}Force destroying infrastructure for $SCOPE in workspace $WORKSPACE_NAME...{{NC}}"
+
+    cd "$TERRAFORM_DIR"
+
+    # Select workspace (exit gracefully if doesn't exist)
+    if ! AWS_PROFILE={{AWS_PROFILE}} {{TERRAFORM_BIN}} workspace select "$WORKSPACE_NAME" 2>/dev/null; then
+        echo -e "{{YELLOW}}Workspace $WORKSPACE_NAME does not exist, nothing to destroy{{NC}}"
+        exit 0
+    fi
+
+    # Run destroy with -refresh=false and -auto-approve
+    AWS_PROFILE={{AWS_PROFILE}} AWS_REGION={{AWS_REGION}} \
+        {{TERRAFORM_BIN}} destroy -var-file="$TFVARS_FILE" -refresh=false -auto-approve
+
+    echo -e "{{GREEN}}✓ Force destroy complete for $SCOPE{{NC}}"
+
 # Internal: Actual Terraform validate operation
 _infra-do-validate SCOPE:
     #!/usr/bin/env bash
@@ -680,6 +773,60 @@ _check-workspace-status SCOPE:
     else
         echo -e "{{YELLOW}}⚠ {{SCOPE}} workspace not initialized{{NC}}"
     fi
+
+# Internal: Force unlock Terraform state
+_infra-force-unlock SCOPE LOCK_ID:
+    #!/usr/bin/env bash
+    SCOPE="{{SCOPE}}"
+    LOCK_ID="{{LOCK_ID}}"
+    TERRAFORM_DIR="infra/terraform/workspaces/$SCOPE"
+    WORKSPACE_NAME="$SCOPE-{{ENV}}"
+
+    if [ -z "$LOCK_ID" ]; then
+        echo -e "{{RED}}Error: LOCK_ID is required{{NC}}"
+        echo -e "{{YELLOW}}Usage: just infra unlock [SCOPE] [LOCK_ID]{{NC}}"
+        exit 1
+    fi
+
+    echo -e "{{RED}}⚠️  WARNING: Force unlocking Terraform state for $SCOPE{{NC}}"
+    echo -e "{{YELLOW}}Lock ID: $LOCK_ID{{NC}}"
+    echo -e "{{YELLOW}}Only proceed if you are certain no Terraform operations are running!{{NC}}"
+    echo -e "{{YELLOW}}Press Ctrl+C to cancel or wait 5 seconds...{{NC}}"
+    echo ""
+    sleep 5
+
+    cd "$TERRAFORM_DIR"
+
+    # Select workspace
+    if ! AWS_PROFILE={{AWS_PROFILE}} {{TERRAFORM_BIN}} workspace select "$WORKSPACE_NAME" 2>/dev/null; then
+        echo -e "{{YELLOW}}Workspace $WORKSPACE_NAME does not exist{{NC}}"
+        exit 0
+    fi
+
+    # Force unlock
+    AWS_PROFILE={{AWS_PROFILE}} {{TERRAFORM_BIN}} force-unlock -force "$LOCK_ID"
+
+    echo -e "{{GREEN}}✓ State unlocked for $SCOPE{{NC}}"
+
+# Internal: List Terraform state for specific scope
+_infra-state-list SCOPE:
+    #!/usr/bin/env bash
+    SCOPE="{{SCOPE}}"
+    TERRAFORM_DIR="infra/terraform/workspaces/$SCOPE"
+    WORKSPACE_NAME="$SCOPE-{{ENV}}"
+
+    echo -e "{{YELLOW}}Listing Terraform state for $SCOPE in workspace $WORKSPACE_NAME...{{NC}}"
+
+    cd "$TERRAFORM_DIR"
+
+    # Select workspace
+    if ! AWS_PROFILE={{AWS_PROFILE}} {{TERRAFORM_BIN}} workspace select "$WORKSPACE_NAME" 2>/dev/null; then
+        echo -e "{{YELLOW}}Workspace $WORKSPACE_NAME does not exist{{NC}}"
+        exit 0
+    fi
+
+    # List state
+    AWS_PROFILE={{AWS_PROFILE}} {{TERRAFORM_BIN}} state list
 
 ################################################################################
 # GitHub Integration Targets

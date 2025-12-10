@@ -33,7 +33,8 @@ resource "aws_lb" "main" {
 
 # S3 bucket for ALB access logs (all environments for security)
 resource "aws_s3_bucket" "alb_logs" {
-  bucket = "${var.project_name}-${local.environment}-alb-logs-${data.aws_caller_identity.current.account_id}"
+  bucket        = "${var.project_name}-${local.environment}-alb-logs-${data.aws_caller_identity.current.account_id}"
+  force_destroy = true
 
   tags = merge(
     local.common_tags,

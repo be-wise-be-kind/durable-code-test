@@ -77,6 +77,16 @@ jobs:
           echo "📊 Infrastructure status before startup:"
           just infra status || echo "Status check completed"
 
+      - name: Initialize Terraform
+        env:
+          ENV: ${{ inputs.environment || 'dev' }}
+          AWS_PROFILE: ""
+        run: |
+          echo "🔧 Initializing Terraform..."
+          SCOPE="${{ inputs.scope || 'runtime' }}"
+          just infra init "$SCOPE"
+          echo "✅ Terraform initialized"
+
       - name: Plan infrastructure startup
         if: ${{ inputs.dry_run == true }}
         env:
