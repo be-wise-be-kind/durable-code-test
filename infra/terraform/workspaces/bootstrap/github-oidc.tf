@@ -191,11 +191,12 @@ resource "aws_iam_role_policy" "github_actions_ecs" {
           "ecs:TagResource",
           "ecs:UntagResource"
         ]
-        # Allow tagging of project resources
+        # Allow tagging of project resources (clusters, services, tasks, task definitions)
         Resource = [
           "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:cluster/${var.product_domain}-*",
           "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:service/${var.product_domain}-*/*",
-          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:task/${var.product_domain}-*/*"
+          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:task/${var.product_domain}-*/*",
+          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:task-definition/${var.product_domain}-*:*"
         ]
       },
       {
@@ -300,7 +301,17 @@ resource "aws_iam_role_policy" "github_actions_terraform_state" {
           "s3:GetAccelerateConfiguration",
           "s3:GetBucketRequestPayment",
           "s3:GetLifecycleConfiguration",
-          "s3:GetBucketPolicyStatus"
+          "s3:GetBucketPolicyStatus",
+          "s3:GetBucketWebsite",
+          "s3:PutBucketWebsite",
+          "s3:DeleteBucketWebsite",
+          "s3:GetBucketLogging",
+          "s3:PutBucketLogging",
+          "s3:GetBucketOwnershipControls",
+          "s3:PutBucketOwnershipControls",
+          "s3:GetBucketEncryption",
+          "s3:PutBucketEncryption",
+          "s3:DeleteBucketEncryption"
         ]
         Resource = [
           "arn:aws:s3:::${var.project_name}-*",
@@ -496,6 +507,47 @@ resource "aws_iam_role_policy" "github_actions_infrastructure" {
           "iam:ListRoleTags",
           "iam:PutRolePermissionsBoundary",
           "iam:DeleteRolePermissionsBoundary"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# Policy for WAFv2 Web ACL management
+resource "aws_iam_role_policy" "github_actions_waf" {
+  name = "${var.project_name}-${local.environment}-github-actions-waf"
+  role = aws_iam_role.github_actions.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "WAFv2Management"
+        Effect = "Allow"
+        Action = [
+          "wafv2:CreateWebACL",
+          "wafv2:DeleteWebACL",
+          "wafv2:GetWebACL",
+          "wafv2:ListWebACLs",
+          "wafv2:UpdateWebACL",
+          "wafv2:AssociateWebACL",
+          "wafv2:DisassociateWebACL",
+          "wafv2:GetWebACLForResource",
+          "wafv2:ListResourcesForWebACL",
+          "wafv2:ListTagsForResource",
+          "wafv2:TagResource",
+          "wafv2:UntagResource",
+          "wafv2:CreateRuleGroup",
+          "wafv2:DeleteRuleGroup",
+          "wafv2:GetRuleGroup",
+          "wafv2:UpdateRuleGroup",
+          "wafv2:ListRuleGroups",
+          "wafv2:PutLoggingConfiguration",
+          "wafv2:GetLoggingConfiguration",
+          "wafv2:DeleteLoggingConfiguration",
+          "wafv2:ListLoggingConfigurations",
+          "wafv2:DescribeManagedRuleGroup"
         ]
         Resource = "*"
       }
