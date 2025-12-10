@@ -627,6 +627,7 @@ _infra-do-plan SCOPE:
 # Internal: Actual Terraform apply operation
 _infra-do-apply SCOPE AUTO:
     #!/usr/bin/env bash
+    set -euo pipefail
     SCOPE="{{SCOPE}}"
     AUTO="{{AUTO}}"
     TERRAFORM_DIR="infra/terraform/workspaces/$SCOPE"
@@ -649,9 +650,12 @@ _infra-do-apply SCOPE AUTO:
         AWS_PROFILE={{AWS_PROFILE}} {{TERRAFORM_BIN}} workspace new "$WORKSPACE_NAME"
     fi
 
-    # Run apply
-    AWS_PROFILE={{AWS_PROFILE}} AWS_REGION={{AWS_REGION}} \
-        {{TERRAFORM_BIN}} apply -var-file="$TFVARS_FILE" $APPROVE_FLAG
+    # Run apply (with error handling)
+    if ! AWS_PROFILE={{AWS_PROFILE}} AWS_REGION={{AWS_REGION}} \
+        {{TERRAFORM_BIN}} apply -var-file="$TFVARS_FILE" $APPROVE_FLAG; then
+        echo -e "{{RED}}✗ Apply failed for $SCOPE{{NC}}"
+        exit 1
+    fi
 
     echo -e "{{GREEN}}✓ Apply complete for $SCOPE{{NC}}"
 

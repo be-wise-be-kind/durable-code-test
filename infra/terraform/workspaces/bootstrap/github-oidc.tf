@@ -107,7 +107,9 @@ resource "aws_iam_role_policy" "github_actions_ecr" {
           "ecr:DeleteLifecyclePolicy",
           "ecr:SetRepositoryPolicy",
           "ecr:GetRepositoryPolicy",
-          "ecr:DeleteRepositoryPolicy"
+          "ecr:DeleteRepositoryPolicy",
+          "ecr:TagResource",
+          "ecr:UntagResource"
         ]
         # Scope to project repositories only (least privilege)
         Resource = [
@@ -431,6 +433,7 @@ resource "aws_iam_role_policy" "github_actions_infrastructure" {
           "route53:GetChange",
           "route53:ListResourceRecordSets",
           "route53:ListTagsForResource",
+          "route53:ChangeTagsForResource",
           "route53:ChangeResourceRecordSets",
           "route53:CreateHostedZone",
           "route53:DeleteHostedZone",
@@ -438,6 +441,28 @@ resource "aws_iam_role_policy" "github_actions_infrastructure" {
           "route53:UpdateHostedZoneComment",
           "route53:AssociateVPCWithHostedZone",
           "route53:DisassociateVPCFromHostedZone",
+          # KMS permissions for encryption
+          "kms:CreateKey",
+          "kms:DescribeKey",
+          "kms:GetKeyPolicy",
+          "kms:GetKeyRotationStatus",
+          "kms:ListResourceTags",
+          "kms:TagResource",
+          "kms:UntagResource",
+          "kms:ScheduleKeyDeletion",
+          "kms:EnableKey",
+          "kms:DisableKey",
+          "kms:EnableKeyRotation",
+          "kms:DisableKeyRotation",
+          "kms:PutKeyPolicy",
+          "kms:CreateAlias",
+          "kms:DeleteAlias",
+          "kms:UpdateAlias",
+          "kms:ListAliases",
+          "kms:Encrypt",
+          "kms:Decrypt",
+          "kms:GenerateDataKey",
+          "kms:GenerateDataKeyWithoutPlaintext",
           # ACM permissions
           "acm:ListCertificates",
           "acm:DescribeCertificate",
