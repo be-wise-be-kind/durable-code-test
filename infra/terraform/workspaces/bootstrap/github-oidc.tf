@@ -535,7 +535,7 @@ resource "aws_iam_role_policy" "github_actions_infrastructure" {
   })
 }
 
-# Policy for WAFv2 Web ACL management (minimal for dev, full for prod)
+# Policy for WAFv2 Web ACL management and logging
 resource "aws_iam_role_policy" "github_actions_waf" {
   name = "${var.project_name}-${local.environment}-github-actions-waf"
   role = aws_iam_role.github_actions.id
@@ -544,12 +544,17 @@ resource "aws_iam_role_policy" "github_actions_waf" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "WAFv2Management"
-        Effect = "Allow"
-        Action = [
-          "wafv2:*"
-        ]
+        Sid      = "WAFv2Full"
+        Effect   = "Allow"
+        Action   = ["wafv2:*", "logs:CreateLogDelivery", "logs:DeleteLogDelivery", "logs:PutResourcePolicy", "logs:DescribeResourcePolicies"]
         Resource = "*"
+      },
+      {
+        Sid       = "WAFServiceLinkedRole"
+        Effect    = "Allow"
+        Action    = ["iam:CreateServiceLinkedRole"]
+        Resource  = "arn:aws:iam::*:role/aws-service-role/wafv2.amazonaws.com/*"
+        Condition = { StringLike = { "iam:AWSServiceName" = "wafv2.amazonaws.com" } }
       }
     ]
   })
