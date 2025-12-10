@@ -1,10 +1,7 @@
-name: Morning Infrastructure Startup
+name: Infrastructure Up
 
 on:
-  schedule:
-    # 9 AM PST = 5 PM UTC (during PST) / 4 PM UTC (during PDT)
-    # Run Monday-Friday only to restore infrastructure for work day
-    - cron: '0 16 * * 1-5'  # Monday-Friday 4 PM UTC (9 AM PDT) - Weekday startup
+  # Manual dispatch only - no scheduled trigger
   workflow_dispatch:
     inputs:
       environment:
@@ -35,7 +32,7 @@ on:
         type: boolean
 
 jobs:
-  startup:
+  up:
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -63,7 +60,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          role-session-name: GitHub-Actions-Startup-${{ github.run_id }}
+          role-session-name: GitHub-Actions-Up-${{ github.run_id }}
           aws-region: us-west-2
 
       - name: Verify AWS credentials
@@ -195,7 +192,7 @@ jobs:
           AWS_PROFILE: ""
           AWS_REGION: us-west-2
         run: |
-          echo "🎯 Morning Startup Summary"
+          echo "🎯 Infrastructure Up Summary"
           echo "  Environment: ${{ inputs.environment || 'dev' }}"
           echo "  Scope: ${{ inputs.scope || 'runtime' }}"
           echo "  Deploy App: ${{ inputs.deploy_app || 'true' }}"
@@ -214,12 +211,12 @@ jobs:
           fi
 
           echo ""
-          echo "💰 Infrastructure restored - development ready!"
+          echo "💰 Infrastructure up - development ready!"
 
       - name: Notify on failure
         if: failure()
         run: |
-          echo "❌ Morning startup failed!"
+          echo "❌ Infrastructure up failed!"
           echo "🔧 Manual intervention required"
           echo "📞 Check AWS console and Terraform state"
           echo ""

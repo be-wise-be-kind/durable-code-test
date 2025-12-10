@@ -1,13 +1,11 @@
-name: Nightly Infrastructure Teardown
+name: Infrastructure Down
 
 on:
   schedule:
-    # 9 PM PST = 5 AM UTC (during PST) / 4 AM UTC (during PDT)
-    # Run Monday-Friday to tear down infrastructure nightly
-    # Combined with morning-startup (Mon-Fri 9 AM), this provides:
-    #   - Mon-Thu: Down overnight (~7 hours), up during work hours
-    #   - Fri-Sun: Down entire weekend (~64 hours), up Monday morning
-    - cron: '0 4 * * 1-5'  # Monday-Friday 4 AM UTC (previous day 9 PM PDT) - Nightly teardown
+    # 10 PM PST = 6 AM UTC (standard time reference)
+    # Runs every day to tear down infrastructure nightly for cost savings
+    # Note: During PDT (daylight saving), this runs at 11 PM PDT
+    - cron: '0 6 * * *'  # Daily 6 AM UTC (10 PM PST / 11 PM PDT)
   workflow_dispatch:
     inputs:
       environment:
@@ -33,7 +31,7 @@ on:
         type: boolean
 
 jobs:
-  teardown:
+  down:
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -61,7 +59,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          role-session-name: GitHub-Actions-Teardown-${{ github.run_id }}
+          role-session-name: GitHub-Actions-Down-${{ github.run_id }}
           aws-region: us-west-2
 
       - name: Verify AWS credentials
@@ -128,30 +126,31 @@ jobs:
 
           echo "💰 Estimated cost savings:"
           if [[ "$SCOPE" == "runtime" ]]; then
-            echo "  - Runtime teardown: ~\$1.50/day savings"
-            echo "  - Preserved: VPC, NAT, ECR, certificates"
+            echo "  - Runtime teardown: ~\$2.10/day savings (~\$63/month)"
+            echo "  - Destroyed: NAT Gateway, ALB, ECS services"
+            echo "  - Preserved: VPC, ECR, certificates (free/low-cost)"
           elif [[ "$SCOPE" == "all" ]]; then
-            echo "  - Complete teardown: ~\$3.50/day savings"
-            echo "  - Note: NAT Gateway recreation takes 5-10 minutes"
+            echo "  - Complete teardown: ~\$2.50/day savings"
+            echo "  - Note: Full rebuild takes longer (certificates, etc.)"
           fi
 
       - name: Post teardown summary
         if: always()
         run: |
-          echo "🎯 Nightly Teardown Summary"
+          echo "🎯 Infrastructure Down Summary"
           echo "  Environment: ${{ inputs.environment || 'dev' }}"
           echo "  Scope: ${{ inputs.scope || 'runtime' }}"
           echo "  Dry Run: ${{ inputs.dry_run || 'false' }}"
           echo "  Status: ${{ job.status }}"
           echo ""
           echo "💡 To restore infrastructure:"
-          echo "  - Automatic: 8 AM PST via morning-startup workflow"
-          echo "  - Manual: just infra up ${{ inputs.scope || 'runtime' }} true"
+          echo "  - Manual: Run the 'Infrastructure Up' workflow"
+          echo "  - CLI: just infra up ${{ inputs.scope || 'runtime' }} true"
 
       - name: Notify on failure
         if: failure()
         run: |
-          echo "❌ Nightly teardown failed!"
+          echo "❌ Infrastructure down failed!"
           echo "🔧 Manual intervention may be required"
           echo "📞 Check AWS console and Terraform state"
           echo "🚨 Consider manual teardown if automation continues to fail"
