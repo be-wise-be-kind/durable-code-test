@@ -113,16 +113,22 @@ jobs:
         if: ${{ inputs.dry_run != true }}
         env:
           ENV: ${{ inputs.environment || 'dev' }}
-          AWS_PROFILE: ""
           AWS_REGION: us-west-2
         run: |
           echo "⏳ Waiting for infrastructure to be ready..."
+
+          # Debug: show AWS caller identity
+          echo "AWS Identity:"
+          aws sts get-caller-identity || echo "Failed to get caller identity"
 
           # Wait up to 10 minutes for infrastructure to be ready
           for i in {1..30}; do
             echo "  Attempt $i/30: Checking infrastructure readiness..."
             # Check if ALB exists and is active
-            if aws elbv2 describe-load-balancers --names "durable-code-${ENV}-alb" --region "$AWS_REGION" >/dev/null 2>&1; then
+            ALB_CHECK=$(aws elbv2 describe-load-balancers --names "durable-code-${ENV}-alb" --region "$AWS_REGION" --query 'LoadBalancers[0].State.Code' --output text 2>&1) || true
+            echo "    ALB status: $ALB_CHECK"
+
+            if [[ "$ALB_CHECK" == "active" ]]; then
               echo "✅ Infrastructure is ready!"
               break
             fi
