@@ -1,17 +1,8 @@
-# Purpose: Automated deployment workflow for containerized applications to AWS ECS infrastructure
-# Scope: Production deployment management for frontend and backend services across AWS environments
-# Overview: Orchestrates deployment of Docker containers to Amazon ECS with comprehensive environment
-#     configuration, task definition management, and deployment verification. Supports manual and
-#     automated deployment triggers with environment-specific configuration handling. Manages AWS
-#     authentication, container image deployment, service health monitoring, and provides deployment
-#     status reporting with rollback capabilities and zero-downtime deployment strategies.
-# Dependencies: AWS ECS, ECR images, task definitions, AWS OIDC authentication, environment configurations
-# Exports: Deployed services to ECS cluster with updated task definitions and environment variables
-# Environment: AWS us-west-2 region targeting dev, staging, and production ECS environments
-# Related: Links to ECR build workflow, AWS infrastructure configuration, and monitoring setup
-# Implementation: Uses AWS ECS deployment actions with task definition updates and service stability verification
+# Purpose: Build and deploy application to AWS ECS
+# Scope: Docker image building and ECS deployment for frontend and backend services
+# Overview: Builds Docker images, pushes to ECR, and deploys to ECS with zero-downtime
 
-name: Deploy to ECS
+name: Deploy
 
 on:
   workflow_dispatch:
@@ -25,13 +16,6 @@ on:
           - dev
           - staging
           - prod
-  push:
-    branches:
-      - main
-    paths:
-      - 'durable-code-app/**'
-      - '.github/workflows/deploy.yml'
-      - 'infra/terraform/**'
 
 env:
   AWS_REGION: us-west-2
@@ -45,7 +29,7 @@ env:
 
 jobs:
   deploy:
-    name: Deploy to ECS
+    name: Build and Deploy
     runs-on: ubuntu-latest
     environment: ${{ github.event.inputs.environment || 'dev' }}
     permissions:
@@ -67,9 +51,37 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Get commit SHA
-        id: sha
-        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Generate image tag
+        id: tag
+        run: echo "tag=v$(date +%Y%m%d-%H%M%S)" >> $GITHUB_OUTPUT
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: .docker/dockerfiles/Dockerfile.frontend
+          target: prod
+          push: true
+          tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_FRONTEND }}:${{ steps.tag.outputs.tag }}
+          build-args: |
+            BUILD_TIMESTAMP=${{ steps.tag.outputs.tag }}
+            API_URL=https://dev.durableaicoding.net
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: .docker/dockerfiles/Dockerfile.backend
+          target: prod
+          push: true
+          tags: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_BACKEND }}:${{ steps.tag.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Download current task definitions
         run: |
@@ -78,37 +90,21 @@ jobs:
           aws ecs describe-task-definition --task-definition ${{ env.TASK_DEFINITION_FRONTEND }} \
             --query taskDefinition > frontend-task-definition.json
 
-      - name: Update backend task definition
-        id: backend-task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: backend-task-definition.json
-          container-name: backend
-          image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_BACKEND }}:${{ steps.sha.outputs.sha_short }}
-          environment-variables: |
-            LOG_LEVEL=INFO
-            ENVIRONMENT=${{ github.event.inputs.environment || 'dev' }}
-            CORS_ORIGINS=https://dev.durableaicoding.net,https://www.dev.durableaicoding.net
-
       - name: Update frontend task definition
         id: frontend-task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: frontend-task-definition.json
           container-name: frontend
-          image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_FRONTEND }}:${{ steps.sha.outputs.sha_short }}
-          environment-variables: |
-            VITE_API_URL=https://api.dev.durableaicoding.net
-            VITE_ENVIRONMENT=${{ github.event.inputs.environment || 'dev' }}
+          image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_FRONTEND }}:${{ steps.tag.outputs.tag }}
 
-      - name: Deploy backend to ECS
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+      - name: Update backend task definition
+        id: backend-task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: ${{ steps.backend-task-def.outputs.task-definition }}
-          service: ${{ env.ECS_SERVICE_BACKEND }}
-          cluster: ${{ env.ECS_CLUSTER }}
-          wait-for-service-stability: true
-          wait-for-minutes: 10
+          task-definition: backend-task-definition.json
+          container-name: backend
+          image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY_BACKEND }}:${{ steps.tag.outputs.tag }}
 
       - name: Deploy frontend to ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
@@ -119,30 +115,30 @@ jobs:
           wait-for-service-stability: true
           wait-for-minutes: 10
 
-      - name: Verify deployments
-        run: |
-          echo "Checking backend service..."
-          aws ecs describe-services --cluster ${{ env.ECS_CLUSTER }} \
-            --services ${{ env.ECS_SERVICE_BACKEND }} \
-            --query "services[0].deployments[0].{Status:status,RunningCount:runningCount,DesiredCount:desiredCount}" \
-            --output table
+      - name: Deploy backend to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.backend-task-def.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE_BACKEND }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+          wait-for-minutes: 10
 
+      - name: Verify deployment
+        run: |
+          echo "Deployment complete!"
+          echo "Image tag: ${{ steps.tag.outputs.tag }}"
           echo ""
-          echo "Checking frontend service..."
+          echo "Frontend service:"
           aws ecs describe-services --cluster ${{ env.ECS_CLUSTER }} \
             --services ${{ env.ECS_SERVICE_FRONTEND }} \
-            --query "services[0].deployments[0].{Status:status,RunningCount:runningCount,DesiredCount:desiredCount}" \
+            --query "services[0].deployments[0].{Status:status,Running:runningCount,Desired:desiredCount}" \
             --output table
-
-      - name: Get application URLs
-        run: |
-          echo "Application deployed successfully! 🎉"
           echo ""
-          echo "Access your application at:"
-          echo "  - Main: https://dev.durableaicoding.net"
-          echo "  - API: https://api.dev.durableaicoding.net"
+          echo "Backend service:"
+          aws ecs describe-services --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE_BACKEND }} \
+            --query "services[0].deployments[0].{Status:status,Running:runningCount,Desired:desiredCount}" \
+            --output table
           echo ""
-          echo "Deployment details:"
-          echo "  - Environment: ${{ github.event.inputs.environment || 'dev' }}"
-          echo "  - Commit: ${{ steps.sha.outputs.sha_short }}"
-          echo "  - Run ID: ${{ github.run_id }}"
+          echo "Application URL: https://dev.durableaicoding.net"
