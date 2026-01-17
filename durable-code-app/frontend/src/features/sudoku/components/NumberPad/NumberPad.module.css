@@ -1,0 +1,177 @@
+/**
+ * Purpose: Styles for NumberPad component
+ * Scope: Number buttons, mode toggles, and action buttons
+ * Overview: Provides styling for the Sudoku input controls including
+ *     number buttons in a grid layout, erase button, and mode toggles.
+ *     Supports active states for modes and disabled states for complete numbers.
+ * Dependencies: Theme CSS variables
+ * Implementation: CSS Modules with responsive grid layouts
+ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border-radius: var(--space-2);
+  border: 1px solid var(--color-border-light);
+}
+
+/* Number button grid */
+.numberGrid {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.numberGrid[data-grid-size='6'] {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.numberGrid[data-grid-size='9'] {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.numberButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  min-height: 48px;
+  font-size: var(--text-xl);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--space-2);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.numberButton:hover:not(.disabled) {
+  background: var(--color-primary-100);
+  border-color: var(--color-primary-300);
+}
+
+.numberButton:active:not(.disabled) {
+  transform: scale(0.95);
+}
+
+.numberButton.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  background: var(--color-border-light);
+}
+
+/* Action buttons */
+.actionButtons {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.actionButton {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-base);
+  font-weight: 500;
+  color: var(--color-text-primary);
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--space-2);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.actionButton:hover {
+  background: var(--color-primary-50);
+  border-color: var(--color-primary-300);
+}
+
+.actionIcon {
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+.actionLabel {
+  font-size: var(--text-sm);
+}
+
+/* Mode toggle buttons */
+.modeToggles {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.modeButton {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  background: var(--color-surface-elevated);
+  border: 2px solid var(--color-border-light);
+  border-radius: var(--space-2);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.modeButton:hover {
+  background: var(--color-primary-50);
+  border-color: var(--color-primary-200);
+}
+
+.modeButton.modeActive {
+  color: var(--color-primary-500);
+  background: var(--color-primary-100);
+  border-color: var(--color-primary-400);
+}
+
+.modeButton.unsureButton.modeActive {
+  color: var(--color-warning, #d97706);
+  background: hsl(38deg 92% 95%);
+  border-color: var(--color-warning, #d97706);
+}
+
+.modeIcon {
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+
+.modeLabel {
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Keyboard hints */
+.hints {
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--color-border-light);
+  text-align: center;
+}
+
+.hints span {
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+}
+
+/* Responsive */
+@media (min-width: 768px) {
+  .numberButton {
+    min-width: 56px;
+    min-height: 56px;
+    font-size: var(--text-2xl);
+  }
+
+  .numberGrid[data-grid-size='9'] {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}

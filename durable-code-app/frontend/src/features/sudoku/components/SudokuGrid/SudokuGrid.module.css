@@ -1,0 +1,68 @@
+/**
+ * Purpose: Styles for SudokuGrid component
+ * Scope: CSS Grid layout for 6x6 and 9x9 Sudoku grids
+ * Overview: Provides responsive CSS Grid layouts for both grid sizes.
+ *     Handles box separators with thicker borders and ensures proper
+ *     aspect ratio for square cells.
+ * Dependencies: Theme CSS variables
+ * Implementation: CSS Grid with size-specific column/row configurations
+ */
+
+.grid {
+  display: grid;
+  border: 2px solid var(--color-text-secondary);
+  background: var(--color-border-light);
+  gap: 0;
+  width: fit-content;
+  max-width: 100%;
+  aspect-ratio: 1;
+}
+
+/* 6x6 grid layout */
+.grid6 {
+  grid-template-columns: repeat(6, minmax(40px, 1fr));
+  grid-template-rows: repeat(6, minmax(40px, 1fr));
+}
+
+/* 9x9 grid layout */
+.grid9 {
+  grid-template-columns: repeat(9, minmax(40px, 1fr));
+  grid-template-rows: repeat(9, minmax(40px, 1fr));
+}
+
+/* Responsive sizing */
+@media (min-width: 480px) {
+  .grid6 {
+    grid-template-columns: repeat(6, minmax(48px, 64px));
+    grid-template-rows: repeat(6, minmax(48px, 64px));
+  }
+
+  .grid9 {
+    grid-template-columns: repeat(9, minmax(40px, 56px));
+    grid-template-rows: repeat(9, minmax(40px, 56px));
+  }
+}
+
+@media (min-width: 768px) {
+  .grid6 {
+    grid-template-columns: repeat(6, minmax(56px, 72px));
+    grid-template-rows: repeat(6, minmax(56px, 72px));
+  }
+
+  .grid9 {
+    grid-template-columns: repeat(9, minmax(48px, 64px));
+    grid-template-rows: repeat(9, minmax(48px, 64px));
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid6 {
+    grid-template-columns: repeat(6, 64px);
+    grid-template-rows: repeat(6, 64px);
+  }
+
+  .grid9 {
+    grid-template-columns: repeat(9, 56px);
+    grid-template-rows: repeat(9, 56px);
+  }
+}

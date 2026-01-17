@@ -50,6 +50,20 @@ const demos: DemoInfo[] = [
     ],
     status: 'available',
   },
+  {
+    id: 'sudoku',
+    title: 'Sudoku',
+    icon: '🔢',
+    description:
+      'Classic number puzzle with 6x6 and 9x9 grids. Place numbers, use pencil marks, and track your progress.',
+    features: [
+      '6x6 and 9x9 grids',
+      'Notes mode',
+      'Unsure color mode',
+      'Shareable puzzle seeds',
+    ],
+    status: 'available',
+  },
 ];
 
 export function DemoSelector(): ReactElement {

@@ -20,6 +20,13 @@ const RacingGameTab = lazy(() =>
   })),
 );
 
+// Lazy load sudoku game
+const SudokuTab = lazy(() =>
+  import('../../../sudoku/components/SudokuTab').then((m) => ({
+    default: m.SudokuTab,
+  })),
+);
+
 export function DemoRouter(): ReactElement {
   const { activeSubTab, setActiveSubTab } = useNavigationStore();
 
@@ -46,6 +53,12 @@ export function DemoRouter(): ReactElement {
       return (
         <Suspense fallback={<div>Loading Racing Game...</div>}>
           <RacingGameTab />
+        </Suspense>
+      );
+    case 'sudoku':
+      return (
+        <Suspense fallback={<div>Loading Sudoku...</div>}>
+          <SudokuTab />
         </Suspense>
       );
     default:
