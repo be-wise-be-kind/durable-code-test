@@ -152,9 +152,10 @@ resource "aws_iam_role_policy" "github_actions_ecs" {
           "ecs:UpdateClusterSettings",
           "ecs:PutClusterCapacityProviders"
         ]
-        # Scope to project clusters only (using project_name which matches resource naming)
+        # Scope to project clusters - includes both naming conventions (durableai for ECR, durable-code for ECS)
         Resource = [
-          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:cluster/${var.project_name}-*"
+          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:cluster/${var.project_name}-*",
+          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:cluster/durable-code-*"
         ]
       },
       {
@@ -167,9 +168,10 @@ resource "aws_iam_role_policy" "github_actions_ecs" {
           "ecs:DescribeServices",
           "ecs:UpdateServicePrimaryTaskSet"
         ]
-        # Scope to project services only (format: cluster/service)
+        # Scope to project services - includes both naming conventions
         Resource = [
-          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:service/${var.project_name}-*/*"
+          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:service/${var.project_name}-*/*",
+          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:service/durable-code-*/*"
         ]
       },
       {
@@ -179,9 +181,10 @@ resource "aws_iam_role_policy" "github_actions_ecs" {
           "ecs:ListTasks",
           "ecs:DescribeTasks"
         ]
-        # Scope to project tasks only
+        # Scope to project tasks - includes both naming conventions
         Resource = [
-          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:task/${var.project_name}-*/*"
+          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:task/${var.project_name}-*/*",
+          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:task/durable-code-*/*"
         ]
       },
       {
@@ -191,12 +194,16 @@ resource "aws_iam_role_policy" "github_actions_ecs" {
           "ecs:TagResource",
           "ecs:UntagResource"
         ]
-        # Allow tagging of project resources (clusters, services, tasks, task definitions)
+        # Allow tagging of project resources - includes both naming conventions
         Resource = [
           "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:cluster/${var.project_name}-*",
+          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:cluster/durable-code-*",
           "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:service/${var.project_name}-*/*",
+          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:service/durable-code-*/*",
           "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:task/${var.project_name}-*/*",
-          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:task-definition/${var.project_name}-*:*"
+          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:task/durable-code-*/*",
+          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:task-definition/${var.project_name}-*:*",
+          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:task-definition/durable-code-*:*"
         ]
       },
       {
@@ -205,10 +212,12 @@ resource "aws_iam_role_policy" "github_actions_ecs" {
         Action = [
           "iam:PassRole"
         ]
-        # Scope to specific task execution and task roles
+        # Scope to specific task execution and task roles - includes both naming conventions
         Resource = [
           "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.project_name}-${local.environment}-ecs-task-execution",
-          "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.project_name}-${local.environment}-ecs-task"
+          "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.project_name}-${local.environment}-ecs-task",
+          "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/durable-code-${local.environment}-ecs-task-execution",
+          "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/durable-code-${local.environment}-ecs-task"
         ]
       }
     ]
@@ -334,9 +343,12 @@ resource "aws_iam_role_policy" "github_actions_terraform_state" {
           "s3:PutMetricsConfiguration",
           "s3:DeleteMetricsConfiguration"
         ]
+        # Scope to project buckets - includes both naming conventions
         Resource = [
           "arn:aws:s3:::${var.project_name}-*",
-          "arn:aws:s3:::${var.project_name}-*/*"
+          "arn:aws:s3:::${var.project_name}-*/*",
+          "arn:aws:s3:::durable-code-*",
+          "arn:aws:s3:::durable-code-*/*"
         ]
       }
     ]
