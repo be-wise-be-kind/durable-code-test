@@ -343,9 +343,12 @@ resource "aws_iam_role_policy" "github_actions_terraform_state" {
           "s3:PutMetricsConfiguration",
           "s3:DeleteMetricsConfiguration"
         ]
+        # Scope to project buckets - includes both naming conventions
         Resource = [
           "arn:aws:s3:::${var.project_name}-*",
-          "arn:aws:s3:::${var.project_name}-*/*"
+          "arn:aws:s3:::${var.project_name}-*/*",
+          "arn:aws:s3:::durable-code-*",
+          "arn:aws:s3:::durable-code-*/*"
         ]
       }
     ]
