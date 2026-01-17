@@ -5,7 +5,7 @@
 variable "project_name" {
   description = "Name of the project, used as a prefix for all resources"
   type        = string
-  default     = "durable-code"
+  default     = "durableai"
 
   validation {
     condition     = can(regex("^[a-z][a-z0-9-]*$", var.project_name))
