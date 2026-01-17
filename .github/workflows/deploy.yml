@@ -37,7 +37,7 @@ env:
   AWS_REGION: us-west-2
   ECR_REPOSITORY_FRONTEND: durableai-dev-frontend
   ECR_REPOSITORY_BACKEND: durableai-dev-backend
-  ECS_CLUSTER: durableai-dev-cluster
+  ECS_CLUSTER: durable-code-dev-cluster
   ECS_SERVICE_FRONTEND: durable-code-dev-frontend
   ECS_SERVICE_BACKEND: durable-code-dev-backend
   TASK_DEFINITION_FRONTEND: durable-code-dev-frontend
