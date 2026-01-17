@@ -1,0 +1,149 @@
+/**
+ * Purpose: Styles for SudokuTab main container component
+ * Scope: Overall layout for Sudoku game interface
+ * Overview: Provides responsive layout for the complete Sudoku game,
+ *     including grid, number pad, controls, and status bar.
+ *     Supports both desktop (side-by-side) and mobile (stacked) layouts.
+ * Dependencies: Theme CSS variables
+ * Implementation: CSS Grid and Flexbox for responsive layouts
+ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--space-4);
+}
+
+/* Header */
+.header {
+  text-align: center;
+}
+
+.title {
+  font-size: var(--text-3xl);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-2);
+}
+
+.subtitle {
+  font-size: var(--text-base);
+  color: var(--color-text-secondary);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Status bar */
+.statusBar {
+  max-width: 800px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Game area - main layout */
+.gameArea {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-6);
+}
+
+/* Grid section */
+.gridSection {
+  display: flex;
+  justify-content: center;
+}
+
+.grid {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Controls section */
+.controlsSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: 400px;
+}
+
+.numberPad {
+  width: 100%;
+}
+
+.gameControls {
+  width: 100%;
+}
+
+/* Instructions */
+.instructions {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border-radius: var(--space-2);
+  border: 1px solid var(--color-border-light);
+}
+
+.instructions h3 {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-3);
+}
+
+.instructions ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.instructions li {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  padding-left: var(--space-4);
+  position: relative;
+}
+
+.instructions li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.5em;
+  width: 6px;
+  height: 6px;
+  background: var(--color-primary-300);
+  border-radius: 50%;
+}
+
+.instructions strong {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+/* Desktop layout */
+@media (min-width: 900px) {
+  .gameArea {
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: center;
+    gap: var(--space-8);
+  }
+
+  .controlsSection {
+    max-width: 320px;
+    flex-shrink: 0;
+  }
+}
+
+@media (min-width: 1100px) {
+  .controlsSection {
+    max-width: 360px;
+  }
+}
