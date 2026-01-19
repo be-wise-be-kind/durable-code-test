@@ -7,7 +7,8 @@ project_name   = "durable-code"
 
 # DNS Configuration
 # Set this to enable DNS records pointing to the ALB
-domain_name = "durableaicoding.net"
+# Use environment-specific subdomain to match ACM certificate
+domain_name = "dev.durableaicoding.net"
 
 # Container Images
 backend_image_tag  = "latest"
