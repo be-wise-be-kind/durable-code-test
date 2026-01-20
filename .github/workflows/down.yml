@@ -2,10 +2,10 @@ name: Infrastructure Down
 
 on:
   schedule:
-    # 10 PM PST = 6 AM UTC (standard time reference)
+    # Midnight PST = 8 AM UTC (standard time reference)
     # Runs every day to tear down infrastructure nightly for cost savings
-    # Note: During PDT (daylight saving), this runs at 11 PM PDT
-    - cron: '0 6 * * *'  # Daily 6 AM UTC (10 PM PST / 11 PM PDT)
+    # Note: During PDT (daylight saving), this runs at 1 AM PDT
+    - cron: '0 8 * * *'  # Daily 8 AM UTC (midnight PST / 1 AM PDT)
   workflow_dispatch:
     inputs:
       environment:

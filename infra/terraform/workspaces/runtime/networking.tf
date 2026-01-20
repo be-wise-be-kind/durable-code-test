@@ -37,16 +37,11 @@ resource "aws_nat_gateway" "main" {
   depends_on = [data.aws_internet_gateway.main]
 }
 
-# Route Tables - Private (depend on NAT Gateways)
+# Route Tables - Private (always created for VPC endpoints and subnet routing)
 resource "aws_route_table" "private" {
-  count = var.enable_nat_gateway ? var.az_count : 0
+  count = var.az_count
 
   vpc_id = data.aws_vpc.main.id
-
-  route {
-    cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.main[count.index].id
-  }
 
   tags = merge(
     local.common_tags,
@@ -58,9 +53,18 @@ resource "aws_route_table" "private" {
   )
 }
 
-# Route Table Associations - Private
-resource "aws_route_table_association" "private" {
+# NAT Gateway route (only when NAT Gateway is enabled)
+resource "aws_route" "nat_gateway" {
   count = var.enable_nat_gateway ? var.az_count : 0
+
+  route_table_id         = aws_route_table.private[count.index].id
+  destination_cidr_block = "0.0.0.0/0"
+  nat_gateway_id         = aws_nat_gateway.main[count.index].id
+}
+
+# Route Table Associations - Private (always needed for private subnet routing)
+resource "aws_route_table_association" "private" {
+  count = var.az_count
 
   subnet_id      = data.aws_subnets.private.ids[count.index]
   route_table_id = aws_route_table.private[count.index].id
