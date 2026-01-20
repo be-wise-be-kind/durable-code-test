@@ -27,3 +27,7 @@ autoscaling_target_memory = 80
 enable_container_insights = false
 enable_service_discovery  = false
 enable_ecs_exec           = true
+
+# Cost Optimization
+# Disable NAT Gateway and use VPC endpoints instead (~$68/month savings)
+enable_nat_gateway = false
