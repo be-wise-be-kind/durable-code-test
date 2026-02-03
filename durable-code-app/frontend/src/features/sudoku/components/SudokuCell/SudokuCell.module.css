@@ -52,7 +52,7 @@
 
 /* Same value as selected cell */
 .sameValue {
-  background: var(--color-primary-100);
+  background: var(--color-primary-50);
 }
 
 /* Cell value (base style) */
