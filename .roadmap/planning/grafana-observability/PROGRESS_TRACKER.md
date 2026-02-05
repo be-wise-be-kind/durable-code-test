@@ -35,7 +35,7 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Grafana St
 
 ## Required Documents Location
 ```
-roadmap/planning/grafana-observability/
+.roadmap/planning/grafana-observability/
 ├── AI_CONTEXT.md          # Architecture decisions, ebook references, tradeoffs
 ├── PR_BREAKDOWN.md        # Detailed instructions for each PR
 ├── PROGRESS_TRACKER.md    # THIS FILE - Progress and handoff notes
