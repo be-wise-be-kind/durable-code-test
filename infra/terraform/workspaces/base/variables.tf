@@ -119,3 +119,10 @@ variable "additional_tags" {
   type        = map(string)
   default     = {}
 }
+
+# Observability Configuration
+variable "enable_observability" {
+  description = "Enable Grafana observability stack resources (S3, IAM, security groups)"
+  type        = bool
+  default     = false
+}
