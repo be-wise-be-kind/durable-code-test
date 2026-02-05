@@ -29,8 +29,8 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Grafana St
 4. **Update this document** after completing each PR
 
 ## Current Status
-**Current PR**: PR 2 - S3 Buckets & IAM Foundation (Base)
-**Infrastructure State**: Base and runtime workspaces operational; no observability resources deployed
+**Current PR**: PR 3 - EC2 Observability Instance (Runtime)
+**Infrastructure State**: Base workspace has observability S3, IAM, and security group resources (behind feature flag)
 **Feature Target**: Complete 4-pillar observability (metrics, logs, traces, profiling) with cross-pillar correlation
 
 ## Required Documents Location
@@ -43,28 +43,29 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Grafana St
 
 ## Next PR to Implement
 
-### START HERE: PR 2 - S3 Buckets & IAM Foundation (Base Workspace)
+### START HERE: PR 3 - EC2 Observability Instance (Runtime Workspace)
 
 **Quick Summary**:
-Create persistent base workspace resources: S3 bucket with prefixes for all 4 pillars, IAM role with instance profile for EC2 access, and security group for the observability EC2 instance.
+Create runtime workspace resources: EC2 instance in private subnet with Docker/Compose, ALB target groups and listener rules for Grafana UI and Faro receiver.
 
 **Pre-flight Checklist**:
-- [ ] Read existing base workspace Terraform files for pattern consistency
-- [ ] Verify `enable_observability` variable pattern matches other feature flags
-- [ ] Review AI_CONTEXT.md for resource placement decisions
+- [ ] Read existing runtime workspace Terraform files for pattern consistency
+- [ ] Verify base workspace outputs are accessible via remote state
+- [ ] Review AI_CONTEXT.md for EC2 sizing and networking decisions
 
 **Prerequisites Complete**:
 - [x] PR 1 merged (architecture documentation approved)
+- [x] PR 2 merged (S3, IAM, security group in base workspace)
 - [x] Base workspace Terraform patterns understood
 - [x] Feature flag pattern documented in AI_CONTEXT.md
 
 ---
 
 ## Overall Progress
-**Total Completion**: 10% (1/10 PRs completed)
+**Total Completion**: 20% (2/10 PRs completed)
 
 ```
-[██░░░░░░░░░░░░░░░░░░] 10% Complete
+[████░░░░░░░░░░░░░░░░] 20% Complete
 ```
 
 ---
@@ -74,7 +75,7 @@ Create persistent base workspace resources: S3 bucket with prefixes for all 4 pi
 | PR | Title | Status | Complexity | Notes |
 |----|-------|--------|------------|-------|
 | 1 | Observability Architecture Documentation | Complete | Medium | Review gate - architecture approval before proceeding |
-| 2 | S3 Buckets & IAM Foundation (Base) | Not Started | Medium | Base workspace persistent storage |
+| 2 | S3 Buckets & IAM Foundation (Base) | Complete | Medium | Commit 6ce8849 |
 | 3 | EC2 Observability Instance (Runtime) | Not Started | High | Depends on PR 2 |
 | 4 | Docker Compose & Component Configs | Not Started | High | Depends on PR 3 |
 | 5 | Backend OpenTelemetry Instrumentation | Not Started | High | Depends on PR 4 |
@@ -105,13 +106,13 @@ Create persistent base workspace resources: S3 bucket with prefixes for all 4 pi
 
 ## PR 2: S3 Buckets & IAM Foundation (Base Workspace)
 **Branch**: `infra/observability-foundation`
-- [ ] Create `observability-storage.tf` with S3 bucket and prefixes
-- [ ] Create `observability-iam.tf` with IAM role + instance profile
-- [ ] Create `observability-security.tf` with security group
-- [ ] Add `enable_observability` variable to base `variables.tf`
-- [ ] Add outputs to base `outputs.tf`
-- [ ] `just infra validate base` passes
-- [ ] `just infra plan base` succeeds
+- [x] Create `observability-storage.tf` with S3 bucket and prefixes
+- [x] Create `observability-iam.tf` with IAM role + instance profile
+- [x] Create `observability-security.tf` with security group
+- [x] Add `enable_observability` variable to base `variables.tf`
+- [x] Add outputs to base `outputs.tf`
+- [x] `just infra validate base` passes
+- [x] `just infra plan base` succeeds
 
 ## PR 3: EC2 Observability Instance (Runtime Workspace)
 **Branch**: `infra/observability-ec2`
