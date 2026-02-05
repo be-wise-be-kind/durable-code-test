@@ -1,0 +1,107 @@
+// Purpose: Grafana Alloy collector configuration for unified telemetry reception and routing
+// Scope: OTLP receiver for backend traces/metrics/logs, Faro receiver for frontend telemetry
+// Overview: Configures Grafana Alloy as the single telemetry collector for the observability stack.
+//     Receives OTLP telemetry from the backend (gRPC on 4317, HTTP on 4318) and Faro telemetry from
+//     the frontend browser SDK (HTTP on 12347). Backend telemetry is batched and routed to the
+//     appropriate storage backends: metrics to Mimir via Prometheus remote write, logs to Loki,
+//     and traces to Tempo via OTLP. Frontend Faro telemetry routes logs to Loki and traces to Tempo.
+//     All backend service addresses use Docker Compose service names for DNS resolution.
+// Dependencies: Mimir (9009), Loki (3100), Tempo (4317), running in the same Docker Compose stack
+// Exports: OTLP gRPC (4317), OTLP HTTP (4318), Faro HTTP (12347), Alloy UI (12345)
+// Environment: Static configuration; backend URLs use Docker service names
+// Related: docker-compose.yml for service definitions, component configs for storage backends
+// Implementation: Pipeline architecture with receiver -> processor -> exporter pattern
+
+// =============================================================================
+// OTLP Receiver - Backend telemetry (traces, metrics, logs)
+// =============================================================================
+
+otelcol.receiver.otlp "default" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+
+  output {
+    metrics = [otelcol.processor.batch.default.input]
+    logs    = [otelcol.processor.batch.default.input]
+    traces  = [otelcol.processor.batch.default.input]
+  }
+}
+
+// =============================================================================
+// Batch Processor - Buffer and batch telemetry for efficient export
+// =============================================================================
+
+otelcol.processor.batch "default" {
+  timeout = "5s"
+  send_batch_size = 1000
+
+  output {
+    metrics = [otelcol.exporter.prometheusremotewrite.mimir.input]
+    logs    = [otelcol.exporter.loki.default.input]
+    traces  = [otelcol.exporter.otlp.tempo.input]
+  }
+}
+
+// =============================================================================
+// Metrics Export - OTLP metrics to Mimir via Prometheus remote write
+// =============================================================================
+
+otelcol.exporter.prometheusremotewrite "mimir" {
+  forward_to = [prometheus.remote_write.mimir.receiver]
+}
+
+prometheus.remote_write "mimir" {
+  endpoint {
+    url = "http://mimir:9009/api/v1/push"
+  }
+}
+
+// =============================================================================
+// Logs Export - OTLP logs to Loki
+// =============================================================================
+
+otelcol.exporter.loki "default" {
+  forward_to = [loki.write.default.receiver]
+}
+
+loki.write "default" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}
+
+// =============================================================================
+// Traces Export - OTLP traces to Tempo
+// =============================================================================
+
+otelcol.exporter.otlp "tempo" {
+  client {
+    endpoint = "tempo:4317"
+    tls {
+      insecure = true
+    }
+  }
+}
+
+// =============================================================================
+// Faro Receiver - Frontend browser telemetry
+// =============================================================================
+
+faro.receiver "default" {
+  server {
+    listen_address           = "0.0.0.0"
+    listen_port              = 12347
+    cors_allowed_origins     = ["*"]
+    api_key                  = ""
+    max_allowed_payload_size = "10MiB"
+  }
+
+  output {
+    logs   = [loki.write.default.receiver]
+    traces = [otelcol.exporter.otlp.tempo.input]
+  }
+}

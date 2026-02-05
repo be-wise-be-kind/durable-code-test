@@ -1,0 +1,25 @@
+# Purpose: Grafana dashboard provisioning configuration for automatic dashboard loading
+# Scope: File-based dashboard provisioning from the dashboards directory
+# Overview: Configures Grafana to automatically load dashboard JSON files from the provisioned
+#     dashboards directory. Dashboards are loaded on startup and cannot be modified through the
+#     UI (read-only provisioning). This ensures dashboards are version-controlled and consistently
+#     deployed across environments. The dashboards directory is volume-mounted from the host.
+# Dependencies: Dashboard JSON files in /var/lib/grafana/dashboards/
+# Exports: Provisioned dashboards available in Grafana UI
+# Environment: Identical across environments
+# Related: docker-compose.yml for volume mount, dashboard JSON files added in PR 7
+# Implementation: File-based provisioning with folder organization and update interval
+
+apiVersion: 1
+
+providers:
+  - name: default
+    orgId: 1
+    folder: ""
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: false
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: false

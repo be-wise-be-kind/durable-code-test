@@ -1,0 +1,89 @@
+#!/bin/bash
+# Purpose: EC2 user data script for bootstrapping the Grafana observability stack
+# Scope: Docker/Compose installation, observability config file deployment, and stack startup
+# Overview: Bootstraps the observability EC2 instance by installing Docker and Docker Compose,
+#     writing all component configuration files to /opt/observability/, and starting the full
+#     Grafana stack via docker compose. Configuration content is injected by Terraform templatefile
+#     at plan time, ensuring S3 bucket names and AWS region are correctly interpolated. The script
+#     runs as user data on first boot and logs to /var/log/user-data.log for troubleshooting.
+# Dependencies: Amazon Linux 2023 AMI, internet access for package/image downloads, IAM instance profile
+# Exports: Running Docker Compose stack at /opt/observability/
+# Environment: All environment-specific values (S3 bucket, region) injected via Terraform
+# Related: observability-ec2.tf for Terraform resource, docker-compose.yml for service definitions
+# Implementation: Sequential installation with heredoc config deployment and docker compose startup
+
+set -euo pipefail
+exec > >(tee /var/log/user-data.log) 2>&1
+
+echo "=== Starting observability stack bootstrap ==="
+
+# Install Docker
+dnf update -y
+dnf install -y docker
+systemctl enable docker
+systemctl start docker
+
+# Install Docker Compose plugin
+mkdir -p /usr/local/lib/docker/cli-plugins
+COMPOSE_VERSION="v2.24.5"
+curl -SL "https://github.com/docker/compose/releases/download/$${COMPOSE_VERSION}/docker-compose-linux-x86_64" \
+  -o /usr/local/lib/docker/cli-plugins/docker-compose
+chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+
+# Verify installations
+docker --version
+docker compose version
+
+# Create observability directory structure
+mkdir -p /opt/observability/{grafana/dashboards,mimir,loki,tempo,pyroscope,alloy}
+
+echo "=== Writing configuration files ==="
+
+# Docker Compose
+cat > /opt/observability/docker-compose.yml << 'COMPOSE_EOF'
+${docker_compose}
+COMPOSE_EOF
+
+# Grafana configuration
+cat > /opt/observability/grafana/grafana.ini << 'GRAFANA_INI_EOF'
+${grafana_ini}
+GRAFANA_INI_EOF
+
+cat > /opt/observability/grafana/datasources.yml << 'GRAFANA_DS_EOF'
+${grafana_datasources}
+GRAFANA_DS_EOF
+
+cat > /opt/observability/grafana/dashboard-provisioning.yml << 'GRAFANA_DP_EOF'
+${grafana_dashboard_provisioning}
+GRAFANA_DP_EOF
+
+# Mimir configuration
+cat > /opt/observability/mimir/mimir.yml << 'MIMIR_EOF'
+${mimir_config}
+MIMIR_EOF
+
+# Loki configuration
+cat > /opt/observability/loki/loki.yml << 'LOKI_EOF'
+${loki_config}
+LOKI_EOF
+
+# Tempo configuration
+cat > /opt/observability/tempo/tempo.yml << 'TEMPO_EOF'
+${tempo_config}
+TEMPO_EOF
+
+# Pyroscope configuration
+cat > /opt/observability/pyroscope/pyroscope.yml << 'PYROSCOPE_EOF'
+${pyroscope_config}
+PYROSCOPE_EOF
+
+# Alloy configuration
+cat > /opt/observability/alloy/config.alloy << 'ALLOY_EOF'
+${alloy_config}
+ALLOY_EOF
+
+echo "=== Starting observability stack ==="
+cd /opt/observability
+docker compose up -d
+
+echo "=== Observability stack bootstrap complete ==="

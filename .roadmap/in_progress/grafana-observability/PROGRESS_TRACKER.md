@@ -29,8 +29,8 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Grafana St
 4. **Update this document** after completing each PR
 
 ## Current Status
-**Current PR**: PR 3 - EC2 Observability Instance (Runtime)
-**Infrastructure State**: Base workspace has observability S3, IAM, and security group resources (behind feature flag)
+**Current PR**: PR 4 - Docker Compose & Component Configs
+**Infrastructure State**: Base workspace has S3, IAM, security group; Runtime workspace has EC2 instance, ALB target groups, listener rules (all behind feature flag)
 **Feature Target**: Complete 4-pillar observability (metrics, logs, traces, profiling) with cross-pillar correlation
 
 ## Required Documents Location
@@ -43,29 +43,28 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Grafana St
 
 ## Next PR to Implement
 
-### START HERE: PR 3 - EC2 Observability Instance (Runtime Workspace)
+### START HERE: PR 4 - Docker Compose & Component Configs
 
 **Quick Summary**:
-Create runtime workspace resources: EC2 instance in private subnet with Docker/Compose, ALB target groups and listener rules for Grafana UI and Faro receiver.
+Create Docker Compose stack and component configs for all 6 observability services (Grafana, Mimir, Loki, Tempo, Pyroscope, Alloy). Update EC2 user_data to deploy configs and run docker compose.
 
 **Pre-flight Checklist**:
-- [ ] Read existing runtime workspace Terraform files for pattern consistency
-- [ ] Verify base workspace outputs are accessible via remote state
-- [ ] Review AI_CONTEXT.md for EC2 sizing and networking decisions
+- [ ] Read AI_CONTEXT.md for component sizing and port assignments
+- [ ] Review Docker Compose memory limits (total ~2.7GB of 4GB on t3.medium)
+- [ ] Verify S3 bucket name available from base workspace outputs
 
 **Prerequisites Complete**:
 - [x] PR 1 merged (architecture documentation approved)
 - [x] PR 2 merged (S3, IAM, security group in base workspace)
-- [x] Base workspace Terraform patterns understood
-- [x] Feature flag pattern documented in AI_CONTEXT.md
+- [x] PR 3 merged (EC2 instance, ALB target groups, listener rules)
 
 ---
 
 ## Overall Progress
-**Total Completion**: 20% (2/10 PRs completed)
+**Total Completion**: 30% (3/10 PRs completed)
 
 ```
-[████░░░░░░░░░░░░░░░░] 20% Complete
+[██████░░░░░░░░░░░░░░] 30% Complete
 ```
 
 ---
@@ -76,8 +75,8 @@ Create runtime workspace resources: EC2 instance in private subnet with Docker/C
 |----|-------|--------|------------|-------|
 | 1 | Observability Architecture Documentation | Complete | Medium | Review gate - architecture approval before proceeding |
 | 2 | S3 Buckets & IAM Foundation (Base) | Complete | Medium | Commit 6ce8849 |
-| 3 | EC2 Observability Instance (Runtime) | Not Started | High | Depends on PR 2 |
-| 4 | Docker Compose & Component Configs | Not Started | High | Depends on PR 3 |
+| 3 | EC2 Observability Instance (Runtime) | Complete | High | Commit 1f8d92d |
+| 4 | Docker Compose & Component Configs | In Progress | High | Depends on PR 3 |
 | 5 | Backend OpenTelemetry Instrumentation | Not Started | High | Depends on PR 4 |
 | 6 | Frontend Grafana Faro SDK | Not Started | Medium | Depends on PR 4 |
 | 7 | Golden Signals & Method Dashboards | Not Started | Medium | Depends on PRs 5, 6 |
@@ -116,23 +115,27 @@ Create runtime workspace resources: EC2 instance in private subnet with Docker/C
 
 ## PR 3: EC2 Observability Instance (Runtime Workspace)
 **Branch**: `infra/observability-ec2`
-- [ ] Create `observability-ec2.tf` with EC2 in private subnet
-- [ ] Create `observability-alb.tf` with target groups and listener rules
-- [ ] Update runtime `data.tf` for base observability outputs
-- [ ] Add variables to runtime `variables.tf`
-- [ ] Add outputs to runtime `outputs.tf`
-- [ ] `just infra plan runtime` succeeds
+- [x] Create `observability-ec2.tf` with EC2 in private subnet
+- [x] Create `observability-alb.tf` with target groups and listener rules
+- [x] Update runtime `data.tf` for base observability outputs
+- [x] Add variables to runtime `variables.tf`
+- [x] Add outputs to runtime `outputs.tf`
+- [x] `just infra plan runtime` succeeds
 
 ## PR 4: Docker Compose & Component Configs
 **Branch**: `infra/observability-stack-config`
-- [ ] Create `infra/observability/docker-compose.yml`
-- [ ] Create Grafana config (grafana.ini, datasources.yml, dashboard-provisioning.yml)
-- [ ] Create Mimir config (mimir.yml)
-- [ ] Create Loki config (loki.yml)
-- [ ] Create Tempo config (tempo.yml)
-- [ ] Create Pyroscope config (pyroscope.yml)
-- [ ] Create Alloy config (config.alloy)
-- [ ] Update EC2 user_data to deploy configs and run docker compose
+- [x] Create `infra/observability/docker-compose.yml`
+- [x] Create Grafana config (grafana.ini, datasources.yml, dashboard-provisioning.yml)
+- [x] Create Mimir config (mimir.yml.tftpl)
+- [x] Create Loki config (loki.yml.tftpl)
+- [x] Create Tempo config (tempo.yml.tftpl)
+- [x] Create Pyroscope config (pyroscope.yml.tftpl)
+- [x] Create Alloy config (config.alloy)
+- [x] Create user-data.sh.tftpl template for config deployment
+- [x] Update EC2 user_data to deploy configs and run docker compose
+- [x] Fix IMDSv2 hop limit (1 -> 2) for Docker container metadata access
+- [x] `just infra validate runtime` passes
+- [x] `just infra validate base` passes
 
 ## PR 5: Backend OpenTelemetry Instrumentation
 **Branch**: `feat/backend-otel-instrumentation`

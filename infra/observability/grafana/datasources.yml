@@ -1,0 +1,76 @@
+# Purpose: Grafana datasource provisioning for all four observability pillars
+# Scope: Prometheus (Mimir), Loki, Tempo, and Pyroscope datasource configurations with cross-pillar links
+# Overview: Provisions all four observability datasources in Grafana with cross-pillar correlation
+#     configured. Mimir serves as the Prometheus-compatible metrics backend, Loki handles logs,
+#     Tempo handles distributed traces, and Pyroscope handles continuous profiling. Each datasource
+#     includes correlation links enabling navigation between signals: metrics exemplars link to
+#     traces, traces link to logs and profiles, enabling the full investigation workflow described
+#     in the observability architecture.
+# Dependencies: Mimir (port 9009), Loki (port 3100), Tempo (port 3200), Pyroscope (port 4040)
+# Exports: Four provisioned datasources available in Grafana dashboards and explore views
+# Environment: Identical configuration across environments; service URLs use Docker Compose hostnames
+# Related: grafana.ini for server settings, component configs for backend service configuration
+# Implementation: File-based provisioning with cross-pillar datasource references for correlation
+
+apiVersion: 1
+
+datasources:
+  - name: Mimir
+    type: prometheus
+    access: proxy
+    url: http://mimir:9009/prometheus
+    isDefault: true
+    uid: mimir
+    jsonData:
+      httpMethod: POST
+      exemplarTraceIdDestinations:
+        - name: traceID
+          datasourceUid: tempo
+
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    uid: loki
+    jsonData:
+      derivedFields:
+        - name: TraceID
+          matcherRegex: '"trace_id":"(\w+)"'
+          url: "$${__value.raw}"
+          datasourceUid: tempo
+          matcherType: regex
+
+  - name: Tempo
+    type: tempo
+    access: proxy
+    url: http://tempo:3200
+    uid: tempo
+    jsonData:
+      tracesToLogsV2:
+        datasourceUid: loki
+        filterByTraceID: true
+        filterBySpanID: false
+        tags:
+          - key: service.name
+            value: service_name
+      tracesToMetrics:
+        datasourceUid: mimir
+        tags:
+          - key: service.name
+            value: service
+      tracesToProfiles:
+        datasourceUid: pyroscope
+        tags:
+          - key: service.name
+            value: service_name
+        profileTypeId: process_cpu:cpu:nanoseconds:cpu:nanoseconds
+      nodeGraph:
+        enabled: true
+      serviceMap:
+        datasourceUid: mimir
+
+  - name: Pyroscope
+    type: grafana-pyroscope-datasource
+    access: proxy
+    url: http://pyroscope:4040
+    uid: pyroscope
