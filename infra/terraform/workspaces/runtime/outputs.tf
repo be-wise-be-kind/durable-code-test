@@ -184,3 +184,19 @@ output "dns_records_created" {
     api  = "api-${local.environment}.${var.domain_name}"
   } : {}
 }
+
+# Observability Outputs
+output "observability_ec2_private_ip" {
+  description = "Private IP of observability EC2 instance"
+  value       = var.enable_observability ? aws_instance.observability[0].private_ip : ""
+}
+
+output "observability_grafana_url" {
+  description = "Grafana URL via ALB"
+  value       = var.enable_observability ? "http://${aws_lb.main.dns_name}/grafana/" : ""
+}
+
+output "observability_ec2_instance_id" {
+  description = "Observability EC2 instance ID for SSM access"
+  value       = var.enable_observability ? aws_instance.observability[0].id : ""
+}

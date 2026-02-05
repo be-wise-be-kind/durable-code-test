@@ -122,3 +122,11 @@ data "aws_acm_certificate" "main" {
   most_recent = true
 }
 
+# Observability base workspace outputs (conditional)
+locals {
+  observability_enabled           = var.enable_observability
+  observability_instance_profile  = var.enable_observability ? data.terraform_remote_state.base.outputs.observability_instance_profile_name : ""
+  observability_security_group_id = var.enable_observability ? data.terraform_remote_state.base.outputs.observability_security_group_id : ""
+  observability_bucket_name       = var.enable_observability ? data.terraform_remote_state.base.outputs.observability_bucket_name : ""
+}
+
