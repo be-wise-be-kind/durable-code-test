@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Observability Architecture - Durable Code</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #64748b;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --observability: #7c3aed;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Navigation */
+        nav {
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        nav .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 24px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            color: var(--primary);
+        }
+
+        /* Page Header */
+        .page-header {
+            padding: 48px 0 32px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .page-header h1 {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        .page-header p {
+            color: var(--text-muted);
+            font-size: 1.125rem;
+        }
+
+        /* Content */
+        .content {
+            padding: 48px 0;
+        }
+
+        .section {
+            margin-bottom: 48px;
+        }
+
+        .section h2 {
+            font-size: 1.5rem;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--primary);
+            display: inline-block;
+        }
+
+        .section h3 {
+            font-size: 1.125rem;
+            margin: 24px 0 12px;
+        }
+
+        .section p {
+            margin-bottom: 16px;
+        }
+
+        .section ul {
+            margin-left: 24px;
+            margin-bottom: 16px;
+        }
+
+        /* Diagram Container */
+        .diagram-container {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 32px;
+            border: 1px solid var(--border);
+            margin: 24px 0;
+        }
+
+        /* Info Cards */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+            margin: 24px 0;
+        }
+
+        .info-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 24px;
+            border: 1px solid var(--border);
+        }
+
+        .info-card h4 {
+            font-size: 1rem;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .info-card p {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .info-card p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 24px 0;
+            background: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: #f1f5f9;
+            font-weight: 600;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        td {
+            font-size: 0.875rem;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-base {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge-runtime {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-observability {
+            background: #ede9fe;
+            color: #6d28d9;
+        }
+
+        /* Collapsible */
+        .collapsible {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin: 16px 0;
+        }
+
+        .collapsible-header {
+            padding: 16px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+        }
+
+        .collapsible-header:hover {
+            background: #f8fafc;
+        }
+
+        .collapsible-content {
+            display: none;
+            padding: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .collapsible.open .collapsible-content {
+            display: block;
+        }
+
+        .collapsible-icon {
+            transition: transform 0.2s;
+        }
+
+        .collapsible.open .collapsible-icon {
+            transform: rotate(180deg);
+        }
+
+        /* Code */
+        code {
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+        }
+
+        pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 0.875rem;
+        }
+
+        /* Workflow Steps */
+        .workflow-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin: 24px 0;
+        }
+
+        .workflow-step {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+        }
+
+        .step-number {
+            width: 32px;
+            height: 32px;
+            background: var(--observability);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .step-content {
+            flex: 1;
+        }
+
+        .step-content h4 {
+            margin-bottom: 4px;
+        }
+
+        .step-content p {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            margin-bottom: 0;
+        }
+
+        /* Phase Group */
+        .phase-group {
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            padding: 24px;
+            margin: 16px 0;
+        }
+
+        .phase-group h4 {
+            font-size: 1rem;
+            margin-bottom: 12px;
+        }
+
+        .phase-group ul {
+            list-style: none;
+            margin: 0;
+        }
+
+        .phase-group li {
+            padding: 6px 0;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        /* Footer */
+        footer {
+            padding: 40px 0;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            border-top: 1px solid var(--border);
+        }
+
+        /* Print Styles */
+        @media print {
+            nav {
+                position: relative;
+            }
+            .collapsible-content {
+                display: block !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="container">
+            <a href="index.html" class="logo">Durable Code Infra</a>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="terraform-architecture.html">Architecture</a></li>
+                <li><a href="terraform-resources.html">Resources</a></li>
+                <li><a href="terraform-environments.html">Environments</a></li>
+                <li><a href="terraform-operations.html">Operations</a></li>
+                <li><a href="observability-architecture.html" class="active">Observability</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="page-header">
+        <div class="container">
+            <h1>Observability Architecture</h1>
+            <p>4-pillar observability with Grafana stack: metrics, logs, traces, and profiling with cross-pillar correlation</p>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="container">
+            <!-- Section 1: Four Pillars Overview -->
+            <section class="section">
+                <h2>Four Pillars Overview</h2>
+                <p>The observability stack covers four complementary signal types, each handled by a dedicated Grafana ecosystem component running in single-binary mode on a shared EC2 instance.</p>
+
+                <div class="info-grid">
+                    <div class="info-card" style="border-left: 4px solid var(--observability);">
+                        <h4><span class="badge badge-observability">Metrics</span> Mimir</h4>
+                        <p><strong>Port:</strong> 9009</p>
+                        <p><strong>Memory:</strong> 768 MB</p>
+                        <p>Long-term Prometheus-compatible metrics storage. Handles the 4 Golden Signals (latency, traffic, errors, saturation) and custom application metrics.</p>
+                    </div>
+
+                    <div class="info-card" style="border-left: 4px solid var(--observability);">
+                        <h4><span class="badge badge-observability">Logs</span> Loki</h4>
+                        <p><strong>Port:</strong> 3100</p>
+                        <p><strong>Memory:</strong> 384 MB</p>
+                        <p>Log aggregation with label-based indexing. Stores structured JSON logs with trace_id and span_id fields for correlation.</p>
+                    </div>
+
+                    <div class="info-card" style="border-left: 4px solid var(--observability);">
+                        <h4><span class="badge badge-observability">Traces</span> Tempo</h4>
+                        <p><strong>Port:</strong> 3200</p>
+                        <p><strong>Memory:</strong> 384 MB</p>
+                        <p>Distributed trace storage. Captures full request lifecycle from browser through backend with latency waterfall visualization.</p>
+                    </div>
+
+                    <div class="info-card" style="border-left: 4px solid var(--observability);">
+                        <h4><span class="badge badge-observability">Profiling</span> Pyroscope</h4>
+                        <p><strong>Port:</strong> 4040</p>
+                        <p><strong>Memory:</strong> 384 MB</p>
+                        <p>Continuous profiling with flame graphs. Links CPU/memory profiles to specific traces and spans for root cause analysis.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 2: System Architecture Diagram -->
+            <section class="section">
+                <h2>System Architecture</h2>
+                <p>Data flows from application sources through Alloy (unified collector) to backend storage, with Grafana providing visualization and correlation.</p>
+
+                <div class="diagram-container">
+                    <svg viewBox="0 0 900 620" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto; max-width: 900px; display: block; margin: 0 auto;">
+                        <defs>
+                            <linearGradient id="observeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" style="stop-color:#6d28d9"/>
+                                <stop offset="100%" style="stop-color:#8b5cf6"/>
+                            </linearGradient>
+                            <linearGradient id="baseGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" style="stop-color:#16a34a"/>
+                                <stop offset="100%" style="stop-color:#22c55e"/>
+                            </linearGradient>
+                            <linearGradient id="runtimeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" style="stop-color:#d97706"/>
+                                <stop offset="100%" style="stop-color:#f59e0b"/>
+                            </linearGradient>
+                            <linearGradient id="sourceGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" style="stop-color:#1e40af"/>
+                                <stop offset="100%" style="stop-color:#3b82f6"/>
+                            </linearGradient>
+                            <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                                <feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity="0.15"/>
+                            </filter>
+                            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8"/>
+                            </marker>
+                            <marker id="arrowPurple" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                <polygon points="0 0, 10 3.5, 0 7" fill="#8b5cf6"/>
+                            </marker>
+                        </defs>
+
+                        <!-- Data Sources -->
+                        <text x="190" y="25" text-anchor="middle" fill="#1e40af" font-family="system-ui" font-size="13" font-weight="600">Data Sources</text>
+
+                        <rect x="40" y="40" width="140" height="50" rx="8" fill="url(#sourceGrad)" filter="url(#shadow)"/>
+                        <text x="110" y="62" text-anchor="middle" fill="white" font-family="system-ui" font-size="12" font-weight="600">Browser / Faro</text>
+                        <text x="110" y="78" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-family="system-ui" font-size="10">Web Vitals, Errors</text>
+
+                        <rect x="210" y="40" width="140" height="50" rx="8" fill="url(#sourceGrad)" filter="url(#shadow)"/>
+                        <text x="280" y="62" text-anchor="middle" fill="white" font-family="system-ui" font-size="12" font-weight="600">ECS Backend</text>
+                        <text x="280" y="78" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-family="system-ui" font-size="10">OTel SDK, Loguru</text>
+
+                        <!-- ALB -->
+                        <rect x="520" y="40" width="140" height="50" rx="8" fill="url(#runtimeGrad)" filter="url(#shadow)"/>
+                        <text x="590" y="62" text-anchor="middle" fill="white" font-family="system-ui" font-size="12" font-weight="600">ALB</text>
+                        <text x="590" y="78" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-family="system-ui" font-size="10">/collect/*, /grafana/*</text>
+
+                        <!-- Arrows: Sources to ALB -->
+                        <path d="M180 65 L520 65" stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+                        <text x="355" y="58" text-anchor="middle" fill="#64748b" font-family="system-ui" font-size="9">HTTPS</text>
+
+                        <!-- Arrow: Backend to Alloy (direct) -->
+                        <path d="M280 90 L280 140 L500 140 L500 190" stroke="#8b5cf6" stroke-width="2" fill="none" marker-end="url(#arrowPurple)"/>
+                        <text x="390" y="135" text-anchor="middle" fill="#6d28d9" font-family="system-ui" font-size="9">OTLP :4317/:4318</text>
+
+                        <!-- Alloy Collector -->
+                        <rect x="440" y="190" width="160" height="60" rx="8" fill="url(#observeGrad)" filter="url(#shadow)"/>
+                        <text x="520" y="215" text-anchor="middle" fill="white" font-family="system-ui" font-size="13" font-weight="600">Alloy</text>
+                        <text x="520" y="235" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-family="system-ui" font-size="10">Unified Collector :12347</text>
+
+                        <!-- Arrow: ALB to Alloy -->
+                        <path d="M590 90 L590 140 L560 140 L560 190" stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+                        <text x="620" y="145" text-anchor="middle" fill="#64748b" font-family="system-ui" font-size="9">/collect/*</text>
+
+                        <!-- Backend Storage Row -->
+                        <text x="340" y="295" text-anchor="middle" fill="#6d28d9" font-family="system-ui" font-size="13" font-weight="600">Backend Storage (EC2 Docker Compose)</text>
+
+                        <!-- Mimir -->
+                        <rect x="80" y="310" width="130" height="50" rx="6" fill="url(#observeGrad)" filter="url(#shadow)"/>
+                        <text x="145" y="332" text-anchor="middle" fill="white" font-family="system-ui" font-size="11" font-weight="600">Mimir :9009</text>
+                        <text x="145" y="348" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-family="system-ui" font-size="9">Metrics (768 MB)</text>
+
+                        <!-- Loki -->
+                        <rect x="230" y="310" width="130" height="50" rx="6" fill="url(#observeGrad)" filter="url(#shadow)"/>
+                        <text x="295" y="332" text-anchor="middle" fill="white" font-family="system-ui" font-size="11" font-weight="600">Loki :3100</text>
+                        <text x="295" y="348" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-family="system-ui" font-size="9">Logs (384 MB)</text>
+
+                        <!-- Tempo -->
+                        <rect x="380" y="310" width="130" height="50" rx="6" fill="url(#observeGrad)" filter="url(#shadow)"/>
+                        <text x="445" y="332" text-anchor="middle" fill="white" font-family="system-ui" font-size="11" font-weight="600">Tempo :3200</text>
+                        <text x="445" y="348" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-family="system-ui" font-size="9">Traces (384 MB)</text>
+
+                        <!-- Pyroscope -->
+                        <rect x="530" y="310" width="130" height="50" rx="6" fill="url(#observeGrad)" filter="url(#shadow)"/>
+                        <text x="595" y="332" text-anchor="middle" fill="white" font-family="system-ui" font-size="11" font-weight="600">Pyroscope :4040</text>
+                        <text x="595" y="348" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-family="system-ui" font-size="9">Profiles (384 MB)</text>
+
+                        <!-- Arrows: Alloy to backends -->
+                        <path d="M480 250 L145 310" stroke="#8b5cf6" stroke-width="1.5" fill="none" marker-end="url(#arrowPurple)"/>
+                        <path d="M500 250 L295 310" stroke="#8b5cf6" stroke-width="1.5" fill="none" marker-end="url(#arrowPurple)"/>
+                        <path d="M530 250 L445 310" stroke="#8b5cf6" stroke-width="1.5" fill="none" marker-end="url(#arrowPurple)"/>
+                        <path d="M560 250 L595 310" stroke="#8b5cf6" stroke-width="1.5" fill="none" marker-end="url(#arrowPurple)"/>
+
+                        <!-- S3 Bucket -->
+                        <rect x="130" y="420" width="530" height="60" rx="8" fill="#f8fafc" stroke="#16a34a" stroke-width="2" filter="url(#shadow)"/>
+                        <text x="395" y="445" text-anchor="middle" fill="#166534" font-family="system-ui" font-size="13" font-weight="600">S3 Bucket (Base Workspace &mdash; Persistent)</text>
+                        <text x="395" y="465" text-anchor="middle" fill="#64748b" font-family="system-ui" font-size="10">mimir/ &nbsp; loki/ &nbsp; tempo/ &nbsp; pyroscope/</text>
+
+                        <!-- Arrows: Backends to S3 -->
+                        <path d="M145 360 L245 420" stroke="#16a34a" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)"/>
+                        <path d="M295 360 L325 420" stroke="#16a34a" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)"/>
+                        <path d="M445 360 L425 420" stroke="#16a34a" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)"/>
+                        <path d="M595 360 L545 420" stroke="#16a34a" stroke-width="1.5" fill="none" marker-end="url(#arrowhead)"/>
+
+                        <!-- Grafana -->
+                        <rect x="710" y="310" width="150" height="50" rx="8" fill="url(#observeGrad)" filter="url(#shadow)"/>
+                        <text x="785" y="332" text-anchor="middle" fill="white" font-family="system-ui" font-size="13" font-weight="600">Grafana :3001</text>
+                        <text x="785" y="348" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-family="system-ui" font-size="10">Dashboards (384 MB)</text>
+
+                        <!-- Arrow: ALB to Grafana -->
+                        <path d="M660 65 L785 65 L785 310" stroke="#94a3b8" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+                        <text x="810" y="190" text-anchor="start" fill="#64748b" font-family="system-ui" font-size="9">/grafana/*</text>
+
+                        <!-- Arrows: Grafana reads from backends -->
+                        <path d="M710 335 L660 335" stroke="#8b5cf6" stroke-width="1.5" stroke-dasharray="6,3" fill="none" marker-end="url(#arrowPurple)"/>
+                        <path d="M710 325 L510 325 L510 310" stroke="#8b5cf6" stroke-width="1.5" stroke-dasharray="6,3" fill="none"/>
+                        <path d="M710 340 L360 340 L360 310" stroke="#8b5cf6" stroke-width="1.5" stroke-dasharray="6,3" fill="none"/>
+                        <path d="M710 345 L210 345 L210 310" stroke="#8b5cf6" stroke-width="1.5" stroke-dasharray="6,3" fill="none"/>
+
+                        <!-- Legend -->
+                        <rect x="40" y="520" width="820" height="80" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+                        <text x="60" y="545" fill="#1e293b" font-family="system-ui" font-size="11" font-weight="600">Legend:</text>
+                        <rect x="60" y="555" width="12" height="12" rx="2" fill="url(#sourceGrad)"/>
+                        <text x="80" y="566" fill="#64748b" font-family="system-ui" font-size="10">Data Sources</text>
+                        <rect x="190" y="555" width="12" height="12" rx="2" fill="url(#runtimeGrad)"/>
+                        <text x="210" y="566" fill="#64748b" font-family="system-ui" font-size="10">Runtime Resources</text>
+                        <rect x="360" y="555" width="12" height="12" rx="2" fill="url(#observeGrad)"/>
+                        <text x="380" y="566" fill="#64748b" font-family="system-ui" font-size="10">Observability Components</text>
+                        <rect x="570" y="555" width="12" height="12" rx="2" fill="#f8fafc" stroke="#16a34a" stroke-width="1"/>
+                        <text x="590" y="566" fill="#64748b" font-family="system-ui" font-size="10">Base Resources (Persistent)</text>
+                        <line x1="60" y1="585" x2="90" y2="585" stroke="#8b5cf6" stroke-width="1.5" stroke-dasharray="6,3"/>
+                        <text x="100" y="589" fill="#64748b" font-family="system-ui" font-size="10">Read (query)</text>
+                        <line x1="210" y1="585" x2="240" y2="585" stroke="#8b5cf6" stroke-width="1.5"/>
+                        <text x="250" y="589" fill="#64748b" font-family="system-ui" font-size="10">Write (ingest)</text>
+                        <line x1="370" y1="585" x2="400" y2="585" stroke="#94a3b8" stroke-width="1.5"/>
+                        <text x="410" y="589" fill="#64748b" font-family="system-ui" font-size="10">HTTP Routing</text>
+                    </svg>
+                </div>
+            </section>
+
+            <!-- Section 3: Resource ERD -->
+            <section class="section">
+                <h2>Resource Entity Relationship Diagram</h2>
+                <p>All AWS and infrastructure resources created for observability, showing ownership and relationship chains across workspaces.</p>
+
+                <div class="diagram-container">
+                    <svg viewBox="0 0 960 750" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto; max-width: 960px; display: block; margin: 0 auto;">
+                        <defs>
+                            <linearGradient id="erdBaseGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" style="stop-color:#16a34a"/>
+                                <stop offset="100%" style="stop-color:#22c55e"/>
+                            </linearGradient>
+                            <linearGradient id="erdRuntimeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" style="stop-color:#d97706"/>
+                                <stop offset="100%" style="stop-color:#f59e0b"/>
+                            </linearGradient>
+                            <linearGradient id="erdObserveGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" style="stop-color:#6d28d9"/>
+                                <stop offset="100%" style="stop-color:#8b5cf6"/>
+                            </linearGradient>
+                            <filter id="erdShadow" x="-10%" y="-10%" width="120%" height="120%">
+                                <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.1"/>
+                            </filter>
+                            <marker id="erdArrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8"/>
+                            </marker>
+                            <marker id="erdArrowGreen" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                <polygon points="0 0, 10 3.5, 0 7" fill="#16a34a"/>
+                            </marker>
+                            <marker id="erdArrowAmber" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                <polygon points="0 0, 10 3.5, 0 7" fill="#d97706"/>
+                            </marker>
+                            <marker id="erdArrowPurple" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                <polygon points="0 0, 10 3.5, 0 7" fill="#6d28d9"/>
+                            </marker>
+                        </defs>
+
+                        <!-- Base Workspace Region -->
+                        <rect x="20" y="20" width="440" height="330" rx="12" fill="none" stroke="#16a34a" stroke-width="2" stroke-dasharray="8,4"/>
+                        <text x="40" y="48" fill="#166534" font-family="system-ui" font-size="14" font-weight="700">Base Workspace (Persistent)</text>
+
+                        <!-- S3 Bucket -->
+                        <rect x="40" y="70" width="180" height="45" rx="6" fill="url(#erdBaseGrad)" filter="url(#erdShadow)"/>
+                        <text x="130" y="90" text-anchor="middle" fill="white" font-family="system-ui" font-size="11" font-weight="600">S3 Bucket</text>
+                        <text x="130" y="105" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-family="system-ui" font-size="9">Observability Data</text>
+
+                        <!-- S3 Prefixes -->
+                        <rect x="55" y="130" width="70" height="28" rx="4" fill="#dcfce7" stroke="#16a34a" stroke-width="1"/>
+                        <text x="90" y="149" text-anchor="middle" fill="#166534" font-family="system-ui" font-size="9">mimir/</text>
+                        <rect x="135" y="130" width="70" height="28" rx="4" fill="#dcfce7" stroke="#16a34a" stroke-width="1"/>
+                        <text x="170" y="149" text-anchor="middle" fill="#166534" font-family="system-ui" font-size="9">loki/</text>
+                        <rect x="55" y="165" width="70" height="28" rx="4" fill="#dcfce7" stroke="#16a34a" stroke-width="1"/>
+                        <text x="90" y="184" text-anchor="middle" fill="#166534" font-family="system-ui" font-size="9">tempo/</text>
+                        <rect x="135" y="165" width="70" height="28" rx="4" fill="#dcfce7" stroke="#16a34a" stroke-width="1"/>
+                        <text x="170" y="184" text-anchor="middle" fill="#166534" font-family="system-ui" font-size="9">pyroscope/</text>
+
+                        <!-- IAM Role -->
+                        <rect x="260" y="70" width="180" height="45" rx="6" fill="url(#erdBaseGrad)" filter="url(#erdShadow)"/>
+                        <text x="350" y="90" text-anchor="middle" fill="white" font-family="system-ui" font-size="11" font-weight="600">IAM Role</text>
+                        <text x="350" y="105" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-family="system-ui" font-size="9">S3 + SSM Access</text>
+
+                        <!-- Instance Profile -->
+                        <rect x="260" y="140" width="180" height="45" rx="6" fill="url(#erdBaseGrad)" filter="url(#erdShadow)"/>
+                        <text x="350" y="160" text-anchor="middle" fill="white" font-family="system-ui" font-size="11" font-weight="600">Instance Profile</text>
+                        <text x="350" y="175" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-family="system-ui" font-size="9">Wraps IAM Role</text>
+
+                        <!-- Security Group -->
+                        <rect x="260" y="210" width="180" height="45" rx="6" fill="url(#erdBaseGrad)" filter="url(#erdShadow)"/>
+                        <text x="350" y="230" text-anchor="middle" fill="white" font-family="system-ui" font-size="11" font-weight="600">Security Group</text>
+                        <text x="350" y="245" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-family="system-ui" font-size="9">Observability EC2</text>
+
+                        <!-- SG Ingress Sources -->
+                        <rect x="50" y="220" width="140" height="30" rx="4" fill="#dcfce7" stroke="#16a34a" stroke-width="1"/>
+                        <text x="120" y="240" text-anchor="middle" fill="#166534" font-family="system-ui" font-size="9">Ingress: ALB SG</text>
+                        <rect x="50" y="260" width="140" height="30" rx="4" fill="#dcfce7" stroke="#16a34a" stroke-width="1"/>
+                        <text x="120" y="280" text-anchor="middle" fill="#166534" font-family="system-ui" font-size="9">Ingress: ECS SG</text>
+
+                        <!-- Base internal arrows -->
+                        <path d="M220 92 L260 92" stroke="#16a34a" stroke-width="1.5" fill="none" marker-end="url(#erdArrowGreen)"/>
+                        <text x="240" y="86" text-anchor="middle" fill="#166534" font-family="system-ui" font-size="8">access</text>
+                        <path d="M350 115 L350 140" stroke="#16a34a" stroke-width="1.5" fill="none" marker-end="url(#erdArrowGreen)"/>
+                        <text x="370" y="130" fill="#166534" font-family="system-ui" font-size="8">wraps</text>
+                        <path d="M190 235 L260 232" stroke="#16a34a" stroke-width="1.5" fill="none" marker-end="url(#erdArrowGreen)"/>
+                        <path d="M190 275 L260 240" stroke="#16a34a" stroke-width="1.5" fill="none" marker-end="url(#erdArrowGreen)"/>
+
+                        <!-- Runtime Workspace Region -->
+                        <rect x="500" y="20" width="440" height="330" rx="12" fill="none" stroke="#d97706" stroke-width="2" stroke-dasharray="8,4"/>
+                        <text x="520" y="48" fill="#92400e" font-family="system-ui" font-size="14" font-weight="700">Runtime Workspace (Ephemeral)</text>
+
+                        <!-- EC2 Instance -->
+                        <rect x="520" y="70" width="180" height="45" rx="6" fill="url(#erdRuntimeGrad)" filter="url(#erdShadow)"/>
+                        <text x="610" y="90" text-anchor="middle" fill="white" font-family="system-ui" font-size="11" font-weight="600">EC2 Instance</text>
+                        <text x="610" y="105" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-family="system-ui" font-size="9">t3.medium, Private Subnet</text>
+
+                        <!-- ALB Target Group Grafana -->
+                        <rect x="740" y="70" width="180" height="45" rx="6" fill="url(#erdRuntimeGrad)" filter="url(#erdShadow)"/>
+                        <text x="830" y="90" text-anchor="middle" fill="white" font-family="system-ui" font-size="11" font-weight="600">TG: Grafana</text>
+                        <text x="830" y="105" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-family="system-ui" font-size="9">Port 3001</text>
+
+                        <!-- ALB Target Group Alloy -->
+                        <rect x="740" y="130" width="180" height="45" rx="6" fill="url(#erdRuntimeGrad)" filter="url(#erdShadow)"/>
+                        <text x="830" y="150" text-anchor="middle" fill="white" font-family="system-ui" font-size="11" font-weight="600">TG: Alloy</text>
+                        <text x="830" y="165" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-family="system-ui" font-size="9">Port 12347</text>
+
+                        <!-- ALB Listener Rule /grafana/* -->
+                        <rect x="740" y="200" width="180" height="45" rx="6" fill="url(#erdRuntimeGrad)" filter="url(#erdShadow)"/>
+                        <text x="830" y="220" text-anchor="middle" fill="white" font-family="system-ui" font-size="11" font-weight="600">Rule: /grafana/*</text>
+                        <text x="830" y="235" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-family="system-ui" font-size="9">Priority 90</text>
+
+                        <!-- ALB Listener Rule /collect/* -->
+                        <rect x="740" y="260" width="180" height="45" rx="6" fill="url(#erdRuntimeGrad)" filter="url(#erdShadow)"/>
+                        <text x="830" y="280" text-anchor="middle" fill="white" font-family="system-ui" font-size="11" font-weight="600">Rule: /collect/*</text>
+                        <text x="830" y="295" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-family="system-ui" font-size="9">Priority 91</text>
+
+                        <!-- Runtime internal arrows -->
+                        <path d="M700 92 L740 92" stroke="#d97706" stroke-width="1.5" fill="none" marker-end="url(#erdArrowAmber)"/>
+                        <text x="720" y="86" text-anchor="middle" fill="#92400e" font-family="system-ui" font-size="8">target</text>
+                        <path d="M700 100 L740 148" stroke="#d97706" stroke-width="1.5" fill="none" marker-end="url(#erdArrowAmber)"/>
+                        <path d="M830 175 L830 200" stroke="#d97706" stroke-width="1.5" fill="none" marker-end="url(#erdArrowAmber)"/>
+                        <path d="M830 115 L830 130" stroke="#d97706" stroke-width="1.5" fill="none"/>
+                        <path d="M830 245 L830 260" stroke="#d97706" stroke-width="1.5" fill="none" marker-end="url(#erdArrowAmber)"/>
+                        <text x="845" y="190" fill="#92400e" font-family="system-ui" font-size="8">forwards to</text>
+                        <text x="845" y="255" fill="#92400e" font-family="system-ui" font-size="8">forwards to</text>
+
+                        <!-- Cross-workspace arrows: Base to Runtime -->
+                        <path d="M440 162 L520 92" stroke="#94a3b8" stroke-width="2" stroke-dasharray="6,3" fill="none" marker-end="url(#erdArrow)"/>
+                        <text x="485" y="118" text-anchor="middle" fill="#64748b" font-family="system-ui" font-size="8">profile</text>
+                        <path d="M440 232 L520 100" stroke="#94a3b8" stroke-width="2" stroke-dasharray="6,3" fill="none" marker-end="url(#erdArrow)"/>
+                        <text x="475" y="175" text-anchor="middle" fill="#64748b" font-family="system-ui" font-size="8">SG</text>
+
+                        <!-- Containers on EC2 Section -->
+                        <rect x="20" y="380" width="920" height="350" rx="12" fill="none" stroke="#6d28d9" stroke-width="2" stroke-dasharray="8,4"/>
+                        <text x="40" y="408" fill="#6d28d9" font-family="system-ui" font-size="14" font-weight="700">Containers on EC2 (Docker Compose)</text>
+
+                        <!-- Container cards -->
+                        <rect x="40" y="425" width="130" height="65" rx="6" fill="url(#erdObserveGrad)" filter="url(#erdShadow)"/>
+                        <text x="105" y="448" text-anchor="middle" fill="white" font-family="system-ui" font-size="11" font-weight="600">Grafana</text>
+                        <text x="105" y="463" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-family="system-ui" font-size="9">:3001 | 384 MB</text>
+                        <text x="105" y="478" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-family="system-ui" font-size="8">Visualization</text>
+
+                        <rect x="190" y="425" width="130" height="65" rx="6" fill="url(#erdObserveGrad)" filter="url(#erdShadow)"/>
+                        <text x="255" y="448" text-anchor="middle" fill="white" font-family="system-ui" font-size="11" font-weight="600">Mimir</text>
+                        <text x="255" y="463" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-family="system-ui" font-size="9">:9009 | 768 MB</text>
+                        <text x="255" y="478" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-family="system-ui" font-size="8">Metrics</text>
+
+                        <rect x="340" y="425" width="130" height="65" rx="6" fill="url(#erdObserveGrad)" filter="url(#erdShadow)"/>
+                        <text x="405" y="448" text-anchor="middle" fill="white" font-family="system-ui" font-size="11" font-weight="600">Loki</text>
+                        <text x="405" y="463" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-family="system-ui" font-size="9">:3100 | 384 MB</text>
+                        <text x="405" y="478" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-family="system-ui" font-size="8">Logs</text>
+
+                        <rect x="490" y="425" width="130" height="65" rx="6" fill="url(#erdObserveGrad)" filter="url(#erdShadow)"/>
+                        <text x="555" y="448" text-anchor="middle" fill="white" font-family="system-ui" font-size="11" font-weight="600">Tempo</text>
+                        <text x="555" y="463" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-family="system-ui" font-size="9">:3200 | 384 MB</text>
+                        <text x="555" y="478" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-family="system-ui" font-size="8">Traces</text>
+
+                        <rect x="640" y="425" width="130" height="65" rx="6" fill="url(#erdObserveGrad)" filter="url(#erdShadow)"/>
+                        <text x="705" y="448" text-anchor="middle" fill="white" font-family="system-ui" font-size="11" font-weight="600">Pyroscope</text>
+                        <text x="705" y="463" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-family="system-ui" font-size="9">:4040 | 384 MB</text>
+                        <text x="705" y="478" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-family="system-ui" font-size="8">Profiles</text>
+
+                        <rect x="790" y="425" width="130" height="65" rx="6" fill="url(#erdObserveGrad)" filter="url(#erdShadow)"/>
+                        <text x="855" y="448" text-anchor="middle" fill="white" font-family="system-ui" font-size="11" font-weight="600">Alloy</text>
+                        <text x="855" y="463" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-family="system-ui" font-size="9">:4317/4318/12347</text>
+                        <text x="855" y="478" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-family="system-ui" font-size="8">Collector (384 MB)</text>
+
+                        <!-- Relationship labels section -->
+                        <text x="480" y="520" text-anchor="middle" fill="#6d28d9" font-family="system-ui" font-size="12" font-weight="600">Relationship Flows</text>
+
+                        <!-- EC2 hosts containers -->
+                        <rect x="40" y="540" width="280" height="35" rx="4" fill="#faf5ff" stroke="#6d28d9" stroke-width="1"/>
+                        <text x="180" y="562" text-anchor="middle" fill="#6d28d9" font-family="system-ui" font-size="10">EC2 &rarr; Instance Profile &rarr; IAM Role &rarr; S3</text>
+                        <text x="180" y="548" text-anchor="middle" fill="#6d28d9" font-family="system-ui" font-size="8" font-weight="600">Access Chain</text>
+
+                        <rect x="340" y="540" width="280" height="35" rx="4" fill="#faf5ff" stroke="#6d28d9" stroke-width="1"/>
+                        <text x="480" y="562" text-anchor="middle" fill="#6d28d9" font-family="system-ui" font-size="10">ALB Rules &rarr; Target Groups &rarr; EC2</text>
+                        <text x="480" y="548" text-anchor="middle" fill="#6d28d9" font-family="system-ui" font-size="8" font-weight="600">Traffic Routing</text>
+
+                        <rect x="640" y="540" width="280" height="35" rx="4" fill="#faf5ff" stroke="#6d28d9" stroke-width="1"/>
+                        <text x="780" y="562" text-anchor="middle" fill="#6d28d9" font-family="system-ui" font-size="10">Mimir/Loki/Tempo/Pyroscope &rarr; S3</text>
+                        <text x="780" y="548" text-anchor="middle" fill="#6d28d9" font-family="system-ui" font-size="8" font-weight="600">Data Persistence</text>
+
+                        <rect x="40" y="590" width="280" height="35" rx="4" fill="#faf5ff" stroke="#6d28d9" stroke-width="1"/>
+                        <text x="180" y="612" text-anchor="middle" fill="#6d28d9" font-family="system-ui" font-size="10">ECS Tasks &rarr; Alloy (OTLP push)</text>
+                        <text x="180" y="598" text-anchor="middle" fill="#6d28d9" font-family="system-ui" font-size="8" font-weight="600">Telemetry Push</text>
+
+                        <rect x="340" y="590" width="280" height="35" rx="4" fill="#faf5ff" stroke="#6d28d9" stroke-width="1"/>
+                        <text x="480" y="612" text-anchor="middle" fill="#6d28d9" font-family="system-ui" font-size="10">Browser &rarr; ALB &rarr; Alloy (Faro)</text>
+                        <text x="480" y="598" text-anchor="middle" fill="#6d28d9" font-family="system-ui" font-size="8" font-weight="600">Frontend Telemetry</text>
+
+                        <rect x="640" y="590" width="280" height="35" rx="4" fill="#faf5ff" stroke="#6d28d9" stroke-width="1"/>
+                        <text x="780" y="612" text-anchor="middle" fill="#6d28d9" font-family="system-ui" font-size="10">Grafana &rarr; Mimir/Loki/Tempo/Pyroscope</text>
+                        <text x="780" y="598" text-anchor="middle" fill="#6d28d9" font-family="system-ui" font-size="8" font-weight="600">Visualization Reads</text>
+
+                        <!-- Legend -->
+                        <rect x="40" y="645" width="880" height="55" rx="6" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+                        <text x="60" y="668" fill="#1e293b" font-family="system-ui" font-size="10" font-weight="600">Color Key:</text>
+                        <rect x="140" y="659" width="12" height="12" rx="2" fill="url(#erdBaseGrad)"/>
+                        <text x="158" y="670" fill="#64748b" font-family="system-ui" font-size="10">Base (Persistent)</text>
+                        <rect x="310" y="659" width="12" height="12" rx="2" fill="url(#erdRuntimeGrad)"/>
+                        <text x="328" y="670" fill="#64748b" font-family="system-ui" font-size="10">Runtime (Ephemeral)</text>
+                        <rect x="510" y="659" width="12" height="12" rx="2" fill="url(#erdObserveGrad)"/>
+                        <text x="528" y="670" fill="#64748b" font-family="system-ui" font-size="10">Observability Containers</text>
+                        <line x1="710" y1="665" x2="740" y2="665" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="6,3"/>
+                        <text x="748" y="669" fill="#64748b" font-family="system-ui" font-size="10">Cross-workspace Reference</text>
+                    </svg>
+                </div>
+            </section>
+
+            <!-- Section 4: Workspace Mapping -->
+            <section class="section">
+                <h2>Workspace Mapping</h2>
+                <p>Resources are split across base (persistent) and runtime (ephemeral) workspaces to preserve data across infrastructure lifecycle operations.</p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Resource</th>
+                            <th>Workspace</th>
+                            <th>Lifecycle</th>
+                            <th>Rationale</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>S3 Bucket (observability data)</td>
+                            <td><span class="badge badge-base">Base</span></td>
+                            <td>Persistent</td>
+                            <td>Survives runtime destroy/recreate cycles</td>
+                        </tr>
+                        <tr>
+                            <td>IAM Role + Instance Profile</td>
+                            <td><span class="badge badge-base">Base</span></td>
+                            <td>Persistent</td>
+                            <td>Stable identity for EC2 instance</td>
+                        </tr>
+                        <tr>
+                            <td>Security Group (observability)</td>
+                            <td><span class="badge badge-base">Base</span></td>
+                            <td>Persistent</td>
+                            <td>Referenced by ALB and ECS security groups</td>
+                        </tr>
+                        <tr>
+                            <td>EC2 Instance (Grafana stack)</td>
+                            <td><span class="badge badge-runtime">Runtime</span></td>
+                            <td>Ephemeral</td>
+                            <td>Destroyed with <code>just infra down runtime</code></td>
+                        </tr>
+                        <tr>
+                            <td>ALB Target Groups + Rules</td>
+                            <td><span class="badge badge-runtime">Runtime</span></td>
+                            <td>Ephemeral</td>
+                            <td>Path routing for /grafana/* and /collect/*</td>
+                        </tr>
+                        <tr>
+                            <td>ECS Task Env Vars</td>
+                            <td><span class="badge badge-runtime">Runtime</span></td>
+                            <td>Ephemeral</td>
+                            <td>OTel endpoint configuration</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Section 5: Component Details -->
+            <section class="section">
+                <h2>Component Details</h2>
+                <p>Each Grafana stack component runs in single-binary mode within Docker Compose on a shared t3.medium EC2 instance (4 GB RAM, ~2.7 GB allocated to containers).</p>
+
+                <div class="info-grid">
+                    <div class="info-card" style="border-left: 4px solid var(--observability);">
+                        <h4><span class="badge badge-observability">Visualization</span> Grafana</h4>
+                        <p><strong>Memory:</strong> 384 MB</p>
+                        <p><strong>Port:</strong> 3001</p>
+                        <p><strong>Mode:</strong> Standalone</p>
+                        <p>Unified dashboard and alerting UI. Reads from all 4 backend datasources. Serves from <code>/grafana/</code> subpath via ALB.</p>
+                    </div>
+
+                    <div class="info-card" style="border-left: 4px solid var(--observability);">
+                        <h4><span class="badge badge-observability">Metrics</span> Mimir</h4>
+                        <p><strong>Memory:</strong> 768 MB</p>
+                        <p><strong>Port:</strong> 9009</p>
+                        <p><strong>Mode:</strong> Single-binary</p>
+                        <p>Prometheus-compatible long-term metrics storage. Handles exemplars for trace correlation. S3 block storage.</p>
+                    </div>
+
+                    <div class="info-card" style="border-left: 4px solid var(--observability);">
+                        <h4><span class="badge badge-observability">Logs</span> Loki</h4>
+                        <p><strong>Memory:</strong> 384 MB</p>
+                        <p><strong>Port:</strong> 3100</p>
+                        <p><strong>Mode:</strong> Single-binary</p>
+                        <p>Label-based log aggregation. TSDB index with S3 chunk storage. Structured JSON with trace_id/span_id fields.</p>
+                    </div>
+
+                    <div class="info-card" style="border-left: 4px solid var(--observability);">
+                        <h4><span class="badge badge-observability">Traces</span> Tempo</h4>
+                        <p><strong>Memory:</strong> 384 MB</p>
+                        <p><strong>Port:</strong> 3200</p>
+                        <p><strong>Mode:</strong> Single-binary</p>
+                        <p>Distributed trace backend. Receives OTLP from Alloy, generates span metrics, enables trace-to-logs/profiles navigation.</p>
+                    </div>
+
+                    <div class="info-card" style="border-left: 4px solid var(--observability);">
+                        <h4><span class="badge badge-observability">Profiling</span> Pyroscope</h4>
+                        <p><strong>Memory:</strong> 384 MB</p>
+                        <p><strong>Port:</strong> 4040</p>
+                        <p><strong>Mode:</strong> Single-binary</p>
+                        <p>Continuous profiling with flame graphs. Push-based SDK integration. Links CPU/memory profiles to traces via span labels.</p>
+                    </div>
+
+                    <div class="info-card" style="border-left: 4px solid var(--observability);">
+                        <h4><span class="badge badge-observability">Collector</span> Alloy</h4>
+                        <p><strong>Memory:</strong> 384 MB</p>
+                        <p><strong>Ports:</strong> 4317 (gRPC), 4318 (HTTP), 12347 (Faro)</p>
+                        <p><strong>Mode:</strong> Single-binary</p>
+                        <p>Unified telemetry collector. Receives OTLP from backend, Faro from frontend, and forwards to all storage backends.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 6: Cross-Pillar Correlation -->
+            <section class="section">
+                <h2>Cross-Pillar Correlation Paths</h2>
+                <p>The primary value of 4-pillar observability is navigating between signal types to find root causes. These correlation paths enable seamless investigation.</p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Path</th>
+                            <th>From</th>
+                            <th>To</th>
+                            <th>Mechanism</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Metric Exemplar &rarr; Trace</td>
+                            <td>Mimir</td>
+                            <td>Tempo</td>
+                            <td>Exemplar config links metric data points to trace IDs</td>
+                        </tr>
+                        <tr>
+                            <td>Trace &rarr; Logs</td>
+                            <td>Tempo</td>
+                            <td>Loki</td>
+                            <td>traceToLogs config filters Loki by trace_id label</td>
+                        </tr>
+                        <tr>
+                            <td>Trace &rarr; Profile</td>
+                            <td>Tempo</td>
+                            <td>Pyroscope</td>
+                            <td>traceToProfiles config links to Pyroscope via span labels</td>
+                        </tr>
+                        <tr>
+                            <td>Alert &rarr; Dashboard &rarr; Trace &rarr; Root Cause</td>
+                            <td>Grafana Alerting</td>
+                            <td>All Pillars</td>
+                            <td>Full investigation workflow: alert fires, click through to dashboard, exemplar to trace, trace to logs and profiles</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="collapsible">
+                    <div class="collapsible-header" onclick="toggleCollapsible(this.parentElement)">
+                        <span>Investigation Workflow Example</span>
+                        <span class="collapsible-icon">&#x25BC;</span>
+                    </div>
+                    <div class="collapsible-content">
+                        <div class="workflow-steps">
+                            <div class="workflow-step">
+                                <div class="step-number">1</div>
+                                <div class="step-content">
+                                    <h4>Alert Fires</h4>
+                                    <p>p99 latency exceeds 2 seconds for /api/v1/endpoint</p>
+                                </div>
+                            </div>
+                            <div class="workflow-step">
+                                <div class="step-number">2</div>
+                                <div class="step-content">
+                                    <h4>Open Dashboard</h4>
+                                    <p>Navigate to Golden Signals dashboard, identify latency spike in the histogram</p>
+                                </div>
+                            </div>
+                            <div class="workflow-step">
+                                <div class="step-number">3</div>
+                                <div class="step-content">
+                                    <h4>Click Exemplar</h4>
+                                    <p>Click the exemplar data point on the latency histogram to jump to the specific trace in Tempo</p>
+                                </div>
+                            </div>
+                            <div class="workflow-step">
+                                <div class="step-number">4</div>
+                                <div class="step-content">
+                                    <h4>Inspect Trace Waterfall</h4>
+                                    <p>See the full request lifecycle: browser &rarr; ALB &rarr; backend &rarr; database. Identify the slow span.</p>
+                                </div>
+                            </div>
+                            <div class="workflow-step">
+                                <div class="step-number">5</div>
+                                <div class="step-content">
+                                    <h4>View Correlated Logs</h4>
+                                    <p>Click "Logs for this trace" to see structured log entries filtered by trace_id in Loki</p>
+                                </div>
+                            </div>
+                            <div class="workflow-step">
+                                <div class="step-number">6</div>
+                                <div class="step-content">
+                                    <h4>Analyze Flame Graph</h4>
+                                    <p>Click "Profile for this span" to view CPU/memory flame graph in Pyroscope, identifying the hot code path</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 7: Network & Security -->
+            <section class="section">
+                <h2>Network &amp; Security</h2>
+                <p>The observability EC2 instance runs in a private subnet with no public IP. All external access routes through the ALB. Management access uses SSM Session Manager.</p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Port</th>
+                            <th>Protocol</th>
+                            <th>Source</th>
+                            <th>Purpose</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>3001</td>
+                            <td>HTTP</td>
+                            <td>ALB Security Group</td>
+                            <td>Grafana UI via /grafana/* path</td>
+                        </tr>
+                        <tr>
+                            <td>12347</td>
+                            <td>HTTP</td>
+                            <td>ALB Security Group</td>
+                            <td>Faro telemetry collection via /collect/* path</td>
+                        </tr>
+                        <tr>
+                            <td>4317</td>
+                            <td>gRPC</td>
+                            <td>ECS Security Group</td>
+                            <td>OTLP telemetry from backend (gRPC)</td>
+                        </tr>
+                        <tr>
+                            <td>4318</td>
+                            <td>HTTP</td>
+                            <td>ECS Security Group</td>
+                            <td>OTLP telemetry from backend (HTTP)</td>
+                        </tr>
+                        <tr>
+                            <td>4040</td>
+                            <td>HTTP</td>
+                            <td>ECS Security Group</td>
+                            <td>Pyroscope push endpoint for profiling data</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Security Posture</h3>
+                <ul>
+                    <li><strong>Private subnet placement:</strong> EC2 has no public IP; accessible only via ALB or SSM</li>
+                    <li><strong>ALB as sole external access:</strong> Path-based routing restricts which services are exposed</li>
+                    <li><strong>S3 bucket policy:</strong> Blocked public access, instance profile grants write permission</li>
+                    <li><strong>Grafana anonymous access:</strong> Limited to viewer role (read-only dashboards)</li>
+                    <li><strong>SSM Session Manager:</strong> Management access without SSH keys or bastion hosts</li>
+                </ul>
+            </section>
+
+            <!-- Section 8: Cost Analysis -->
+            <section class="section">
+                <h2>Cost Analysis</h2>
+                <p>All observability resources are gated behind the <code>enable_observability</code> feature flag. When disabled, the additional cost is zero.</p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Resource</th>
+                            <th>Monthly Cost</th>
+                            <th>Conditional</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>EC2 t3.medium</td>
+                            <td>~$30</td>
+                            <td><code>enable_observability</code></td>
+                        </tr>
+                        <tr>
+                            <td>S3 storage</td>
+                            <td>&lt;$1 (dev)</td>
+                            <td><code>enable_observability</code></td>
+                        </tr>
+                        <tr>
+                            <td>ALB rules</td>
+                            <td>$0 (reuses existing)</td>
+                            <td><code>enable_observability</code></td>
+                        </tr>
+                        <tr style="font-weight: 600;">
+                            <td>Total enabled</td>
+                            <td>~$31</td>
+                            <td></td>
+                        </tr>
+                        <tr style="font-weight: 600;">
+                            <td>Total disabled</td>
+                            <td>$0</td>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p>The EC2 instance follows the same ephemeral lifecycle as other runtime resources&mdash;destroyed during off-hours and recreated on demand. S3 data in the base workspace persists across these cycles.</p>
+            </section>
+
+            <!-- Section 9: Implementation Roadmap -->
+            <section class="section">
+                <h2>Implementation Roadmap</h2>
+                <p>The observability feature is delivered across 10 pull requests in 5 phases, with each PR building on the previous ones.</p>
+
+                <h3>Phase 1: Documentation &amp; Foundation</h3>
+                <div class="phase-group">
+                    <h4><span class="badge badge-observability">PR 1</span> Observability Architecture Documentation</h4>
+                    <ul>
+                        <li>Architecture documentation HTML page (this page)</li>
+                        <li>Review gate&mdash;architecture approval before infrastructure work proceeds</li>
+                    </ul>
+                </div>
+                <div class="phase-group">
+                    <h4><span class="badge badge-observability">PR 2</span> S3 Buckets &amp; IAM Foundation (Base)</h4>
+                    <ul>
+                        <li>S3 bucket with prefix-based storage for all 4 pillars</li>
+                        <li>IAM role, instance profile, and security group</li>
+                    </ul>
+                </div>
+
+                <h3>Phase 2: Infrastructure</h3>
+                <div class="phase-group">
+                    <h4><span class="badge badge-observability">PR 3</span> EC2 Observability Instance (Runtime)</h4>
+                    <ul>
+                        <li>EC2 instance in private subnet with Docker Compose</li>
+                        <li>ALB target groups and listener rules for /grafana/* and /collect/*</li>
+                    </ul>
+                </div>
+                <div class="phase-group">
+                    <h4><span class="badge badge-observability">PR 4</span> Docker Compose &amp; Component Configs</h4>
+                    <ul>
+                        <li>Docker Compose with 6 services and memory limits</li>
+                        <li>Configuration files for Grafana, Mimir, Loki, Tempo, Pyroscope, Alloy</li>
+                    </ul>
+                </div>
+
+                <h3>Phase 3: Instrumentation</h3>
+                <div class="phase-group">
+                    <h4><span class="badge badge-observability">PR 5</span> Backend OpenTelemetry Instrumentation</h4>
+                    <ul>
+                        <li>OTel SDK for FastAPI: TracerProvider, MeterProvider, structured logging</li>
+                        <li>Pyroscope profiling SDK with trace-linked labels</li>
+                    </ul>
+                </div>
+                <div class="phase-group">
+                    <h4><span class="badge badge-observability">PR 6</span> Frontend Grafana Faro SDK</h4>
+                    <ul>
+                        <li>Faro SDK: web vitals, errors, sessions, W3C trace propagation</li>
+                        <li>Frontend-to-backend distributed trace correlation</li>
+                    </ul>
+                </div>
+
+                <h3>Phase 4: Visualization &amp; Alerting</h3>
+                <div class="phase-group">
+                    <h4><span class="badge badge-observability">PR 7</span> Golden Signals &amp; Method Dashboards</h4>
+                    <ul>
+                        <li>Golden Signals overview, RED method, web vitals, USE method dashboards</li>
+                    </ul>
+                </div>
+                <div class="phase-group">
+                    <h4><span class="badge badge-observability">PR 8</span> Tracing Deep Dive &amp; Profiling Correlation</h4>
+                    <ul>
+                        <li>Trace analysis and profiling dashboards</li>
+                        <li>Cross-pillar datasource links: exemplars, trace-to-logs, trace-to-profiles</li>
+                    </ul>
+                </div>
+                <div class="phase-group">
+                    <h4><span class="badge badge-observability">PR 9</span> Alerting &amp; SLO Monitoring</h4>
+                    <ul>
+                        <li>Alert rules, contact points, notification policies</li>
+                        <li>Multi-window burn rate SLO alerting</li>
+                    </ul>
+                </div>
+
+                <h3>Phase 5: Integration</h3>
+                <div class="phase-group">
+                    <h4><span class="badge badge-observability">PR 10</span> Integration, Verification &amp; CI/CD</h4>
+                    <ul>
+                        <li>Correlation demo dashboard demonstrating all 4 pillars</li>
+                        <li>Health check script and CI/CD integration</li>
+                    </ul>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>Durable Code Infrastructure Documentation</p>
+        </div>
+    </footer>
+
+    <script>
+        function toggleCollapsible(element) {
+            element.classList.toggle('open');
+        }
+    </script>
+</body>
+</html>
