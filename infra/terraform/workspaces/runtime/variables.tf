@@ -232,3 +232,20 @@ variable "additional_tags" {
   type        = map(string)
   default     = {}
 }
+
+# Observability Feature Flags
+variable "enable_observability" {
+  description = "Enable Grafana observability stack (EC2 instance, ALB routes)"
+  type        = bool
+  default     = false
+}
+
+variable "observability_instance_type" {
+  description = "EC2 instance type for observability stack"
+  type        = map(string)
+  default = {
+    dev     = "t3.medium"
+    staging = "t3.medium"
+    prod    = "t3.medium"
+  }
+}
