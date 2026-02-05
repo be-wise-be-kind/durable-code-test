@@ -1,7 +1,11 @@
 name: Infrastructure Up
 
 on:
-  # Manual dispatch only - no scheduled trigger
+  schedule:
+    # 8 PM MST (Phoenix, AZ) = 3 AM UTC
+    # Runs every day to start infrastructure for the evening
+    # Arizona does not observe daylight saving time
+    - cron: '0 3 * * *'  # Daily 3 AM UTC (8 PM MST)
   workflow_dispatch:
     inputs:
       environment:
