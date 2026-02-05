@@ -18,8 +18,9 @@ See: [.ai/howto/terraform-workspaces.md](../../../.ai/howto/terraform-workspaces
 
 ```
 workspaces/
-├── base/           # Base infrastructure workspace (VPC, NAT, ECR, Route53)
-├── runtime/        # Runtime infrastructure workspace (ECS, ALB listeners)
+├── bootstrap/      # Bootstrap workspace (OIDC, IAM, S3 state, DynamoDB locks)
+├── base/           # Base infrastructure workspace (VPC, ECR, Route53, ACM, KMS)
+├── runtime/        # Runtime infrastructure workspace (ECS, ALB, NAT, WAF, DNS)
 └── README.md       # This file
 ```
 
@@ -27,11 +28,17 @@ workspaces/
 
 ```bash
 # Initialize workspaces
-./infra/scripts/workspace-init.sh base dev
-./infra/scripts/workspace-init.sh runtime dev
+just infra init base
+just infra init runtime
+
+# Plan changes
+just infra plan base
+just infra plan runtime
+
+# Deploy
+just infra up base
+just infra up runtime
 
 # Check status
-./infra/scripts/workspace-status.sh dev
+just infra status
 ```
-
-**Note**: Full infrastructure will be added in PR2 (base) and PR3 (runtime). Currently contains workspace foundation only.

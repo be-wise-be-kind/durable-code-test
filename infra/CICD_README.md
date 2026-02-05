@@ -31,17 +31,28 @@ GitHub Actions → OIDC Provider → AWS IAM Role → ECR/ECS
 1. **GitHub OIDC Provider**: Configured in AWS to trust GitHub Actions
 2. **IAM Role**: `durable-code-dev-github-actions` with permissions for ECR and ECS
 3. **Workflows**:
-   - `build-and-push.yml`: Builds Docker images and pushes to ECR
-   - `deploy.yml`: Deploys new images to ECS services
+   - `up.yml`: Brings infrastructure up (scheduled daily at 3 AM UTC / 8 PM MST, or manual)
+   - `down.yml`: Tears infrastructure down (scheduled daily at 8 AM UTC / midnight PST, or manual)
+   - `deploy.yml`: Builds Docker images and deploys to ECS (triggered after up, or manual)
+   - `terraform-test.yml`: Validates Terraform configs, scripts, and just targets on PRs
+
+### Daily Up/Down Cycle
+
+```
+8 PM MST (3 AM UTC)  → up.yml   → Terraform apply + app deploy
+Midnight PST (8 AM UTC) → down.yml → Terraform destroy (runtime)
+```
+
+This cycle saves ~$63/month by tearing down expensive runtime resources (NAT Gateway, ALB, ECS) outside business hours while preserving persistent base infrastructure (VPC, ECR, certificates).
 
 ## Prerequisites
 
 ### AWS Infrastructure (Already Deployed)
-- ✅ OIDC Provider: Configured for GitHub Actions
-- ✅ IAM Role: `durable-code-dev-github-actions`
-- ✅ ECR Repositories: `durableai-dev-frontend` and `durableai-dev-backend`
-- ✅ ECS Cluster: `durableai-dev-cluster`
-- ✅ ECS Services: `durable-code-dev-frontend` and `durable-code-dev-backend`
+- OIDC Provider: Configured for GitHub Actions
+- IAM Role: `durable-code-dev-github-actions`
+- ECR Repositories: `durableai-dev-frontend` and `durableai-dev-backend`
+- ECS Cluster: `durable-code-dev-cluster`
+- ECS Services: `durable-code-dev-frontend` and `durable-code-dev-backend`
 
 ### GitHub Secrets Required
 
@@ -82,47 +93,70 @@ gh secret set API_URL --body "https://api.dev.durableaicoding.net"
 
 ## Workflows
 
-### Build and Push Workflow
+### Infrastructure Up (`up.yml`)
 
 **Trigger**:
-- Push to `main` or `develop` branches
-- Pull requests to `main` or `develop`
+- Scheduled daily at 3 AM UTC (8 PM MST)
+- Manual dispatch with environment, scope, deploy-app, and dry-run options
+
+**Actions**:
+1. Sets up Just and Terraform
+2. Authenticates with AWS using OIDC
+3. Initializes and applies Terraform (base and/or runtime)
+4. Waits for ALB readiness
+5. Optionally deploys the application
+6. Verifies health
+
+### Infrastructure Down (`down.yml`)
+
+**Trigger**:
+- Scheduled daily at 8 AM UTC (midnight PST)
+- Manual dispatch with environment, scope, and dry-run options
 
 **Actions**:
 1. Authenticates with AWS using OIDC
-2. Builds Docker images for frontend and backend
-3. Pushes images to ECR with multiple tags (latest, commit SHA, branch name)
-4. Supports multi-architecture builds (amd64 and arm64)
+2. Checks infrastructure status
+3. Destroys runtime (and optionally base) resources
+4. Reports cost savings (~$2.10/day for runtime)
 
-### Deploy Workflow
+### Application Deploy (`deploy.yml`)
 
 **Trigger**:
-- Manual dispatch via GitHub UI
-- Automatic on push to `main` branch
+- After Infrastructure Up workflow completes
+- Manual dispatch with environment selection
 
 **Actions**:
 1. Authenticates with AWS using OIDC
-2. Downloads current ECS task definitions
-3. Updates task definitions with new image tags
-4. Deploys to ECS services
-5. Waits for services to stabilize
+2. Builds and pushes Docker images to ECR
+3. Updates ECS task definitions with new images
+4. Deploys frontend and backend services
+5. Waits for service stability (10 min timeout)
 6. Verifies deployment success
+
+### Terraform Tests (`terraform-test.yml`)
+
+**Trigger**:
+- PRs/pushes affecting `infra/**`, `justfile`, or the workflow itself
+
+**Jobs**:
+1. `validate-terraform`: Format check, init, validate, tfsec scan (matrix: base, runtime)
+2. `validate-scripts`: ShellCheck and bash syntax checking
+3. `test-just-targets`: Just target syntax and subcommand validation
+4. `integration-test`: Complete workflow dry run
 
 ## Usage
 
 ### Manual Deployment
 
 1. Go to Actions tab in GitHub
-2. Select "Deploy to ECS" workflow
+2. Select "Deploy Application" workflow
 3. Click "Run workflow"
 4. Select environment (dev/staging/prod)
 5. Click "Run workflow" button
 
 ### Automatic Deployment
 
-Any push to the `main` branch that modifies application code will automatically:
-1. Build and push Docker images
-2. Deploy to the dev environment
+The `up.yml` workflow runs nightly at 8 PM MST, bringing infrastructure up and deploying the application automatically.
 
 ## Monitoring Deployments
 
@@ -218,15 +252,7 @@ aws ecs describe-task-definition \
 - **Multi-architecture builds**: Supports both x86 and ARM for cost-effective Fargate Spot
 - **Caching**: Uses GitHub Actions cache to speed up builds
 - **Conditional pushes**: Only pushes images on non-PR builds
-
-## Next Steps
-
-1. ✅ Configure GitHub secrets (AWS_ROLE_ARN)
-2. ✅ Test build workflow with a PR
-3. ✅ Test deployment workflow manually
-4. ⬜ Set up environment protection rules
-5. ⬜ Configure notifications for deployment status
-6. ⬜ Add automated tests before deployment
+- **Daily up/down cycle**: Saves ~$63/month by destroying runtime resources outside business hours
 
 ## Support
 
@@ -234,4 +260,4 @@ For issues or questions:
 - Check GitHub Actions logs
 - Review AWS CloudWatch logs
 - Consult the AWS ECS documentation
-- Contact the DevOps team
+- See [Operations documentation](../docs/terraform-operations.html) for just commands and workflow details

@@ -297,6 +297,8 @@
                 <li><a href="index.html">Home</a></li>
                 <li><a href="terraform-architecture.html">Architecture</a></li>
                 <li><a href="terraform-resources.html" class="active">Resources</a></li>
+                <li><a href="terraform-environments.html">Environments</a></li>
+                <li><a href="terraform-operations.html">Operations</a></li>
             </ul>
         </div>
     </nav>
@@ -403,12 +405,20 @@
                                     <td>Provider configuration and backend</td>
                                 </tr>
                                 <tr>
-                                    <td><code>workspaces/bootstrap/iam.tf</code></td>
+                                    <td><code>workspaces/bootstrap/github-oidc.tf</code></td>
                                     <td>OIDC provider and IAM roles</td>
                                 </tr>
                                 <tr>
-                                    <td><code>workspaces/bootstrap/state.tf</code></td>
-                                    <td>S3 bucket and DynamoDB table</td>
+                                    <td><code>workspaces/bootstrap/data.tf</code></td>
+                                    <td>Data sources</td>
+                                </tr>
+                                <tr>
+                                    <td><code>workspaces/bootstrap/variables.tf</code></td>
+                                    <td>Input variables</td>
+                                </tr>
+                                <tr>
+                                    <td><code>workspaces/bootstrap/outputs.tf</code></td>
+                                    <td>Exported values</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -523,28 +533,36 @@
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td><code>workspaces/base/vpc.tf</code></td>
-                                    <td>VPC, subnets, internet gateway, route tables</td>
+                                    <td><code>workspaces/base/main.tf</code></td>
+                                    <td>Main configuration</td>
                                 </tr>
                                 <tr>
-                                    <td><code>workspaces/base/security-groups.tf</code></td>
-                                    <td>ALB and ECS security groups</td>
+                                    <td><code>workspaces/base/providers.tf</code></td>
+                                    <td>AWS provider configuration</td>
+                                </tr>
+                                <tr>
+                                    <td><code>workspaces/base/networking.tf</code></td>
+                                    <td>VPC, subnets, IGW, route tables, security groups</td>
+                                </tr>
+                                <tr>
+                                    <td><code>workspaces/base/dns.tf</code></td>
+                                    <td>Route53 zones, ACM certs, DNS validation</td>
                                 </tr>
                                 <tr>
                                     <td><code>workspaces/base/ecr.tf</code></td>
                                     <td>Container repositories with lifecycle policies</td>
                                 </tr>
                                 <tr>
-                                    <td><code>workspaces/base/route53.tf</code></td>
-                                    <td>Hosted zone and DNS records</td>
-                                </tr>
-                                <tr>
-                                    <td><code>workspaces/base/acm.tf</code></td>
-                                    <td>SSL certificate with DNS validation</td>
-                                </tr>
-                                <tr>
                                     <td><code>workspaces/base/kms.tf</code></td>
                                     <td>Encryption key and alias</td>
+                                </tr>
+                                <tr>
+                                    <td><code>workspaces/base/vpc-flow-logs.tf</code></td>
+                                    <td>VPC flow log configuration</td>
+                                </tr>
+                                <tr>
+                                    <td><code>workspaces/base/variables.tf</code></td>
+                                    <td>Input variables</td>
                                 </tr>
                                 <tr>
                                     <td><code>workspaces/base/outputs.tf</code></td>
@@ -675,16 +693,24 @@
                             </thead>
                             <tbody>
                                 <tr>
+                                    <td><code>workspaces/runtime/main.tf</code></td>
+                                    <td>Main configuration</td>
+                                </tr>
+                                <tr>
+                                    <td><code>workspaces/runtime/providers.tf</code></td>
+                                    <td>AWS provider configuration</td>
+                                </tr>
+                                <tr>
                                     <td><code>workspaces/runtime/data.tf</code></td>
                                     <td>Remote state references to base workspace</td>
                                 </tr>
                                 <tr>
-                                    <td><code>workspaces/runtime/nat.tf</code></td>
-                                    <td>NAT Gateway and Elastic IP</td>
+                                    <td><code>workspaces/runtime/networking.tf</code></td>
+                                    <td>NAT Gateway, EIP, route tables</td>
                                 </tr>
                                 <tr>
                                     <td><code>workspaces/runtime/alb.tf</code></td>
-                                    <td>Load balancer and S3 logs bucket</td>
+                                    <td>Application Load Balancer</td>
                                 </tr>
                                 <tr>
                                     <td><code>workspaces/runtime/alb-listeners.tf</code></td>
@@ -692,19 +718,23 @@
                                 </tr>
                                 <tr>
                                     <td><code>workspaces/runtime/ecs.tf</code></td>
-                                    <td>Cluster, task definitions, services</td>
+                                    <td>Cluster, task definitions, services, IAM roles</td>
                                 </tr>
                                 <tr>
-                                    <td><code>workspaces/runtime/ecs-iam.tf</code></td>
-                                    <td>Execution and task roles</td>
+                                    <td><code>workspaces/runtime/dns.tf</code></td>
+                                    <td>Route53 records for runtime services</td>
                                 </tr>
                                 <tr>
                                     <td><code>workspaces/runtime/waf.tf</code></td>
                                     <td>WAF Web ACL and rules</td>
                                 </tr>
                                 <tr>
-                                    <td><code>workspaces/runtime/cloudwatch.tf</code></td>
-                                    <td>Log groups with retention policies</td>
+                                    <td><code>workspaces/runtime/variables.tf</code></td>
+                                    <td>Input variables</td>
+                                </tr>
+                                <tr>
+                                    <td><code>workspaces/runtime/outputs.tf</code></td>
+                                    <td>ALB DNS, service endpoints</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -820,7 +850,7 @@
 
     <footer>
         <div class="container">
-            <p>Durable Code Infrastructure Documentation | Last Updated: December 2025</p>
+            <p>Durable Code Infrastructure Documentation | Last Updated: February 2026</p>
         </div>
     </footer>
 </body>

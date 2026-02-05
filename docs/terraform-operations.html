@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operations - Durable Code</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #64748b;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Navigation */
+        nav {
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        nav .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 24px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            color: var(--primary);
+        }
+
+        /* Page Header */
+        .page-header {
+            padding: 48px 0 32px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .page-header h1 {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        .page-header p {
+            color: var(--text-muted);
+            font-size: 1.125rem;
+        }
+
+        /* Content */
+        .content {
+            padding: 48px 0;
+        }
+
+        .section {
+            margin-bottom: 48px;
+        }
+
+        .section h2 {
+            font-size: 1.5rem;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--primary);
+            display: inline-block;
+        }
+
+        .section h3 {
+            font-size: 1.125rem;
+            margin: 24px 0 12px;
+        }
+
+        .section p {
+            margin-bottom: 16px;
+        }
+
+        .section ul {
+            margin-left: 24px;
+            margin-bottom: 16px;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            font-size: 0.875rem;
+            background: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        th, td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: #f1f5f9;
+            font-weight: 600;
+            font-size: 0.8125rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-scope {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .badge-workflow {
+            background: #f3e8ff;
+            color: #6b21a8;
+        }
+
+        .badge-schedule {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-manual {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        /* Code */
+        code {
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+        }
+
+        pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 0.875rem;
+            margin: 16px 0;
+        }
+
+        /* Info Cards */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin: 24px 0;
+        }
+
+        .info-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 24px;
+            border: 1px solid var(--border);
+        }
+
+        .info-card h4 {
+            font-size: 1rem;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .info-card p {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .info-card p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Collapsible */
+        .collapsible {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin: 16px 0;
+        }
+
+        .collapsible-header {
+            padding: 16px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+        }
+
+        .collapsible-header:hover {
+            background: #f8fafc;
+        }
+
+        .collapsible-content {
+            display: none;
+            padding: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .collapsible.open .collapsible-content {
+            display: block;
+        }
+
+        .collapsible-icon {
+            transition: transform 0.2s;
+        }
+
+        .collapsible.open .collapsible-icon {
+            transform: rotate(180deg);
+        }
+
+        /* Footer */
+        footer {
+            padding: 40px 0;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            border-top: 1px solid var(--border);
+        }
+
+        /* Print Styles */
+        @media print {
+            nav {
+                position: relative;
+            }
+            .collapsible-content {
+                display: block !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="container">
+            <a href="index.html" class="logo">Durable Code Infra</a>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="terraform-architecture.html">Architecture</a></li>
+                <li><a href="terraform-resources.html">Resources</a></li>
+                <li><a href="terraform-environments.html">Environments</a></li>
+                <li><a href="terraform-operations.html" class="active">Operations</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="page-header">
+        <div class="container">
+            <h1>Operations</h1>
+            <p>Just commands, CI/CD workflows, scripts reference, and common operational procedures</p>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="container">
+            <!-- Just Commands -->
+            <section class="section">
+                <h2>Just Commands Reference</h2>
+                <p>All infrastructure operations use the <code>just infra</code> command. Scope options: <code>base</code>, <code>runtime</code> (default), <code>all</code>, <code>bootstrap</code>.</p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Command</th>
+                            <th>Arguments</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>just infra check-aws</code></td>
+                            <td>&mdash;</td>
+                            <td>Verify AWS credentials and display caller identity</td>
+                        </tr>
+                        <tr>
+                            <td><code>just infra init</code></td>
+                            <td><span class="badge badge-scope">SCOPE</span></td>
+                            <td>Initialize Terraform workspace with backend config</td>
+                        </tr>
+                        <tr>
+                            <td><code>just infra plan</code></td>
+                            <td><span class="badge badge-scope">SCOPE</span></td>
+                            <td>Plan infrastructure changes (dry run)</td>
+                        </tr>
+                        <tr>
+                            <td><code>just infra up</code></td>
+                            <td><span class="badge badge-scope">SCOPE</span> AUTO</td>
+                            <td>Deploy infrastructure (AUTO: true for auto-approve)</td>
+                        </tr>
+                        <tr>
+                            <td><code>just infra down</code></td>
+                            <td><span class="badge badge-scope">SCOPE</span></td>
+                            <td>Destroy infrastructure (prompts for confirmation)</td>
+                        </tr>
+                        <tr>
+                            <td><code>just infra down-force</code></td>
+                            <td><span class="badge badge-scope">SCOPE</span></td>
+                            <td>Force destroy (no refresh, auto-approve)</td>
+                        </tr>
+                        <tr>
+                            <td><code>just infra status</code></td>
+                            <td>&mdash;</td>
+                            <td>Show infrastructure status for base and runtime</td>
+                        </tr>
+                        <tr>
+                            <td><code>just infra state</code></td>
+                            <td><span class="badge badge-scope">SCOPE</span></td>
+                            <td>List Terraform state resources</td>
+                        </tr>
+                        <tr>
+                            <td><code>just infra output</code></td>
+                            <td><span class="badge badge-scope">SCOPE</span> FORMAT</td>
+                            <td>Show Terraform outputs (FORMAT: text or json)</td>
+                        </tr>
+                        <tr>
+                            <td><code>just infra fmt</code></td>
+                            <td>&mdash;</td>
+                            <td>Format all Terraform files recursively</td>
+                        </tr>
+                        <tr>
+                            <td><code>just infra validate</code></td>
+                            <td><span class="badge badge-scope">SCOPE</span></td>
+                            <td>Validate Terraform configuration</td>
+                        </tr>
+                        <tr>
+                            <td><code>just infra unlock</code></td>
+                            <td><span class="badge badge-scope">SCOPE</span> LOCK_ID</td>
+                            <td>Force unlock Terraform state (5-second safety delay)</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="collapsible">
+                    <div class="collapsible-header" onclick="toggleCollapsible(this.parentElement)">
+                        <span>Usage Examples</span>
+                        <span class="collapsible-icon">&#x25BC;</span>
+                    </div>
+                    <div class="collapsible-content">
+                        <pre><code># Check AWS credentials first
+just infra check-aws
+
+# Initialize and plan runtime
+just infra init runtime
+just infra plan runtime
+
+# Deploy runtime with auto-approve
+just infra up runtime true
+
+# Deploy everything (base then runtime)
+just infra up all
+
+# Tear down runtime only
+just infra down runtime
+
+# Check what's deployed
+just infra status
+
+# View runtime outputs as JSON
+just infra output runtime json</code></pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CI/CD Workflows -->
+            <section class="section">
+                <h2>CI/CD Workflows</h2>
+                <p>GitHub Actions workflows in <code>.github/workflows/</code> automate infrastructure and deployment operations.</p>
+
+                <div class="info-grid">
+                    <div class="info-card" style="border-left: 4px solid var(--success);">
+                        <h4><span class="badge badge-workflow">up.yml</span> Infrastructure Up</h4>
+                        <p><strong>Schedule:</strong> Daily at 3 AM UTC (8 PM MST)</p>
+                        <p><strong>Manual:</strong> Dispatch with environment, scope, deploy-app, dry-run options</p>
+                        <p>Initializes Terraform, applies infrastructure, waits for ALB readiness, optionally deploys the application, and verifies health.</p>
+                    </div>
+
+                    <div class="info-card" style="border-left: 4px solid var(--danger);">
+                        <h4><span class="badge badge-workflow">down.yml</span> Infrastructure Down</h4>
+                        <p><strong>Schedule:</strong> Daily at 8 AM UTC (midnight PST)</p>
+                        <p><strong>Manual:</strong> Dispatch with environment, scope, dry-run options</p>
+                        <p>Checks status, destroys runtime (and optionally base), calculates cost savings (~$2.10/day for runtime).</p>
+                    </div>
+
+                    <div class="info-card" style="border-left: 4px solid var(--primary);">
+                        <h4><span class="badge badge-workflow">deploy.yml</span> Application Deploy</h4>
+                        <p><strong>Trigger:</strong> After Infrastructure Up completes, or manual dispatch</p>
+                        <p><strong>Manual:</strong> Dispatch with environment selection (dev/staging/prod)</p>
+                        <p>Builds Docker images, pushes to ECR, updates ECS task definitions, deploys services, waits for stability (10 min timeout).</p>
+                    </div>
+
+                    <div class="info-card" style="border-left: 4px solid var(--secondary);">
+                        <h4><span class="badge badge-workflow">terraform-test.yml</span> Terraform Tests</h4>
+                        <p><strong>Trigger:</strong> PRs/pushes affecting <code>infra/**</code>, <code>justfile</code></p>
+                        <p><strong>Jobs:</strong> validate-terraform (matrix: base, runtime), validate-scripts, test-just-targets, integration-test</p>
+                        <p>Runs format check, validation, tfsec scan, ShellCheck, and just target tests.</p>
+                    </div>
+                </div>
+
+                <h3>Daily Schedule</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Time (UTC)</th>
+                            <th>Time (MST)</th>
+                            <th>Workflow</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>3:00 AM</td>
+                            <td>8:00 PM</td>
+                            <td><span class="badge badge-workflow">up.yml</span></td>
+                            <td>Infrastructure up + app deploy</td>
+                        </tr>
+                        <tr>
+                            <td>8:00 AM</td>
+                            <td>12:00 AM (midnight)</td>
+                            <td><span class="badge badge-workflow">down.yml</span></td>
+                            <td>Infrastructure teardown</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Scripts Reference -->
+            <section class="section">
+                <h2>Scripts Reference</h2>
+                <p>Shell scripts in <code>infra/scripts/</code> implement the low-level Terraform operations.</p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Script</th>
+                            <th>Purpose</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>workspace-init.sh</code></td>
+                            <td>Initialize and select Terraform workspaces with backend config</td>
+                        </tr>
+                        <tr>
+                            <td><code>workspace-deploy.sh</code></td>
+                            <td>Unified deployment orchestrator (dispatches to base then runtime)</td>
+                        </tr>
+                        <tr>
+                            <td><code>workspace-deploy-base.sh</code></td>
+                            <td>Deploy persistent base infrastructure (VPC, ECR, Route53, ACM)</td>
+                        </tr>
+                        <tr>
+                            <td><code>workspace-deploy-runtime.sh</code></td>
+                            <td>Deploy ephemeral runtime infrastructure (ECS, ALB, listeners)</td>
+                        </tr>
+                        <tr>
+                            <td><code>workspace-destroy.sh</code></td>
+                            <td>Unified destruction orchestrator (destroys in proper order)</td>
+                        </tr>
+                        <tr>
+                            <td><code>workspace-destroy-base.sh</code></td>
+                            <td>Destroy base infrastructure (VPC, ECR, Route53) &mdash; destructive</td>
+                        </tr>
+                        <tr>
+                            <td><code>workspace-destroy-runtime.sh</code></td>
+                            <td>Destroy runtime infrastructure (ECS, ALB listeners)</td>
+                        </tr>
+                        <tr>
+                            <td><code>workspace-status.sh</code></td>
+                            <td>Display status of base and runtime workspaces</td>
+                        </tr>
+                        <tr>
+                            <td><code>deploy-app.sh</code></td>
+                            <td>Build Docker images and deploy to ECS (frontend + backend)</td>
+                        </tr>
+                        <tr>
+                            <td><code>setup-terraform-backend.sh</code></td>
+                            <td>Bootstrap: create S3 state bucket and DynamoDB lock table</td>
+                        </tr>
+                        <tr>
+                            <td><code>check-domain-availability.sh</code></td>
+                            <td>Check domain availability via Route53 or whois</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Common Operations -->
+            <section class="section">
+                <h2>Common Operations</h2>
+
+                <h3>Deploy New Code</h3>
+                <pre><code># Option 1: Manual via just (requires running infra)
+just infra check-aws
+just infra status      # Verify infra is up
+
+# Option 2: Trigger deploy workflow from GitHub Actions
+# Go to Actions &rarr; "Deploy Application" &rarr; Run workflow</code></pre>
+
+                <h3>Bring Infrastructure Up</h3>
+                <pre><code># Full stack: base + runtime + app deploy
+just infra up all
+
+# Or step by step:
+just infra init base
+just infra up base
+just infra init runtime
+just infra up runtime</code></pre>
+
+                <h3>Bring Infrastructure Down</h3>
+                <pre><code># Destroy runtime only (preserves VPC, ECR, certs)
+just infra down runtime
+
+# Force destroy (no confirmation, no refresh)
+just infra down-force runtime</code></pre>
+
+                <h3>Check Status</h3>
+                <pre><code># Show what's deployed across both workspaces
+just infra status
+
+# View specific outputs
+just infra output runtime
+just infra output base json
+
+# List resources in state
+just infra state runtime</code></pre>
+            </section>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>Durable Code Infrastructure Documentation | Last Updated: February 2026</p>
+        </div>
+    </footer>
+
+    <script>
+        function toggleCollapsible(element) {
+            element.classList.toggle('open');
+        }
+    </script>
+</body>
+</html>
