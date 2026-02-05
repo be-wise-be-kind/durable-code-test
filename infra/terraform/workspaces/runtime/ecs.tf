@@ -222,7 +222,7 @@ resource "aws_ecs_task_definition" "backend" {
         }
       ]
 
-      environment = [
+      environment = concat([
         {
           name  = "ENVIRONMENT"
           value = var.environment
@@ -231,7 +231,36 @@ resource "aws_ecs_task_definition" "backend" {
           name  = "PORT"
           value = tostring(var.backend_port)
         }
-      ]
+        ], var.enable_observability ? [
+        {
+          name  = "OTEL_ENABLED"
+          value = "true"
+        },
+        {
+          name  = "OTEL_SERVICE_NAME"
+          value = "${var.project_name}-backend"
+        },
+        {
+          name  = "OTEL_EXPORTER_OTLP_ENDPOINT"
+          value = "http://${aws_instance.observability[0].private_ip}:4317"
+        },
+        {
+          name  = "OTEL_TRACES_SAMPLER"
+          value = "traceidratio"
+        },
+        {
+          name  = "OTEL_TRACES_SAMPLER_ARG"
+          value = var.environment == "prod" ? "0.1" : "1.0"
+        },
+        {
+          name  = "PYROSCOPE_ENABLED"
+          value = "true"
+        },
+        {
+          name  = "PYROSCOPE_SERVER_ADDRESS"
+          value = "http://${aws_instance.observability[0].private_ip}:4040"
+        }
+      ] : [])
 
       logConfiguration = {
         logDriver = "awslogs"

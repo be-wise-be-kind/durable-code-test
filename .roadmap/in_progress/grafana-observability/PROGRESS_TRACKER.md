@@ -29,8 +29,8 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Grafana St
 4. **Update this document** after completing each PR
 
 ## Current Status
-**Current PR**: PR 4 - Docker Compose & Component Configs
-**Infrastructure State**: Base workspace has S3, IAM, security group; Runtime workspace has EC2 instance, ALB target groups, listener rules (all behind feature flag)
+**Current PR**: PR 5 - Backend OpenTelemetry Instrumentation
+**Infrastructure State**: Base workspace has S3, IAM, security group; Runtime workspace has EC2 instance, ALB target groups, listener rules; Docker Compose stack with all 6 observability services configured (all behind feature flag)
 **Feature Target**: Complete 4-pillar observability (metrics, logs, traces, profiling) with cross-pillar correlation
 
 ## Required Documents Location
@@ -43,28 +43,29 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Grafana St
 
 ## Next PR to Implement
 
-### START HERE: PR 4 - Docker Compose & Component Configs
+### START HERE: PR 5 - Backend OpenTelemetry Instrumentation
 
 **Quick Summary**:
-Create Docker Compose stack and component configs for all 6 observability services (Grafana, Mimir, Loki, Tempo, Pyroscope, Alloy). Update EC2 user_data to deploy configs and run docker compose.
+Add OpenTelemetry SDK instrumentation to the FastAPI backend. Create telemetry, logging, metrics, and profiling modules in `app/core/`. Update ECS task definition with OTEL environment variables.
 
 **Pre-flight Checklist**:
-- [ ] Read AI_CONTEXT.md for component sizing and port assignments
-- [ ] Review Docker Compose memory limits (total ~2.7GB of 4GB on t3.medium)
-- [ ] Verify S3 bucket name available from base workspace outputs
+- [ ] Read AI_CONTEXT.md for instrumentation patterns and env var names
+- [ ] Review PR_BREAKDOWN.md PR 5 section for file list and success criteria
+- [ ] Verify Docker Compose stack config from PR 4 for endpoint ports (4317, 4040)
 
 **Prerequisites Complete**:
 - [x] PR 1 merged (architecture documentation approved)
 - [x] PR 2 merged (S3, IAM, security group in base workspace)
 - [x] PR 3 merged (EC2 instance, ALB target groups, listener rules)
+- [x] PR 4 merged (Docker Compose stack with all 6 observability services)
 
 ---
 
 ## Overall Progress
-**Total Completion**: 30% (3/10 PRs completed)
+**Total Completion**: 40% (4/10 PRs completed)
 
 ```
-[██████░░░░░░░░░░░░░░] 30% Complete
+[████████░░░░░░░░░░░░] 40% Complete
 ```
 
 ---
@@ -76,7 +77,7 @@ Create Docker Compose stack and component configs for all 6 observability servic
 | 1 | Observability Architecture Documentation | Complete | Medium | Review gate - architecture approval before proceeding |
 | 2 | S3 Buckets & IAM Foundation (Base) | Complete | Medium | Commit 6ce8849 |
 | 3 | EC2 Observability Instance (Runtime) | Complete | High | Commit 1f8d92d |
-| 4 | Docker Compose & Component Configs | In Progress | High | Depends on PR 3 |
+| 4 | Docker Compose & Component Configs | Complete | High | Commit 0ef67cb |
 | 5 | Backend OpenTelemetry Instrumentation | Not Started | High | Depends on PR 4 |
 | 6 | Frontend Grafana Faro SDK | Not Started | Medium | Depends on PR 4 |
 | 7 | Golden Signals & Method Dashboards | Not Started | Medium | Depends on PRs 5, 6 |

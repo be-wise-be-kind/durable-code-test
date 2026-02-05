@@ -171,6 +171,24 @@ def _configure_middleware(application: FastAPI) -> None:
     )
 
 
+def _configure_observability(application: FastAPI) -> None:
+    """Configure observability instrumentation (telemetry, logging, metrics, profiling).
+
+    Initializes OpenTelemetry tracing/metrics, structured JSON logging, Four Golden Signals
+    metrics middleware, and Pyroscope profiling. Each component gates itself behind its own
+    environment variable (OTEL_ENABLED, PYROSCOPE_ENABLED).
+    """
+    from .core.logging_config import configure_logging
+    from .core.metrics import configure_metrics
+    from .core.profiling import configure_profiling
+    from .core.telemetry import configure_telemetry
+
+    configure_logging()
+    configure_telemetry(application)
+    configure_metrics(application)
+    configure_profiling()
+
+
 def create_application() -> FastAPI:
     """Create and configure the FastAPI application with security hardening."""
     application = FastAPI(
@@ -179,6 +197,9 @@ def create_application() -> FastAPI:
         version=API_VERSION,
     )
 
+    # Observability init before middleware so spans cover all requests
+    _configure_observability(application)
+
     _configure_exception_handlers(application)
     _configure_middleware(application)
 
@@ -186,6 +207,15 @@ def create_application() -> FastAPI:
 
 
 app = create_application()
+
+
+@app.on_event("shutdown")
+async def _shutdown_telemetry() -> None:
+    """Flush and shut down OpenTelemetry providers on application exit."""
+    from .core.telemetry import shutdown_telemetry
+
+    shutdown_telemetry()
+
 
 # Include routers
 app.include_router(oscilloscope_router)
