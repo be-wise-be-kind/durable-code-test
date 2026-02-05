@@ -350,6 +350,8 @@
                 <li><a href="index.html">Home</a></li>
                 <li><a href="terraform-architecture.html" class="active">Architecture</a></li>
                 <li><a href="terraform-resources.html">Resources</a></li>
+                <li><a href="terraform-environments.html">Environments</a></li>
+                <li><a href="terraform-operations.html">Operations</a></li>
             </ul>
         </div>
     </nav>
@@ -548,7 +550,7 @@ workspace_key_prefix = ""   # Disables env:/ prefixing</code></pre>
                 <p>The infrastructure supports a cost-saving pattern where expensive resources are destroyed outside business hours.</p>
 
                 <h3>Down Workflow (Teardown)</h3>
-                <p>Triggered nightly at 10 PM PST or manually.</p>
+                <p>Scheduled daily at 8 AM UTC (midnight PST) via <code>down.yml</code>, or triggered manually.</p>
                 <div class="workflow-steps">
                     <div class="workflow-step">
                         <div class="step-number">1</div>
@@ -581,7 +583,7 @@ workspace_key_prefix = ""   # Disables env:/ prefixing</code></pre>
                 </div>
 
                 <h3>Up Workflow (Startup)</h3>
-                <p>Triggered manually when infrastructure is needed.</p>
+                <p>Scheduled daily at 3 AM UTC (8 PM MST) via <code>up.yml</code>, or triggered manually.</p>
                 <div class="workflow-steps">
                     <div class="workflow-step">
                         <div class="step-number">1</div>
@@ -746,7 +748,7 @@ data "aws_vpc" "main" {
 
     <footer>
         <div class="container">
-            <p>Durable Code Infrastructure Documentation | Last Updated: December 2025</p>
+            <p>Durable Code Infrastructure Documentation | Last Updated: February 2026</p>
         </div>
     </footer>
 

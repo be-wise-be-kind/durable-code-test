@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Environments - Durable Code</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #64748b;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Navigation */
+        nav {
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        nav .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 24px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text);
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            color: var(--primary);
+        }
+
+        /* Page Header */
+        .page-header {
+            padding: 48px 0 32px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .page-header h1 {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        .page-header p {
+            color: var(--text-muted);
+            font-size: 1.125rem;
+        }
+
+        /* Content */
+        .content {
+            padding: 48px 0;
+        }
+
+        .section {
+            margin-bottom: 48px;
+        }
+
+        .section h2 {
+            font-size: 1.5rem;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--primary);
+            display: inline-block;
+        }
+
+        .section h3 {
+            font-size: 1.125rem;
+            margin: 24px 0 12px;
+        }
+
+        .section p {
+            margin-bottom: 16px;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            font-size: 0.875rem;
+            background: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        th, td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: #f1f5f9;
+            font-weight: 600;
+            font-size: 0.8125rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-dev {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .badge-staging {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-prod {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge-enabled {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge-disabled {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+
+        /* Info Cards */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin: 24px 0;
+        }
+
+        .info-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 24px;
+            border: 1px solid var(--border);
+        }
+
+        .info-card h4 {
+            font-size: 1rem;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .info-card p {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .info-card p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Code */
+        code {
+            background: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+        }
+
+        /* Footer */
+        footer {
+            padding: 40px 0;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            border-top: 1px solid var(--border);
+        }
+
+        /* Print Styles */
+        @media print {
+            nav {
+                position: relative;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="container">
+            <a href="index.html" class="logo">Durable Code Infra</a>
+            <ul class="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="terraform-architecture.html">Architecture</a></li>
+                <li><a href="terraform-resources.html">Resources</a></li>
+                <li><a href="terraform-environments.html" class="active">Environments</a></li>
+                <li><a href="terraform-operations.html">Operations</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="page-header">
+        <div class="container">
+            <h1>Environments</h1>
+            <p>Comparison of dev, staging, and production environment configurations</p>
+        </div>
+    </div>
+
+    <div class="content">
+        <div class="container">
+            <!-- Overview -->
+            <section class="section">
+                <h2>Overview</h2>
+                <p>Each environment is configured via a <code>.tfvars</code> file in <code>infra/environments/</code>. These files control resource sizing, cost optimization features, and security posture. All environments deploy to <code>us-west-2</code>.</p>
+
+                <div class="info-grid">
+                    <div class="info-card" style="border-left: 4px solid var(--primary);">
+                        <h4><span class="badge badge-dev">Dev</span> Development</h4>
+                        <p><strong>Domain:</strong> <code>dev.durableaicoding.net</code></p>
+                        <p><strong>Strategy:</strong> Aggressive cost optimization with Fargate Spot and auto-shutdown.</p>
+                        <p><strong>Budget:</strong> $10/month</p>
+                    </div>
+
+                    <div class="info-card" style="border-left: 4px solid var(--warning);">
+                        <h4><span class="badge badge-staging">Staging</span> Staging</h4>
+                        <p><strong>Domain:</strong> <code>staging.durableaicoding.net</code></p>
+                        <p><strong>Strategy:</strong> Balance of cost efficiency and production-like behavior.</p>
+                        <p><strong>Budget:</strong> $15/month</p>
+                    </div>
+
+                    <div class="info-card" style="border-left: 4px solid var(--success);">
+                        <h4><span class="badge badge-prod">Prod</span> Production</h4>
+                        <p><strong>Domain:</strong> <code>durableaicoding.net</code></p>
+                        <p><strong>Strategy:</strong> Reliability and security focus, 24/7 availability.</p>
+                        <p><strong>Budget:</strong> $25/month</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Comparison Table -->
+            <section class="section">
+                <h2>Environment Comparison</h2>
+
+                <h3>Resource Sizing</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Setting</th>
+                            <th><span class="badge badge-dev">Dev</span></th>
+                            <th><span class="badge badge-staging">Staging</span></th>
+                            <th><span class="badge badge-prod">Prod</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>CPU (units)</td>
+                            <td>256</td>
+                            <td>512</td>
+                            <td>512</td>
+                        </tr>
+                        <tr>
+                            <td>Memory (MB)</td>
+                            <td>512</td>
+                            <td>1024</td>
+                            <td>1024</td>
+                        </tr>
+                        <tr>
+                            <td>Desired Count</td>
+                            <td>1</td>
+                            <td>2</td>
+                            <td>2</td>
+                        </tr>
+                        <tr>
+                            <td>Min Capacity</td>
+                            <td>0 (scale-to-zero)</td>
+                            <td>1</td>
+                            <td>2 (HA)</td>
+                        </tr>
+                        <tr>
+                            <td>Max Capacity</td>
+                            <td>2</td>
+                            <td>3</td>
+                            <td>4</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Cost Optimization</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th><span class="badge badge-dev">Dev</span></th>
+                            <th><span class="badge badge-staging">Staging</span></th>
+                            <th><span class="badge badge-prod">Prod</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Fargate Type</td>
+                            <td>Spot (70% savings)</td>
+                            <td>On-demand</td>
+                            <td>On-demand</td>
+                        </tr>
+                        <tr>
+                            <td>Auto-Shutdown</td>
+                            <td><span class="badge badge-enabled">Enabled</span></td>
+                            <td><span class="badge badge-enabled">Enabled</span></td>
+                            <td><span class="badge badge-disabled">Disabled (24/7)</span></td>
+                        </tr>
+                        <tr>
+                            <td>NAT Gateway</td>
+                            <td><span class="badge badge-disabled">Disabled</span></td>
+                            <td><span class="badge badge-enabled">Enabled</span></td>
+                            <td><span class="badge badge-enabled">Enabled</span></td>
+                        </tr>
+                        <tr>
+                            <td>Budget Target</td>
+                            <td>$10/month</td>
+                            <td>$15/month</td>
+                            <td>$25/month</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Security Features</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th><span class="badge badge-dev">Dev</span></th>
+                            <th><span class="badge badge-staging">Staging</span></th>
+                            <th><span class="badge badge-prod">Prod</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>WAF</td>
+                            <td><span class="badge badge-disabled">Disabled</span></td>
+                            <td><span class="badge badge-disabled">Disabled</span></td>
+                            <td><span class="badge badge-enabled">Enabled</span></td>
+                        </tr>
+                        <tr>
+                            <td>GuardDuty</td>
+                            <td><span class="badge badge-disabled">Disabled</span></td>
+                            <td><span class="badge badge-enabled">Enabled</span></td>
+                            <td><span class="badge badge-enabled">Enabled</span></td>
+                        </tr>
+                        <tr>
+                            <td>Security Hub</td>
+                            <td><span class="badge badge-disabled">Disabled</span></td>
+                            <td><span class="badge badge-disabled">Disabled</span></td>
+                            <td><span class="badge badge-enabled">Enabled</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Monitoring</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th><span class="badge badge-dev">Dev</span></th>
+                            <th><span class="badge badge-staging">Staging</span></th>
+                            <th><span class="badge badge-prod">Prod</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Container Insights</td>
+                            <td><span class="badge badge-disabled">Disabled</span></td>
+                            <td><span class="badge badge-enabled">Enabled</span></td>
+                            <td><span class="badge badge-enabled">Enabled</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Backend Config -->
+            <section class="section">
+                <h2>Backend Configuration</h2>
+                <p>Each workspace and environment has a dedicated backend configuration file in <code>infra/terraform/backend-config/</code>. The state path follows the pattern <code>{workspace}/{env}/terraform.tfstate</code>.</p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Environment</th>
+                            <th>Workspace</th>
+                            <th>Backend Config File</th>
+                            <th>State Path</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="badge badge-dev">Dev</span></td>
+                            <td>Base</td>
+                            <td><code>base-dev.hcl</code></td>
+                            <td><code>base/dev/terraform.tfstate</code></td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-dev">Dev</span></td>
+                            <td>Runtime</td>
+                            <td><code>runtime-dev.hcl</code></td>
+                            <td><code>runtime/dev/terraform.tfstate</code></td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-staging">Staging</span></td>
+                            <td>Base</td>
+                            <td><code>base-staging.hcl</code></td>
+                            <td><code>base/staging/terraform.tfstate</code></td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-staging">Staging</span></td>
+                            <td>Runtime</td>
+                            <td><code>runtime-staging.hcl</code></td>
+                            <td><code>runtime/staging/terraform.tfstate</code></td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-prod">Prod</span></td>
+                            <td>Base</td>
+                            <td><code>base-prod.hcl</code></td>
+                            <td><code>base/prod/terraform.tfstate</code></td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-prod">Prod</span></td>
+                            <td>Runtime</td>
+                            <td><code>runtime-prod.hcl</code></td>
+                            <td><code>runtime/prod/terraform.tfstate</code></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- CI/CD Branches -->
+            <section class="section">
+                <h2>CI/CD Branch Mapping</h2>
+                <p>Each environment is triggered by specific branch patterns:</p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Environment</th>
+                            <th>Branches</th>
+                            <th>Availability</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="badge badge-dev">Dev</span></td>
+                            <td><code>develop</code>, <code>feature/*</code></td>
+                            <td>Business hours weekdays (with auto-shutdown)</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-staging">Staging</span></td>
+                            <td><code>main</code>, <code>release/*</code></td>
+                            <td>Always up (with auto-shutdown)</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-prod">Prod</span></td>
+                            <td><code>main</code></td>
+                            <td>24/7 always available</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>Durable Code Infrastructure Documentation | Last Updated: February 2026</p>
+        </div>
+    </footer>
+</body>
+</html>

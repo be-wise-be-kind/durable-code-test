@@ -356,6 +356,8 @@
                 <li><a href="index.html" class="active">Home</a></li>
                 <li><a href="terraform-architecture.html">Architecture</a></li>
                 <li><a href="terraform-resources.html">Resources</a></li>
+                <li><a href="terraform-environments.html">Environments</a></li>
+                <li><a href="terraform-operations.html">Operations</a></li>
             </ul>
         </div>
     </nav>
@@ -383,10 +385,16 @@
                     <p>Complete list of AWS resources by workspace. VPC, ECS, ALB, security groups, and more with their dependencies.</p>
                 </a>
 
-                <a href="terraform-state-fix.html" class="card">
+                <a href="terraform-environments.html" class="card">
+                    <div class="card-icon">&#127758;</div>
+                    <h3>Environments</h3>
+                    <p>Compare dev, staging, and production environments. Resource sizing, cost features, and security configuration per environment.</p>
+                </a>
+
+                <a href="terraform-operations.html" class="card">
                     <div class="card-icon">&#128295;</div>
-                    <h3>State Management Fix</h3>
-                    <p>Documentation of the workspace state path issue and the migration to clean, predictable state file locations.</p>
+                    <h3>Operations</h3>
+                    <p>Just commands reference, CI/CD workflows, infrastructure scripts, and common operational procedures.</p>
                 </a>
             </div>
 
@@ -411,6 +419,7 @@
                             <li>ECR Repositories</li>
                             <li>Route53 &amp; ACM</li>
                             <li>KMS Keys</li>
+                            <li>VPC Flow Logs</li>
                         </ul>
                     </div>
 
@@ -418,10 +427,10 @@
                         <h4>Runtime <span class="workspace-badge">Ephemeral</span></h4>
                         <ul>
                             <li>NAT Gateway</li>
-                            <li>Application Load Balancer</li>
+                            <li>ALB &amp; Listeners</li>
                             <li>ECS Cluster &amp; Services</li>
                             <li>WAF Web ACL</li>
-                            <li>CloudWatch Logs</li>
+                            <li>DNS Records</li>
                         </ul>
                     </div>
                 </div>
@@ -543,7 +552,7 @@
 
     <footer>
         <div class="container">
-            <p>Durable Code Infrastructure Documentation | Last Updated: December 2025</p>
+            <p>Durable Code Infrastructure Documentation | Last Updated: February 2026</p>
         </div>
     </footer>
 </body>
