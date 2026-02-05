@@ -151,6 +151,13 @@ The file `docs/observability-architecture.html` is the canonical visual referenc
 
 ## AI Agent Guidance
 
+### Critical: Progress Document Updates
+After every PR merge, update BOTH progress documents before starting the next PR:
+1. **PROGRESS_TRACKER.md**: Update "Current PR", mark completed PR status as "Complete" with commit hash, update progress percentage and bar, update "Next PR to Implement" section
+2. **PR_BREAKDOWN.md**: Check off completed PR in both "Completed PRs" and "Remaining PRs" sections, update "NEXT PR TO IMPLEMENT" pointer, update progress percentage
+
+Failure to update these documents causes the next AI agent session to re-implement completed work or skip prerequisite validation.
+
 ### When Implementing Infrastructure (PRs 2-3)
 - Follow existing Terraform patterns in `infra/terraform/workspaces/`
 - Use `count = var.enable_observability ? 1 : 0` on all resources
