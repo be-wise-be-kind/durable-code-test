@@ -201,3 +201,34 @@ output "workspace_name" {
   description = "Current Terraform workspace name"
   value       = local.workspace_name
 }
+
+# Observability Outputs
+output "observability_bucket_name" {
+  description = "S3 bucket name for observability data (if enabled)"
+  value       = var.enable_observability ? aws_s3_bucket.observability[0].id : ""
+}
+
+output "observability_bucket_arn" {
+  description = "S3 bucket ARN for observability data (if enabled)"
+  value       = var.enable_observability ? aws_s3_bucket.observability[0].arn : ""
+}
+
+output "observability_instance_profile_name" {
+  description = "IAM instance profile name for observability EC2 (if enabled)"
+  value       = var.enable_observability ? aws_iam_instance_profile.observability[0].name : ""
+}
+
+output "observability_instance_profile_arn" {
+  description = "IAM instance profile ARN for observability EC2 (if enabled)"
+  value       = var.enable_observability ? aws_iam_instance_profile.observability[0].arn : ""
+}
+
+output "observability_iam_role_arn" {
+  description = "IAM role ARN for observability EC2 (if enabled)"
+  value       = var.enable_observability ? aws_iam_role.observability[0].arn : ""
+}
+
+output "observability_security_group_id" {
+  description = "Security group ID for observability EC2 (if enabled)"
+  value       = var.enable_observability ? aws_security_group.observability[0].id : ""
+}
