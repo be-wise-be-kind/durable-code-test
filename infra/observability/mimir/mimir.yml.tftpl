@@ -1,0 +1,66 @@
+# Purpose: Mimir configuration for single-binary mode with S3 block storage
+# Scope: Metrics storage backend handling Prometheus-compatible remote write and query
+# Overview: Configures Grafana Mimir in single-binary (monolithic) mode for the observability stack.
+#     Uses S3 for long-term block storage with a local TSDB for recent data. Multitenancy is disabled
+#     for simplicity. The memberlist KV store handles ring coordination within the single instance.
+#     Replication factor is 1 (single instance). Blocks retention is set to 7 days to manage S3 costs.
+#     Compactor runs locally to merge and deduplicate blocks before S3 upload.
+# Dependencies: S3 bucket with mimir/ prefix, IAM instance profile with S3 access
+# Exports: Prometheus-compatible API on port 9009 (/prometheus for reads, /api/v1/push for writes)
+# Environment: S3 bucket name and AWS region injected via Terraform templatefile
+# Related: docker-compose.yml for container settings, alloy config.alloy for metric ingestion
+# Implementation: Single-binary mode with memberlist ring, S3 block storage, local TSDB cache
+
+target: all
+
+multitenancy_enabled: false
+
+server:
+  http_listen_port: 9009
+  grpc_listen_port: 9095
+  log_level: warn
+
+blocks_storage:
+  backend: s3
+  s3:
+    bucket_name: ${s3_bucket}
+    endpoint: s3.${aws_region}.amazonaws.com
+    region: ${aws_region}
+    storage_prefix: mimir/blocks
+  tsdb:
+    dir: /data/mimir/tsdb
+  bucket_store:
+    sync_dir: /data/mimir/tsdb-sync
+
+compactor:
+  data_dir: /data/mimir/compactor
+  sharding_ring:
+    kvstore:
+      store: memberlist
+
+distributor:
+  ring:
+    kvstore:
+      store: memberlist
+
+ingester:
+  ring:
+    kvstore:
+      store: memberlist
+    replication_factor: 1
+
+store_gateway:
+  sharding_ring:
+    replication_factor: 1
+
+ruler_storage:
+  backend: s3
+  s3:
+    bucket_name: ${s3_bucket}
+    endpoint: s3.${aws_region}.amazonaws.com
+    region: ${aws_region}
+    storage_prefix: mimir/ruler
+
+limits:
+  max_global_series_per_user: 0
+  compactor_blocks_retention_period: 168h

@@ -1,0 +1,28 @@
+# Purpose: Pyroscope configuration for single-binary mode with S3 profile storage
+# Scope: Continuous profiling backend handling profile ingestion, storage, and flame graph queries
+# Overview: Configures Grafana Pyroscope in single-binary mode for the observability stack. Accepts
+#     profiling data via the push API from the backend Pyroscope SDK. Stores profile data in S3 with
+#     local data directory for caching. Multitenancy is disabled. Configured to accept profiles
+#     tagged with trace_id and span_id labels for trace-to-profile correlation in Grafana.
+# Dependencies: S3 bucket with pyroscope/ prefix, IAM instance profile with S3 access
+# Exports: Push API and query API on port 4040
+# Environment: S3 bucket name and AWS region injected via Terraform templatefile
+# Related: docker-compose.yml for container settings, backend profiling.py for SDK integration
+# Implementation: Single-binary mode with S3 storage, accepts push-based profiles with trace labels
+
+target: all
+
+server:
+  http_listen_port: 4040
+  log_level: warn
+
+storage:
+  backend: s3
+  s3:
+    bucket_name: ${s3_bucket}
+    endpoint: s3.${aws_region}.amazonaws.com
+    region: ${aws_region}
+    prefix: pyroscope
+
+self_profiling:
+  disable_push: true

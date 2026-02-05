@@ -1,0 +1,57 @@
+# Purpose: Loki configuration for single-binary mode with S3 chunk and TSDB index storage
+# Scope: Log aggregation backend handling push API ingestion and LogQL queries
+# Overview: Configures Grafana Loki in single-binary mode for the observability stack. Uses S3 for
+#     chunk storage and TSDB for index storage with S3 backing. The schema uses v13 with TSDB index
+#     and S3 object store. Retention is set to 7 days with compactor-based deletion. Multitenancy is
+#     disabled. The memberlist KV store handles ring coordination within the single instance.
+#     Query parallelism is limited to 2 to respect the memory constraints of the t3.medium instance.
+# Dependencies: S3 bucket with loki/ prefix, IAM instance profile with S3 access
+# Exports: Loki API on port 3100 (/loki/api/v1/push for writes, /loki/api/v1/query for reads)
+# Environment: S3 bucket name and AWS region injected via Terraform templatefile
+# Related: docker-compose.yml for container settings, alloy config.alloy for log ingestion
+# Implementation: Single-binary mode with TSDB index, S3 chunk storage, compactor-based retention
+
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9096
+  log_level: warn
+
+common:
+  path_prefix: /data/loki
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: memberlist
+
+schema_config:
+  configs:
+    - from: "2024-01-01"
+      store: tsdb
+      object_store: s3
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+storage_config:
+  tsdb_shipper:
+    active_index_directory: /data/loki/tsdb-index
+    cache_location: /data/loki/tsdb-cache
+  aws:
+    bucketnames: ${s3_bucket}
+    endpoint: s3.${aws_region}.amazonaws.com
+    region: ${aws_region}
+    s3forcepathstyle: false
+    storage_prefix: loki
+
+limits_config:
+  retention_period: 168h
+  max_query_parallelism: 2
+
+compactor:
+  working_directory: /data/loki/compactor
+  compaction_interval: 10m
+  retention_enabled: true
+  delete_request_store: s3
