@@ -26,23 +26,24 @@
 - [x] PR 2: S3 Buckets & IAM Foundation (Base Workspace)
 - [x] PR 3: EC2 Observability Instance (Runtime Workspace)
 - [x] PR 4: Docker Compose & Component Configs
+- [x] PR 5: Backend OpenTelemetry Instrumentation
 
 ### NEXT PR TO IMPLEMENT
-START HERE: **PR 5** - Backend OpenTelemetry Instrumentation
+START HERE: **PR 6** - Frontend Grafana Faro SDK
 
 ### Remaining PRs
 - [x] PR 1: Observability Architecture Documentation
 - [x] PR 2: S3 Buckets & IAM Foundation (Base Workspace)
 - [x] PR 3: EC2 Observability Instance (Runtime Workspace)
 - [x] PR 4: Docker Compose & Component Configs
-- [ ] PR 5: Backend OpenTelemetry Instrumentation
+- [x] PR 5: Backend OpenTelemetry Instrumentation
 - [ ] PR 6: Frontend Grafana Faro SDK
 - [ ] PR 7: Golden Signals & Method Dashboards
 - [ ] PR 8: Tracing Deep Dive & Profiling Correlation
 - [ ] PR 9: Alerting & SLO Monitoring
 - [ ] PR 10: Integration, Verification & CI/CD
 
-**Progress**: 40% Complete (4/10 PRs)
+**Progress**: 50% Complete (5/10 PRs)
 
 ---
 
