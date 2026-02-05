@@ -14,7 +14,7 @@
 
 **Exports**: Architecture decisions, component configuration guidance, integration patterns, and cross-pillar correlation strategies
 
-**Related**: PR_BREAKDOWN.md for implementation tasks, PROGRESS_TRACKER.md for current status
+**Related**: PR_BREAKDOWN.md for implementation tasks, PROGRESS_TRACKER.md for current status, `docs/observability-architecture.html` for visual architecture reference
 
 **Implementation**: Phased PR approach with infrastructure-first, instrumentation-second, dashboards-third strategy
 
@@ -133,6 +133,21 @@ The Durable Code Test project demonstrates AI-ready development practices with a
 - **Fargate networking**: No host networking mode; OTLP must use EC2 private IP
 - **ALB path routing**: Grafana subpath requires `GF_SERVER_ROOT_URL` and `GF_SERVER_SERVE_FROM_SUB_PATH`
 - **S3 permissions**: EC2 instance profile requires specific S3 bucket policy
+
+## Architecture Documentation
+
+The file `docs/observability-architecture.html` is the canonical visual reference for this feature. It contains:
+- System architecture diagram (data flow from sources through Alloy to backends)
+- Resource ERD showing all AWS resources and their relationships across workspaces
+- Component details (ports, memory limits, modes)
+- Cross-pillar correlation paths
+- Network and security layout
+- Cost analysis
+- Dashboard mockups for all planned Grafana dashboards
+
+**This document is both a reference and a living artifact.** When implementing PRs:
+- **Read it** before starting work to understand the architecture visually
+- **Update it** if any architectural decision changes (e.g., ports, memory limits, resource placement, data flow)
 
 ## AI Agent Guidance
 

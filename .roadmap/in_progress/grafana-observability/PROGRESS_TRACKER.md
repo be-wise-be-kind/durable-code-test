@@ -29,13 +29,13 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Grafana St
 4. **Update this document** after completing each PR
 
 ## Current Status
-**Current PR**: PR 1 - Observability Architecture Documentation
+**Current PR**: PR 2 - S3 Buckets & IAM Foundation (Base)
 **Infrastructure State**: Base and runtime workspaces operational; no observability resources deployed
 **Feature Target**: Complete 4-pillar observability (metrics, logs, traces, profiling) with cross-pillar correlation
 
 ## Required Documents Location
 ```
-.roadmap/planning/grafana-observability/
+.roadmap/in_progress/grafana-observability/
 ├── AI_CONTEXT.md          # Architecture decisions, ebook references, tradeoffs
 ├── PR_BREAKDOWN.md        # Detailed instructions for each PR
 ├── PROGRESS_TRACKER.md    # THIS FILE - Progress and handoff notes
@@ -43,28 +43,28 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Grafana St
 
 ## Next PR to Implement
 
-### START HERE: PR 1 - Observability Architecture Documentation
+### START HERE: PR 2 - S3 Buckets & IAM Foundation (Base Workspace)
 
 **Quick Summary**:
-Create comprehensive architecture documentation page (`docs/observability-architecture.html`) following the existing vanilla HTML/CSS/JS docs pattern. Add navigation links across all existing docs pages and a card on `docs/index.html`.
+Create persistent base workspace resources: S3 bucket with prefixes for all 4 pillars, IAM role with instance profile for EC2 access, and security group for the observability EC2 instance.
 
 **Pre-flight Checklist**:
-- [ ] Read all files in `docs/` to understand template pattern and recent structural changes
-- [ ] Verify nav link structure across existing pages
-- [ ] Review the plan in AI_CONTEXT.md for architecture diagram content
+- [ ] Read existing base workspace Terraform files for pattern consistency
+- [ ] Verify `enable_observability` variable pattern matches other feature flags
+- [ ] Review AI_CONTEXT.md for resource placement decisions
 
 **Prerequisites Complete**:
-- [x] Existing docs pattern understood (index.html, terraform-architecture.html, terraform-resources.html)
-- [x] SVG diagram patterns identified (gradient defs, workspace badges)
-- [x] No infrastructure dependencies for this PR
+- [x] PR 1 merged (architecture documentation approved)
+- [x] Base workspace Terraform patterns understood
+- [x] Feature flag pattern documented in AI_CONTEXT.md
 
 ---
 
 ## Overall Progress
-**Total Completion**: 0% (0/10 PRs completed)
+**Total Completion**: 10% (1/10 PRs completed)
 
 ```
-[░░░░░░░░░░░░░░░░░░░░] 0% Complete
+[██░░░░░░░░░░░░░░░░░░] 10% Complete
 ```
 
 ---
@@ -73,7 +73,7 @@ Create comprehensive architecture documentation page (`docs/observability-archit
 
 | PR | Title | Status | Complexity | Notes |
 |----|-------|--------|------------|-------|
-| 1 | Observability Architecture Documentation | In Progress | Medium | Review gate - architecture approval before proceeding |
+| 1 | Observability Architecture Documentation | Complete | Medium | Review gate - architecture approval before proceeding |
 | 2 | S3 Buckets & IAM Foundation (Base) | Not Started | Medium | Base workspace persistent storage |
 | 3 | EC2 Observability Instance (Runtime) | Not Started | High | Depends on PR 2 |
 | 4 | Docker Compose & Component Configs | Not Started | High | Depends on PR 3 |
@@ -95,13 +95,13 @@ Create comprehensive architecture documentation page (`docs/observability-archit
 
 ## PR 1: Observability Architecture Documentation
 **Branch**: `docs/observability-architecture`
-- [ ] Read all docs/ HTML files for pattern consistency
-- [ ] Create `docs/observability-architecture.html` with full architecture content
-- [ ] Add card to `docs/index.html` linking to new page
-- [ ] Add nav link to all existing docs pages (index, terraform-architecture, terraform-resources)
-- [ ] Verify all nav links work across pages
-- [ ] Verify SVG diagrams render correctly
-- [ ] Content accurately represents planned architecture
+- [x] Read all docs/ HTML files for pattern consistency
+- [x] Create `docs/observability-architecture.html` with full architecture content
+- [x] Add card to `docs/index.html` linking to new page
+- [x] Add nav link to all existing docs pages (index, terraform-architecture, terraform-resources, terraform-environments, terraform-operations)
+- [x] Verify all nav links work across pages
+- [x] Verify SVG diagrams render correctly
+- [x] Content accurately represents planned architecture
 
 ## PR 2: S3 Buckets & IAM Foundation (Base Workspace)
 **Branch**: `infra/observability-foundation`
