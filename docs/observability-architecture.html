@@ -1103,89 +1103,169 @@
                 <p>The EC2 instance follows the same ephemeral lifecycle as other runtime resources&mdash;destroyed during off-hours and recreated on demand. S3 data in the base workspace persists across these cycles.</p>
             </section>
 
-            <!-- Section 9: Implementation Roadmap -->
+            <!-- Section 9: Dashboard Mockups -->
             <section class="section">
-                <h2>Implementation Roadmap</h2>
-                <p>The observability feature is delivered across 10 pull requests in 5 phases, with each PR building on the previous ones.</p>
+                <h2>Dashboard Mockups</h2>
+                <p>Six Grafana dashboards provide visibility across all 4 pillars, from high-level golden signals down to individual trace flamegraphs.</p>
 
-                <h3>Phase 1: Documentation &amp; Foundation</h3>
-                <div class="phase-group">
-                    <h4><span class="badge badge-observability">PR 1</span> Observability Architecture Documentation</h4>
-                    <ul>
-                        <li>Architecture documentation HTML page (this page)</li>
-                        <li>Review gate&mdash;architecture approval before infrastructure work proceeds</li>
-                    </ul>
-                </div>
-                <div class="phase-group">
-                    <h4><span class="badge badge-observability">PR 2</span> S3 Buckets &amp; IAM Foundation (Base)</h4>
-                    <ul>
-                        <li>S3 bucket with prefix-based storage for all 4 pillars</li>
-                        <li>IAM role, instance profile, and security group</li>
-                    </ul>
-                </div>
+                <h3>Golden Signals Overview</h3>
+                <div class="diagram-container">
+                    <svg viewBox="0 0 900 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Golden Signals dashboard mockup">
+                        <!-- Dashboard chrome -->
+                        <rect x="10" y="10" width="880" height="200" rx="6" fill="#181b1f" stroke="#333" stroke-width="1"/>
+                        <rect x="10" y="10" width="880" height="28" rx="6" fill="#222529"/>
+                        <text x="24" y="29" fill="#ccc" font-family="system-ui" font-size="11" font-weight="600">Golden Signals Overview</text>
+                        <circle cx="870" cy="24" r="5" fill="#22c55e"/>
 
-                <h3>Phase 2: Infrastructure</h3>
-                <div class="phase-group">
-                    <h4><span class="badge badge-observability">PR 3</span> EC2 Observability Instance (Runtime)</h4>
-                    <ul>
-                        <li>EC2 instance in private subnet with Docker Compose</li>
-                        <li>ALB target groups and listener rules for /grafana/* and /collect/*</li>
-                    </ul>
-                </div>
-                <div class="phase-group">
-                    <h4><span class="badge badge-observability">PR 4</span> Docker Compose &amp; Component Configs</h4>
-                    <ul>
-                        <li>Docker Compose with 6 services and memory limits</li>
-                        <li>Configuration files for Grafana, Mimir, Loki, Tempo, Pyroscope, Alloy</li>
-                    </ul>
-                </div>
+                        <!-- 4 panels -->
+                        <rect x="20" y="48" width="205" height="150" rx="4" fill="#1a1d21" stroke="#333" stroke-width="0.5"/>
+                        <text x="30" y="66" fill="#8b949e" font-family="system-ui" font-size="9">LATENCY (p50 / p95 / p99)</text>
+                        <polyline points="30,170 60,155 90,160 120,140 150,145 180,120 210,130" fill="none" stroke="#22c55e" stroke-width="1.5"/>
+                        <polyline points="30,165 60,148 90,150 120,130 150,132 180,105 210,115" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4,2"/>
+                        <polyline points="30,160 60,140 90,142 120,118 150,120 180,90 210,100" fill="none" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="2,2"/>
+                        <text x="122" y="188" text-anchor="middle" fill="#555" font-family="system-ui" font-size="8">time &rarr;</text>
 
-                <h3>Phase 3: Instrumentation</h3>
-                <div class="phase-group">
-                    <h4><span class="badge badge-observability">PR 5</span> Backend OpenTelemetry Instrumentation</h4>
-                    <ul>
-                        <li>OTel SDK for FastAPI: TracerProvider, MeterProvider, structured logging</li>
-                        <li>Pyroscope profiling SDK with trace-linked labels</li>
-                    </ul>
-                </div>
-                <div class="phase-group">
-                    <h4><span class="badge badge-observability">PR 6</span> Frontend Grafana Faro SDK</h4>
-                    <ul>
-                        <li>Faro SDK: web vitals, errors, sessions, W3C trace propagation</li>
-                        <li>Frontend-to-backend distributed trace correlation</li>
-                    </ul>
-                </div>
+                        <rect x="235" y="48" width="205" height="150" rx="4" fill="#1a1d21" stroke="#333" stroke-width="0.5"/>
+                        <text x="245" y="66" fill="#8b949e" font-family="system-ui" font-size="9">TRAFFIC (req/sec)</text>
+                        <rect x="255" y="140" width="16" height="45" rx="2" fill="#6366f1" opacity="0.7"/>
+                        <rect x="278" y="120" width="16" height="65" rx="2" fill="#6366f1" opacity="0.8"/>
+                        <rect x="301" y="105" width="16" height="80" rx="2" fill="#6366f1" opacity="0.85"/>
+                        <rect x="324" y="95" width="16" height="90" rx="2" fill="#6366f1" opacity="0.9"/>
+                        <rect x="347" y="110" width="16" height="75" rx="2" fill="#6366f1" opacity="0.85"/>
+                        <rect x="370" y="85" width="16" height="100" rx="2" fill="#6366f1"/>
+                        <rect x="393" y="90" width="16" height="95" rx="2" fill="#6366f1" opacity="0.95"/>
+                        <rect x="416" y="100" width="16" height="85" rx="2" fill="#6366f1" opacity="0.9"/>
+                        <text x="337" y="188" text-anchor="middle" fill="#555" font-family="system-ui" font-size="8">time &rarr;</text>
 
-                <h3>Phase 4: Visualization &amp; Alerting</h3>
-                <div class="phase-group">
-                    <h4><span class="badge badge-observability">PR 7</span> Golden Signals &amp; Method Dashboards</h4>
-                    <ul>
-                        <li>Golden Signals overview, RED method, web vitals, USE method dashboards</li>
-                    </ul>
-                </div>
-                <div class="phase-group">
-                    <h4><span class="badge badge-observability">PR 8</span> Tracing Deep Dive &amp; Profiling Correlation</h4>
-                    <ul>
-                        <li>Trace analysis and profiling dashboards</li>
-                        <li>Cross-pillar datasource links: exemplars, trace-to-logs, trace-to-profiles</li>
-                    </ul>
-                </div>
-                <div class="phase-group">
-                    <h4><span class="badge badge-observability">PR 9</span> Alerting &amp; SLO Monitoring</h4>
-                    <ul>
-                        <li>Alert rules, contact points, notification policies</li>
-                        <li>Multi-window burn rate SLO alerting</li>
-                    </ul>
+                        <rect x="450" y="48" width="205" height="150" rx="4" fill="#1a1d21" stroke="#333" stroke-width="0.5"/>
+                        <text x="460" y="66" fill="#8b949e" font-family="system-ui" font-size="9">ERRORS (rate %)</text>
+                        <polyline points="460,180 490,178 520,179 550,175 580,170 610,178 640,176" fill="none" stroke="#22c55e" stroke-width="1.5"/>
+                        <line x1="460" y1="90" x2="640" y2="90" stroke="#ef4444" stroke-width="0.5" stroke-dasharray="4,2"/>
+                        <text x="642" y="93" fill="#ef4444" font-family="system-ui" font-size="7">5% SLO</text>
+                        <text x="552" y="188" text-anchor="middle" fill="#555" font-family="system-ui" font-size="8">time &rarr;</text>
+
+                        <rect x="665" y="48" width="215" height="150" rx="4" fill="#1a1d21" stroke="#333" stroke-width="0.5"/>
+                        <text x="675" y="66" fill="#8b949e" font-family="system-ui" font-size="9">SATURATION (CPU / Memory)</text>
+                        <rect x="685" y="95" width="80" height="12" rx="2" fill="#333"/>
+                        <rect x="685" y="95" width="30" height="12" rx="2" fill="#22c55e"/>
+                        <text x="775" y="105" fill="#8b949e" font-family="system-ui" font-size="8">38% CPU</text>
+                        <rect x="685" y="115" width="80" height="12" rx="2" fill="#333"/>
+                        <rect x="685" y="115" width="52" height="12" rx="2" fill="#f59e0b"/>
+                        <text x="775" y="125" fill="#8b949e" font-family="system-ui" font-size="8">65% Mem</text>
+                        <rect x="685" y="140" width="80" height="12" rx="2" fill="#333"/>
+                        <rect x="685" y="140" width="18" height="12" rx="2" fill="#22c55e"/>
+                        <text x="775" y="150" fill="#8b949e" font-family="system-ui" font-size="8">22% Disk</text>
+                    </svg>
                 </div>
 
-                <h3>Phase 5: Integration</h3>
-                <div class="phase-group">
-                    <h4><span class="badge badge-observability">PR 10</span> Integration, Verification &amp; CI/CD</h4>
-                    <ul>
-                        <li>Correlation demo dashboard demonstrating all 4 pillars</li>
-                        <li>Health check script and CI/CD integration</li>
-                    </ul>
+                <h3>Backend RED Method</h3>
+                <p>Per-endpoint Rate, Errors, and Duration. Histogram heatmaps show latency distribution with exemplar links that jump directly to individual traces in Tempo.</p>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Panel</th>
+                                <th>Datasource</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Request Rate by Endpoint</td>
+                                <td><span class="badge badge-observability">Mimir</span></td>
+                                <td>Stacked time series of requests/sec grouped by route</td>
+                            </tr>
+                            <tr>
+                                <td>Error Rate by Endpoint</td>
+                                <td><span class="badge badge-observability">Mimir</span></td>
+                                <td>Percentage of 5xx responses per route with SLO threshold line</td>
+                            </tr>
+                            <tr>
+                                <td>Latency Heatmap</td>
+                                <td><span class="badge badge-observability">Mimir</span></td>
+                                <td>Duration histogram with exemplar dots linking to Tempo traces</td>
+                            </tr>
+                            <tr>
+                                <td>Top Slow Endpoints</td>
+                                <td><span class="badge badge-observability">Mimir</span></td>
+                                <td>Table of highest p99 latency endpoints, sorted descending</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
+
+                <h3>Frontend Web Vitals</h3>
+                <p>Core Web Vitals from Grafana Faro SDK: LCP, INP, and CLS with threshold indicators (good/needs-improvement/poor), JS error rate, and active session count.</p>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Panel</th>
+                                <th>Datasource</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>LCP / INP / CLS Gauges</td>
+                                <td><span class="badge badge-observability">Mimir</span></td>
+                                <td>Stat panels with green/amber/red thresholds per Core Web Vital</td>
+                            </tr>
+                            <tr>
+                                <td>JS Error Rate</td>
+                                <td><span class="badge badge-observability">Loki</span></td>
+                                <td>Time series of unhandled JS exceptions from Faro error instrumentation</td>
+                            </tr>
+                            <tr>
+                                <td>Active Sessions</td>
+                                <td><span class="badge badge-observability">Mimir</span></td>
+                                <td>Session count over time from Faro session instrumentation</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>Trace Analysis &amp; Profiling</h3>
+                <p>Deep-dive trace exploration with service graph visualization and flamegraph profiling linked to individual traces via span labels.</p>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Panel</th>
+                                <th>Datasource</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Trace Search</td>
+                                <td><span class="badge badge-observability">Tempo</span></td>
+                                <td>Search by service, operation, duration, and status</td>
+                            </tr>
+                            <tr>
+                                <td>Trace Waterfall</td>
+                                <td><span class="badge badge-observability">Tempo</span></td>
+                                <td>Span timeline with links to correlated logs and profiles</td>
+                            </tr>
+                            <tr>
+                                <td>Service Graph</td>
+                                <td><span class="badge badge-observability">Tempo</span></td>
+                                <td>Node graph showing service dependencies and call rates</td>
+                            </tr>
+                            <tr>
+                                <td>CPU / Memory Flamegraph</td>
+                                <td><span class="badge badge-observability">Pyroscope</span></td>
+                                <td>Flamegraphs filterable by trace_id for request-scoped profiling</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>Infrastructure USE Method</h3>
+                <p>Utilization, Saturation, and Errors for ECS tasks and the observability EC2 instance. Covers CPU, memory, network, and disk I/O.</p>
+
+                <h3>Correlation Demo</h3>
+                <p>End-to-end dashboard demonstrating the full cross-pillar investigation path: latency spike &rarr; metric exemplar &rarr; trace waterfall &rarr; correlated logs &rarr; flamegraph. Validates all 4 pillars working together.</p>
             </section>
         </div>
     </div>
