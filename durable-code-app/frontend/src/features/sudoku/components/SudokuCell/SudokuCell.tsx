@@ -49,6 +49,9 @@ function areEqual(
     prev.cell.isUnsure === next.cell.isUnsure &&
     prev.cell.isValid === next.cell.isValid &&
     prev.showCellPopup === next.showCellPopup &&
+    prev.keypadHighlightValue === next.keypadHighlightValue &&
+    prev.inputMode === next.inputMode &&
+    prev.isUnsureMode === next.isUnsureMode &&
     setsEqual(prev.cell.notes, next.cell.notes)
   );
 }
@@ -65,9 +68,14 @@ function SudokuCellComponent({
   isHighlighted,
   isRelated,
   isSameValue,
+  keypadHighlightValue,
+  inputMode,
+  isUnsureMode,
   showCellPopup,
   onClick,
   onNumberPlace,
+  onToggleInputMode,
+  onToggleUnsureMode,
 }: SudokuCellProps): ReactElement {
   // Determine box boundaries for thick borders
   const boundaries = isBoxBoundary(position.row, position.col, gridSize);
@@ -156,7 +164,7 @@ function SudokuCellComponent({
             <button
               key={num}
               type="button"
-              className={styles.popupButton}
+              className={`${styles.popupButton} ${num === keypadHighlightValue ? styles.popupButtonActive : ''}`}
               onClick={(e) => {
                 e.stopPropagation();
                 onNumberPlace(num);
@@ -166,6 +174,43 @@ function SudokuCellComponent({
               {num}
             </button>
           ))}
+          <div className={styles.popupModeRow}>
+            <button
+              type="button"
+              className={`${styles.popupModeButton} ${inputMode === 'notes' ? styles.popupModeActive : ''}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleInputMode();
+              }}
+              aria-label={`Notes mode ${inputMode === 'notes' ? 'on' : 'off'}`}
+              aria-pressed={inputMode === 'notes'}
+            >
+              N
+            </button>
+            <button
+              type="button"
+              className={`${styles.popupModeButton} ${isUnsureMode ? styles.popupModeUnsureActive : ''}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleUnsureMode();
+              }}
+              aria-label={`Unsure mode ${isUnsureMode ? 'on' : 'off'}`}
+              aria-pressed={isUnsureMode}
+            >
+              ?
+            </button>
+            <button
+              type="button"
+              className={styles.popupDismiss}
+              onClick={(e) => {
+                e.stopPropagation();
+                onClick();
+              }}
+              aria-label="Dismiss popup keypad"
+            >
+              Hide
+            </button>
+          </div>
         </div>
       )}
     </div>

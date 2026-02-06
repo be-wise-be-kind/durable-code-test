@@ -55,6 +55,13 @@
 .gridSection {
   display: flex;
   justify-content: center;
+  transition: filter 0.3s ease;
+}
+
+.gridPaused {
+  filter: blur(8px);
+  pointer-events: none;
+  user-select: none;
 }
 
 .grid {
