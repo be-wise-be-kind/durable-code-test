@@ -29,8 +29,8 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Grafana St
 4. **Update this document** after completing each PR
 
 ## Current Status
-**Current PR**: PR 6 - Frontend Grafana Faro SDK
-**Infrastructure State**: Base workspace has S3, IAM, security group; Runtime workspace has EC2 instance, ALB target groups, listener rules; Docker Compose stack with all 6 observability services; Backend OTel instrumentation with tracing, metrics, logging, profiling (all behind feature flag)
+**Current PR**: PR 7 - Golden Signals & Method Dashboards
+**Infrastructure State**: Base workspace has S3, IAM, security group; Runtime workspace has EC2 instance, ALB target groups, listener rules; Docker Compose stack with all 6 observability services; Backend OTel instrumentation with tracing, metrics, logging, profiling; Frontend Faro SDK with error boundary, W3C trace propagation (all behind feature flags)
 **Feature Target**: Complete 4-pillar observability (metrics, logs, traces, profiling) with cross-pillar correlation
 
 ## Required Documents Location
@@ -43,15 +43,15 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Grafana St
 
 ## Next PR to Implement
 
-### START HERE: PR 6 - Frontend Grafana Faro SDK
+### START HERE: PR 7 - Golden Signals & Method Dashboards
 
 **Quick Summary**:
-Add Grafana Faro SDK to the React/TypeScript frontend for browser-side observability. Create Faro initialization, error boundary, and barrel exports. Update Dockerfile with build args for Faro configuration.
+Create Grafana dashboards for Golden Signals overview, backend RED method, frontend Web Vitals, and infrastructure USE method. Mount dashboards directory in Docker Compose.
 
 **Pre-flight Checklist**:
-- [ ] Read AI_CONTEXT.md for frontend instrumentation patterns
-- [ ] Review PR_BREAKDOWN.md PR 6 section for file list and success criteria
-- [ ] Verify Alloy Faro receiver port (12347) and ALB `/collect/*` route from PRs 3-4
+- [ ] Read AI_CONTEXT.md for dashboard design patterns
+- [ ] Review PR_BREAKDOWN.md PR 7 section for file list and success criteria
+- [ ] Verify Grafana datasources are configured from PR 4
 
 **Prerequisites Complete**:
 - [x] PR 1 merged (architecture documentation approved)
@@ -59,14 +59,15 @@ Add Grafana Faro SDK to the React/TypeScript frontend for browser-side observabi
 - [x] PR 3 merged (EC2 instance, ALB target groups, listener rules)
 - [x] PR 4 merged (Docker Compose stack with all 6 observability services)
 - [x] PR 5 merged (Backend OTel instrumentation with tracing, metrics, logging, profiling)
+- [x] PR 6 merged (Frontend Faro SDK with error boundary and W3C trace propagation)
 
 ---
 
 ## Overall Progress
-**Total Completion**: 50% (5/10 PRs completed)
+**Total Completion**: 60% (6/10 PRs completed)
 
 ```
-[██████████░░░░░░░░░░] 50% Complete
+[████████████░░░░░░░░] 60% Complete
 ```
 
 ---
@@ -80,7 +81,7 @@ Add Grafana Faro SDK to the React/TypeScript frontend for browser-side observabi
 | 3 | EC2 Observability Instance (Runtime) | Complete | High | Commit 1f8d92d |
 | 4 | Docker Compose & Component Configs | Complete | High | Commit 0ef67cb |
 | 5 | Backend OpenTelemetry Instrumentation | Complete | High | Commit ee057ef |
-| 6 | Frontend Grafana Faro SDK | Not Started | Medium | Depends on PR 4 |
+| 6 | Frontend Grafana Faro SDK | Complete | Medium | Commit 8395b4e, PR #63 |
 | 7 | Golden Signals & Method Dashboards | Not Started | Medium | Depends on PRs 5, 6 |
 | 8 | Tracing Deep Dive & Profiling Correlation | Not Started | High | Depends on PRs 5, 6 |
 | 9 | Alerting & SLO Monitoring | Not Started | Medium | Depends on PR 7 |
@@ -151,12 +152,14 @@ Add Grafana Faro SDK to the React/TypeScript frontend for browser-side observabi
 
 ## PR 6: Frontend Grafana Faro SDK
 **Branch**: `feat/frontend-faro-instrumentation`
-- [ ] Create `faro.ts` with initializeFaro()
-- [ ] Create `FaroErrorBoundary.tsx`
-- [ ] Create `index.ts` barrel exports
-- [ ] Update `package.json` with Faro dependencies
-- [ ] Update `main.tsx` to initialize Faro
-- [ ] Update Dockerfile.frontend with build args
+- [x] Create `faro.ts` with initializeFaro()
+- [x] Create `FaroErrorBoundary.tsx`
+- [x] Create `index.ts` barrel exports
+- [x] Update `package.json` with Faro dependencies
+- [x] Update `main.tsx` to initialize Faro
+- [x] Update Dockerfile.frontend with build args
+- [x] Update `.env.example` with VITE_FARO_* variables
+- [x] Fix Terraform workspace name derivation (base/runtime main.tf)
 
 ## PR 7: Golden Signals & Method Dashboards
 **Branch**: `feat/golden-signals-dashboards`

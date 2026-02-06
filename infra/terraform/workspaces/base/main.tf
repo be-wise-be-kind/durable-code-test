@@ -31,9 +31,8 @@ terraform {
 }
 
 locals {
-  workspace_name = terraform.workspace
-  # Extract environment from workspace name (e.g., base-dev -> dev)
-  environment = length(split("-", terraform.workspace)) > 1 ? split("-", terraform.workspace)[1] : "dev"
+  workspace_name = "base-${var.environment}"
+  environment    = var.environment
 
   common_tags = {
     Environment = local.environment

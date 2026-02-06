@@ -25,6 +25,8 @@
     "build:analyze": "npm run build && echo 'Bundle analysis available at dist/stats.html'"
   },
   "dependencies": {
+    "@grafana/faro-web-sdk": "^1.12.0",
+    "@grafana/faro-web-tracing": "^1.12.0",
     "@tanstack/react-query": "^5.89.0",
     "@tanstack/react-query-devtools": "^5.89.0",
     "matter-js": "^0.20.0",
