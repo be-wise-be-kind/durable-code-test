@@ -29,8 +29,8 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Locust Loa
 4. **Update this document** after completing each PR
 
 ## Current Status
-**Current PR**: PR 1 - Load Testing Foundation & HTTP Scenarios
-**Infrastructure State**: No load testing infrastructure exists; the `load-testing/` directory is to be created
+**Current PR**: PR 2 - WebSocket Load Testing Scenarios
+**Infrastructure State**: `load-testing/` directory exists with Dockerfile, docker-compose.yml, pyproject.toml, and HTTP scenarios. `just load-test` dispatch target operational with ui/run/stop/status/help subcommands.
 **Feature Target**: Locust-based load testing for all HTTP and WebSocket endpoints with metrics export to Grafana
 
 ## Required Documents Location
@@ -43,28 +43,28 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Locust Loa
 
 ## Next PR to Implement
 
-### START HERE: PR 1 - Load Testing Foundation & HTTP Scenarios
+### START HERE: PR 2 - WebSocket Load Testing Scenarios
 
 **Quick Summary**:
-Create the `load-testing/` project directory with Locust, Dockerfile, docker-compose, justfile dispatch target, and HttpUser class exercising all REST endpoints.
+Add WebSocket load testing for the oscilloscope endpoint. Create a custom Locust User class with a `websockets` library client that exercises the full oscilloscope protocol sequence (connect, start, receive frames, configure, stop, disconnect).
 
 **Pre-flight Checklist**:
-- [ ] Read existing backend API routes to identify all HTTP endpoints
-- [ ] Review justfile for existing dispatch patterns (e.g., `just infra`)
-- [ ] Review docker-compose networking to understand `durable-network-dev`
+- [ ] Read WebSocket oscilloscope implementation in backend to understand exact protocol sequence
+- [ ] Review existing `load-testing/` structure from PR1
+- [ ] Understand Locust custom User class and event reporting patterns
 
 **Prerequisites Complete**:
-- [x] Backend REST API endpoints exist and are functional
-- [x] Docker networking established (`durable-network-dev`)
-- [x] Justfile dispatch pattern documented in AI_CONTEXT.md
+- [x] PR1 merged - load-testing foundation exists (`98ac3b8`, PR #72)
+- [x] Backend WebSocket oscilloscope service functional
+- [x] `just load-test` dispatch target operational
 
 ---
 
 ## Overall Progress
-**Total Completion**: 10% (0/5 PRs completed, PR 1 In Progress)
+**Total Completion**: 20% (1/5 PRs completed, PR 2 next)
 
 ```
-[██░░░░░░░░░░░░░░░░░░] 10% Complete
+[████░░░░░░░░░░░░░░░░] 20% Complete
 ```
 
 ---
@@ -73,7 +73,7 @@ Create the `load-testing/` project directory with Locust, Dockerfile, docker-com
 
 | PR | Title | Status | Complexity | Notes |
 |----|-------|--------|------------|-------|
-| 1 | Load Testing Foundation & HTTP Scenarios | In Progress | High | No dependencies |
+| 1 | Load Testing Foundation & HTTP Scenarios | Complete | High | `98ac3b8`, PR #72 |
 | 2 | WebSocket Load Testing Scenarios | Not Started | High | Depends on PR 1 |
 | 3 | Mixed Scenarios & Parameterized Profiles | Not Started | Medium | Depends on PR 2 |
 | 4 | Metrics Export to Prometheus/Mimir | Not Started | Medium | Depends on PR 3 |
@@ -88,16 +88,16 @@ Create the `load-testing/` project directory with Locust, Dockerfile, docker-com
 
 ---
 
-## PR 1: Load Testing Foundation & HTTP Scenarios
-**Branch**: `feat/load-testing-foundation`
-- [ ] Create `load-testing/` directory structure (locustfiles/, profiles/, Dockerfile, docker-compose.yml, requirements.txt)
-- [ ] Create Dockerfile based on `locustio/locust` image with custom dependencies
-- [ ] Create `docker-compose.yml` with master and worker services on `durable-network-dev`
-- [ ] Create `locustfiles/http_users.py` with HttpUser class exercising all REST endpoints
-- [ ] Add `just load-test` dispatch target to justfile (run, ui, stop, status subcommands)
-- [ ] `just load-test run` executes headless load test against backend
-- [ ] `just load-test ui` starts Locust web UI on port 8089
-- [ ] Verify all HTTP endpoint tasks produce non-error responses
+## PR 1: Load Testing Foundation & HTTP Scenarios ✅
+**Branch**: `feat/load-testing-foundation` | **Merged**: `98ac3b8` (PR #72)
+- [x] Create `load-testing/` directory structure (locustfiles/, Dockerfile, docker-compose.yml, pyproject.toml)
+- [x] Create Dockerfile based on `python:3.11-slim` with pip install from pyproject.toml
+- [x] Create `docker-compose.yml` with locust-master service, configurable via LOAD_TEST_HOST env var
+- [x] Create `locustfiles/http_users.py` with HttpUser class exercising all 8 REST endpoints
+- [x] Add `just load-test` dispatch target to justfile (ui, run, stop, status, help subcommands)
+- [x] `just load-test run` executes headless load test against configured host
+- [x] `just load-test ui` starts Locust web UI on port 8089
+- [x] Verified all HTTP endpoint tasks produce 200 responses (70 requests, 0 failures)
 
 ## PR 2: WebSocket Load Testing Scenarios
 **Branch**: `feat/load-testing-websocket`
