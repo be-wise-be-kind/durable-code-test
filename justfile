@@ -28,6 +28,9 @@ AWS_REGION := env_var_or_default("AWS_REGION", "us-west-2")
 AWS_PROFILE := env_var_or_default("AWS_PROFILE", "terraform-deploy")
 ENV := env_var_or_default("ENV", "dev")
 
+# Load testing configuration
+LOAD_TEST_HOST := env_var_or_default("LOAD_TEST_HOST", "http://localhost:8000")
+
 # Colors for output
 CYAN := '\033[0;36m'
 GREEN := '\033[0;32m'
@@ -877,6 +880,102 @@ _infra-state-list SCOPE:
 
     # List state - backend-config determines state path, no workspace needed
     AWS_PROFILE={{AWS_PROFILE}} {{TERRAFORM_BIN}} state list
+
+################################################################################
+# Load Testing Targets
+################################################################################
+
+# Load testing management (Examples: load-test ui, load-test run --users 10 --spawn-rate 2, load-test stop)
+load-test SUBCOMMAND="ui" *ARGS:
+    @just _load-test-dispatch {{SUBCOMMAND}} {{ARGS}}
+
+# Internal: Dispatch load-test subcommands to appropriate handlers
+_load-test-dispatch SUBCOMMAND *ARGS:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    case "{{SUBCOMMAND}}" in
+        ui)
+            just _load-test-ui
+            ;;
+        run)
+            just _load-test-run {{ARGS}}
+            ;;
+        stop)
+            just _load-test-stop
+            ;;
+        status)
+            just _load-test-status
+            ;;
+        --list|list|help)
+            just _load-test-help
+            ;;
+        *)
+            echo -e "{{RED}}Error: Unknown subcommand '{{SUBCOMMAND}}'{{NC}}"
+            echo ""
+            just _load-test-help
+            exit 1
+            ;;
+    esac
+
+# Internal: Start Locust web UI (detached)
+_load-test-ui:
+    #!/usr/bin/env bash
+    echo -e "{{CYAN}}Starting Locust load testing UI...{{NC}}"
+    echo -e "{{YELLOW}}Target host: {{LOAD_TEST_HOST}}{{NC}}"
+    LOAD_TEST_HOST="{{LOAD_TEST_HOST}}" {{COMPOSE_CMD}} -f load-testing/docker-compose.yml up -d --build
+    echo -e "{{GREEN}}✓ Locust web UI started!{{NC}}"
+    echo -e "{{YELLOW}}Web UI: http://localhost:8089{{NC}}"
+    echo -e "{{YELLOW}}Target: {{LOAD_TEST_HOST}}{{NC}}"
+
+# Internal: Run Locust headless with args passthrough
+_load-test-run *ARGS:
+    #!/usr/bin/env bash
+    echo -e "{{CYAN}}Running Locust load test (headless)...{{NC}}"
+    echo -e "{{YELLOW}}Target host: {{LOAD_TEST_HOST}}{{NC}}"
+    LOAD_TEST_HOST="{{LOAD_TEST_HOST}}" {{COMPOSE_CMD}} -f load-testing/docker-compose.yml run \
+        --rm \
+        -e LOCUST_HOST="{{LOAD_TEST_HOST}}" \
+        locust-master \
+        --headless {{ARGS}}
+    echo -e "{{GREEN}}✓ Load test complete{{NC}}"
+
+# Internal: Stop Locust containers
+_load-test-stop:
+    @echo -e "{{CYAN}}Stopping Locust load testing...{{NC}}"
+    @{{COMPOSE_CMD}} -f load-testing/docker-compose.yml down
+    @echo -e "{{GREEN}}✓ Locust containers stopped{{NC}}"
+
+# Internal: Show Locust container status
+_load-test-status:
+    @echo -e "{{CYAN}}Locust Container Status:{{NC}}"
+    @{{COMPOSE_CMD}} -f load-testing/docker-compose.yml ps
+
+# Internal: Show load-test command help
+_load-test-help:
+    @echo -e "{{CYAN}}╔════════════════════════════════════════════════════════════╗{{NC}}"
+    @echo -e "{{CYAN}}║              Load Testing Commands                        ║{{NC}}"
+    @echo -e "{{CYAN}}╚════════════════════════════════════════════════════════════╝{{NC}}"
+    @echo ""
+    @echo -e "{{GREEN}}Usage:{{NC}} just load-test <subcommand> [arguments]"
+    @echo ""
+    @echo -e "{{GREEN}}Subcommands:{{NC}}"
+    @echo -e "  {{YELLOW}}ui{{NC}}                       Start Locust web UI on port 8089 [default]"
+    @echo -e "  {{YELLOW}}run [ARGS]{{NC}}               Run headless load test with Locust arguments"
+    @echo -e "  {{YELLOW}}stop{{NC}}                     Stop all Locust containers"
+    @echo -e "  {{YELLOW}}status{{NC}}                   Show Locust container status"
+    @echo -e "  {{YELLOW}}help{{NC}}                     Show this help message"
+    @echo ""
+    @echo -e "{{GREEN}}Configuration:{{NC}}"
+    @echo -e "  Set {{YELLOW}}LOAD_TEST_HOST{{NC}} in .env or pass via environment:"
+    @echo -e "  {{CYAN}}LOAD_TEST_HOST=https://my-app.example.com just load-test ui{{NC}}"
+    @echo ""
+    @echo -e "{{GREEN}}Examples:{{NC}}"
+    @echo -e "  {{CYAN}}just load-test{{NC}}                                            # Start web UI"
+    @echo -e "  {{CYAN}}just load-test ui{{NC}}                                         # Start web UI"
+    @echo -e "  {{CYAN}}just load-test run --users 10 --spawn-rate 2 --run-time 60s{{NC}} # Headless run"
+    @echo -e "  {{CYAN}}just load-test stop{{NC}}                                       # Stop containers"
+    @echo -e "  {{CYAN}}just load-test status{{NC}}                                     # Check status"
+    @echo ""
 
 ################################################################################
 # GitHub Integration Targets

@@ -35,7 +35,7 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Locust Loa
 
 ## Required Documents Location
 ```
-.roadmap/planning/load-testing/
+.roadmap/in_progress/load-testing/
 ├── AI_CONTEXT.md          # Architecture decisions, tool choice rationale, integration patterns
 ├── PR_BREAKDOWN.md        # Detailed instructions for each PR
 ├── PROGRESS_TRACKER.md    # THIS FILE - Progress and handoff notes
@@ -61,10 +61,10 @@ Create the `load-testing/` project directory with Locust, Dockerfile, docker-com
 ---
 
 ## Overall Progress
-**Total Completion**: 0% (0/5 PRs completed)
+**Total Completion**: 10% (0/5 PRs completed, PR 1 In Progress)
 
 ```
-[░░░░░░░░░░░░░░░░░░░░] 0% Complete
+[██░░░░░░░░░░░░░░░░░░] 10% Complete
 ```
 
 ---
@@ -73,7 +73,7 @@ Create the `load-testing/` project directory with Locust, Dockerfile, docker-com
 
 | PR | Title | Status | Complexity | Notes |
 |----|-------|--------|------------|-------|
-| 1 | Load Testing Foundation & HTTP Scenarios | Not Started | High | No dependencies |
+| 1 | Load Testing Foundation & HTTP Scenarios | In Progress | High | No dependencies |
 | 2 | WebSocket Load Testing Scenarios | Not Started | High | Depends on PR 1 |
 | 3 | Mixed Scenarios & Parameterized Profiles | Not Started | Medium | Depends on PR 2 |
 | 4 | Metrics Export to Prometheus/Mimir | Not Started | Medium | Depends on PR 3 |
