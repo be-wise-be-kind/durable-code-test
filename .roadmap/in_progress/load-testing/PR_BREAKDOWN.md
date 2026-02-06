@@ -24,18 +24,20 @@
 
 ### Completed PRs
 - [x] PR 1: Load Testing Foundation & HTTP Scenarios (`98ac3b8`, PR #72)
+- [x] PR 2: WebSocket Load Testing Scenarios (`6d283f5`, PR #76)
+- [x] PR 3: Mixed Scenarios & Parameterized Profiles (PR pending)
 
 ### NEXT PR TO IMPLEMENT
-START HERE: **PR 2** - WebSocket Load Testing Scenarios
+START HERE: **PR 4** - Metrics Export to Prometheus/Mimir
 
 ### Remaining PRs
 - [x] PR 1: Load Testing Foundation & HTTP Scenarios
-- [ ] PR 2: WebSocket Load Testing Scenarios
-- [ ] PR 3: Mixed Scenarios & Parameterized Profiles
+- [x] PR 2: WebSocket Load Testing Scenarios
+- [x] PR 3: Mixed Scenarios & Parameterized Profiles
 - [ ] PR 4: Metrics Export to Prometheus/Mimir
 - [ ] PR 5: Observability Integration & Dashboard
 
-**Progress**: 20% Complete (1/5 PRs)
+**Progress**: 60% Complete (3/5 PRs)
 
 ---
 

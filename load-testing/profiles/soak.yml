@@ -1,0 +1,22 @@
+# Purpose: Soak test profile for detecting stability issues over extended duration
+# Scope: Extended-duration load test identifying memory leaks, connection exhaustion, and drift
+# Overview: Defines a soak test profile with 30 concurrent users over 30 minutes.
+#     Intended for detecting stability issues that only manifest over extended periods:
+#     memory leaks, connection pool exhaustion, file descriptor leaks, and gradual performance
+#     degradation. Uses a moderate user count with long duration to accumulate enough cycles
+#     for leak detection. The 70/30 HTTP-to-WebSocket weight ratio maintains standard traffic
+#     distribution while the extended duration exposes resource management issues.
+# Dependencies: Locust load testing framework, mixed_users.py locustfile
+# Exports: Profile configuration consumed by justfile --profile flag and profile_loader.py
+# Environment: Dedicated test environment with monitoring for resource tracking
+# Related: smoke.yml for validation, load.yml for baseline, stress.yml for peak load
+# Implementation: Flat YAML structure with fields mapped to Locust CLI arguments and
+#     environment variables by the justfile or profile_loader.py
+
+name: soak
+description: Extended duration stability test
+users: 30
+spawn_rate: 2
+duration: 30m
+http_weight: 70
+websocket_weight: 30
