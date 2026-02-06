@@ -29,8 +29,8 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Locust Loa
 4. **Update this document** after completing each PR
 
 ## Current Status
-**Current PR**: PR 2 - WebSocket Load Testing Scenarios
-**Infrastructure State**: `load-testing/` directory exists with Dockerfile, docker-compose.yml, pyproject.toml, and HTTP scenarios. `just load-test` dispatch target operational with ui/run/stop/status/help subcommands.
+**Current PR**: PR 4 - Metrics Export to Prometheus/Mimir
+**Infrastructure State**: `load-testing/` directory contains Dockerfile, docker-compose.yml, pyproject.toml, HTTP scenarios, WebSocket scenarios, mixed scenario locustfile, profile loader, and 4 YAML load profiles (smoke/load/stress/soak). `just load-test` dispatch target supports ui/run/stop/status/help subcommands with `--profile` flag for predefined test configurations.
 **Feature Target**: Locust-based load testing for all HTTP and WebSocket endpoints with metrics export to Grafana
 
 ## Required Documents Location
@@ -43,28 +43,30 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Locust Loa
 
 ## Next PR to Implement
 
-### START HERE: PR 2 - WebSocket Load Testing Scenarios
+### START HERE: PR 4 - Metrics Export to Prometheus/Mimir
 
 **Quick Summary**:
-Add WebSocket load testing for the oscilloscope endpoint. Create a custom Locust User class with a `websockets` library client that exercises the full oscilloscope protocol sequence (connect, start, receive frames, configure, stop, disconnect).
+Add Prometheus metrics export to the Locust master process. Create a metrics exporter that hooks into Locust request events, exposes histograms/counters/gauges on port 9646, and is controllable via the `LOCUST_METRICS_EXPORT` environment variable.
 
 **Pre-flight Checklist**:
-- [ ] Read WebSocket oscilloscope implementation in backend to understand exact protocol sequence
-- [ ] Review existing `load-testing/` structure from PR1
-- [ ] Understand Locust custom User class and event reporting patterns
+- [ ] Review existing load-testing infrastructure (Dockerfile, docker-compose.yml, locustfiles)
+- [ ] Understand Locust event system for hooking into request events
+- [ ] Review prometheus-client library patterns for custom metrics
 
 **Prerequisites Complete**:
 - [x] PR1 merged - load-testing foundation exists (`98ac3b8`, PR #72)
+- [x] PR2 merged - WebSocket load testing exists (`6d283f5`, PR #76)
+- [x] PR3 merged - Mixed scenarios and profiles operational
 - [x] Backend WebSocket oscilloscope service functional
-- [x] `just load-test` dispatch target operational
+- [x] `just load-test` dispatch target operational with `--profile` flag
 
 ---
 
 ## Overall Progress
-**Total Completion**: 20% (1/5 PRs completed, PR 2 next)
+**Total Completion**: 60% (3/5 PRs completed, PR 4 next)
 
 ```
-[████░░░░░░░░░░░░░░░░] 20% Complete
+[████████████░░░░░░░░] 60% Complete
 ```
 
 ---
@@ -74,8 +76,8 @@ Add WebSocket load testing for the oscilloscope endpoint. Create a custom Locust
 | PR | Title | Status | Complexity | Notes |
 |----|-------|--------|------------|-------|
 | 1 | Load Testing Foundation & HTTP Scenarios | Complete | High | `98ac3b8`, PR #72 |
-| 2 | WebSocket Load Testing Scenarios | Not Started | High | Depends on PR 1 |
-| 3 | Mixed Scenarios & Parameterized Profiles | Not Started | Medium | Depends on PR 2 |
+| 2 | WebSocket Load Testing Scenarios | Complete | High | `6d283f5`, PR #76 |
+| 3 | Mixed Scenarios & Parameterized Profiles | Complete | Medium | PR pending |
 | 4 | Metrics Export to Prometheus/Mimir | Not Started | Medium | Depends on PR 3 |
 | 5 | Observability Integration & Dashboard | Not Started | Medium | Depends on PR 4 + Observability PR 4+ |
 
@@ -99,23 +101,23 @@ Add WebSocket load testing for the oscilloscope endpoint. Create a custom Locust
 - [x] `just load-test ui` starts Locust web UI on port 8089
 - [x] Verified all HTTP endpoint tasks produce 200 responses (70 requests, 0 failures)
 
-## PR 2: WebSocket Load Testing Scenarios
-**Branch**: `feat/load-testing-websocket`
-- [ ] Create `locustfiles/websocket_users.py` with custom WebSocketUser class
-- [ ] Implement oscilloscope protocol flow (connect, start, receive, configure, stop, disconnect)
-- [ ] Report WebSocket timing metrics to Locust event system
-- [ ] Create `load-testing/lib/websocket_client.py` helper using `websockets` library
-- [ ] Add `websockets` to requirements.txt
-- [ ] Verify WebSocket tasks appear in Locust statistics with correct timing
+## PR 2: WebSocket Load Testing Scenarios ✅
+**Branch**: `feat/load-testing-websocket` | **Merged**: `6d283f5` (PR #76)
+- [x] Create `locustfiles/websocket_users.py` with custom WebSocketUser class
+- [x] Implement oscilloscope protocol flow (connect, start, receive, configure, stop, disconnect)
+- [x] Report WebSocket timing metrics to Locust event system
+- [x] Create `load-testing/lib/websocket_client.py` helper using `websockets` library
+- [x] Add `websockets` to pyproject.toml dependencies
+- [x] Verify WebSocket tasks appear in Locust statistics with correct timing
 
-## PR 3: Mixed Scenarios & Parameterized Profiles
-**Branch**: `feat/load-testing-scenarios`
-- [ ] Create `locustfiles/mixed_users.py` combining HTTP and WebSocket with weight ratios
-- [ ] Create YAML load profiles under `profiles/` (smoke.yml, load.yml, stress.yml, soak.yml)
-- [ ] Create `load-testing/lib/profile_loader.py` to parse YAML profiles into Locust configuration
-- [ ] Enhance `just load-test` with `--profile` flag (e.g., `just load-test run --profile smoke`)
-- [ ] Each profile defines user count, spawn rate, duration, and scenario weights
-- [ ] Verify each profile runs to completion without errors
+## PR 3: Mixed Scenarios & Parameterized Profiles ✅
+**Branch**: `feat/load-testing-scenarios` | **Merged**: PR pending
+- [x] Create `locustfiles/mixed_users.py` combining HTTP and WebSocket with weight ratios
+- [x] Create YAML load profiles under `profiles/` (smoke.yml, load.yml, stress.yml, soak.yml)
+- [x] Create `load-testing/lib/profile_loader.py` to parse YAML profiles into Locust configuration
+- [x] Enhance `just load-test` with `--profile` flag (e.g., `just load-test run --profile smoke`)
+- [x] Each profile defines user count, spawn rate, duration, and scenario weights
+- [x] Verify each profile runs to completion without errors
 
 ## PR 4: Metrics Export to Prometheus/Mimir
 **Branch**: `feat/load-testing-metrics-export`
