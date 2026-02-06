@@ -4,13 +4,14 @@
 #     with a web UI on port 8089. Targets external URLs (deployed web instances) configured
 #     via the LOCUST_HOST environment variable, which defaults to the LOAD_TEST_HOST value
 #     from the project .env file or can be overridden at runtime. Volume-mounts locustfiles
-#     for live editing during test development. Workers are deferred to a later PR.
+#     and lib shared utility package for live editing during test development. Workers are
+#     deferred to a later PR.
 # Dependencies: Docker Compose, Dockerfile in same directory, LOAD_TEST_HOST env var
 # Exports: Locust master service with web UI
 # Interfaces: Port 8089 (Locust web UI), LOCUST_HOST env var for target URL
 # Environment: Local Docker runtime, targeting deployed web instances
-# Related: Dockerfile for image build, locustfiles/ for test scenarios, justfile for commands
-# Implementation: Single master service with volume mount for locustfiles and env-based host config
+# Related: Dockerfile for image build, locustfiles/ for test scenarios, lib/ for shared utilities
+# Implementation: Single master service with volume mounts for locustfiles and lib, env-based host config
 
 services:
   locust-master:
@@ -22,9 +23,13 @@ services:
       - "8089:8089"
     environment:
       - LOCUST_HOST=${LOAD_TEST_HOST:-http://localhost:8000}
+      # Default: HTTP scenarios only. Override for WebSocket or all scenarios:
+      #   LOCUST_LOCUSTFILE=locustfiles/websocket_users.py  (WebSocket only)
+      #   LOCUST_LOCUSTFILE=locustfiles/                    (all scenarios)
       - LOCUST_LOCUSTFILE=locustfiles/http_users.py
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
       - ./locustfiles:/load-testing/locustfiles
+      - ./lib:/load-testing/lib
     command: []

@@ -5,10 +5,10 @@
 #     application. Uses pip-installable format for containerized builds. Locust provides the
 #     load testing framework with built-in web UI, statistics collection, and distributed
 #     testing capabilities.
-# Dependencies: Locust load testing framework
+# Dependencies: Locust load testing framework, websockets library for WebSocket protocol support
 # Exports: Installable Python package for Docker container builds
 # Environment: Docker container via Dockerfile, targeting deployed web instances
-# Related: Dockerfile for container build, locustfiles/ for test scenarios
+# Related: Dockerfile for container build, locustfiles/ for test scenarios, lib/ for shared utilities
 # Implementation: PEP 621 project metadata with minimal dependency set
 
 [project]
@@ -18,4 +18,5 @@ description = "Locust load testing for the Durable Code application"
 requires-python = ">=3.11"
 dependencies = [
     "locust>=2.29.0",
+    "websockets>=13.0",
 ]
