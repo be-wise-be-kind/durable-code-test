@@ -44,6 +44,9 @@ max_capacity   = 2    # Limited scaling for cost control
 enable_container_insights = false
 budget_amount            = 10.0  # Lower budget for dev
 
+# Observability
+enable_observability = true
+
 # Security (optional features disabled for cost savings)
 enable_waf          = false
 enable_guardduty    = false

@@ -92,7 +92,7 @@ services:
       start_period: 45s
 
   alloy:
-    image: grafana/alloy:1.5.1
+    image: grafana/alloy:v1.13.0
     container_name: alloy
     restart: unless-stopped
     ports:
@@ -135,7 +135,7 @@ services:
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
       - grafana-data:/var/lib/grafana
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
     deploy:
       resources:
         limits:

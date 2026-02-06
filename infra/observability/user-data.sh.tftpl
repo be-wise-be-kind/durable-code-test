@@ -84,6 +84,7 @@ ALLOY_EOF
 
 echo "=== Starting observability stack ==="
 cd /opt/observability
+export GRAFANA_ADMIN_PASSWORD="${grafana_admin_password}"
 docker compose up -d
 
 echo "=== Observability stack bootstrap complete ==="

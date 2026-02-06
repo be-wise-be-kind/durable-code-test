@@ -240,6 +240,13 @@ variable "enable_observability" {
   default     = false
 }
 
+variable "grafana_admin_password" {
+  description = "Admin password for Grafana UI"
+  type        = string
+  default     = "admin"
+  sensitive   = true
+}
+
 variable "observability_instance_type" {
   description = "EC2 instance type for observability stack"
   type        = map(string)
