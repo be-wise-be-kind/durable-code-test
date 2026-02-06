@@ -112,7 +112,9 @@ export interface SudokuGridProps {
   gridSize: GridSize;
   selectedCell: CellPosition | null;
   highlightedValue: number | null;
+  showCellPopup: boolean;
   onCellClick: (position: CellPosition) => void;
+  onNumberPlace: (num: number) => void;
   className?: string;
 }
 
@@ -127,7 +129,9 @@ export interface SudokuCellProps {
   isHighlighted: boolean;
   isRelated: boolean;
   isSameValue: boolean;
+  showCellPopup: boolean;
   onClick: () => void;
+  onNumberPlace: (num: number) => void;
 }
 
 /**
@@ -135,12 +139,17 @@ export interface SudokuCellProps {
  */
 export interface NumberPadProps {
   gridSize: GridSize;
+  activeNumber: number | null;
   onNumberClick: (num: number) => void;
   onEraseClick: () => void;
+  onUndoClick: () => void;
+  canUndo: boolean;
   inputMode: InputMode;
   isUnsureMode: boolean;
+  showCellPopup: boolean;
   onToggleInputMode: () => void;
   onToggleUnsureMode: () => void;
+  onToggleCellPopup: () => void;
   disabledNumbers: Set<number>;
   className?: string;
 }
@@ -184,6 +193,7 @@ export interface UseSudokuReturn {
   // Selection state
   selectedCell: CellPosition | null;
   highlightedValue: number | null;
+  keypadHighlightValue: number | null;
 
   // Input mode state
   inputMode: InputMode;
@@ -201,6 +211,10 @@ export interface UseSudokuReturn {
   eraseCell: () => void;
   toggleNote: (num: number) => void;
 
+  // Undo
+  undoGame: () => void;
+  canUndo: boolean;
+
   // Mode toggles
   toggleInputMode: () => void;
   toggleUnsureMode: () => void;
@@ -213,6 +227,10 @@ export interface UseSudokuReturn {
   resetGame: () => void;
   pauseGame: () => void;
   resumeGame: () => void;
+
+  // Cell popup toggle
+  showCellPopup: boolean;
+  toggleCellPopup: () => void;
 
   // Utility
   getDisabledNumbers: () => Set<number>;

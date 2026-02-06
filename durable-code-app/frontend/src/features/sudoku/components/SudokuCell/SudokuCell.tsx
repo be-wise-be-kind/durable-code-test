@@ -11,7 +11,7 @@
  * State/Behavior: Stateless component, controlled by parent via props
  */
 
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import type { ReactElement } from 'react';
 import type { SudokuCellProps } from '../../types/sudoku.types';
 import { isBoxBoundary } from '../../config/sudoku.constants';
@@ -48,6 +48,7 @@ function areEqual(
     prev.cell.isOriginal === next.cell.isOriginal &&
     prev.cell.isUnsure === next.cell.isUnsure &&
     prev.cell.isValid === next.cell.isValid &&
+    prev.showCellPopup === next.showCellPopup &&
     setsEqual(prev.cell.notes, next.cell.notes)
   );
 }
@@ -64,7 +65,9 @@ function SudokuCellComponent({
   isHighlighted,
   isRelated,
   isSameValue,
+  showCellPopup,
   onClick,
+  onNumberPlace,
 }: SudokuCellProps): ReactElement {
   // Determine box boundaries for thick borders
   const boundaries = isBoxBoundary(position.row, position.col, gridSize);
@@ -104,6 +107,20 @@ function SudokuCellComponent({
     );
   }, [cell.value, cell.notes, gridSize]);
 
+  // Show popup when cell is selected, empty, not original, and popup is enabled
+  const showPopup =
+    showCellPopup && isSelected && cell.value === null && !cell.isOriginal;
+
+  // Popup position: show below by default, above if in bottom rows
+  const popupPositionClass =
+    position.row >= gridSize - 2 ? styles.popupAbove : styles.popupBelow;
+
+  // Numbers for the popup
+  const popupNumbers = useMemo(
+    () => Array.from({ length: gridSize }, (_, i) => i + 1),
+    [gridSize],
+  );
+
   return (
     <div
       className={cellClasses}
@@ -125,6 +142,31 @@ function SudokuCellComponent({
         <span className={styles.value}>{cell.value}</span>
       ) : (
         renderNotes()
+      )}
+      {showPopup && (
+        <div
+          className={`${styles.popup} ${popupPositionClass}`}
+          data-grid-size={gridSize}
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+          role="group"
+          aria-label="Quick number entry"
+        >
+          {popupNumbers.map((num) => (
+            <button
+              key={num}
+              type="button"
+              className={styles.popupButton}
+              onClick={(e) => {
+                e.stopPropagation();
+                onNumberPlace(num);
+              }}
+              aria-label={`Place ${num}`}
+            >
+              {num}
+            </button>
+          ))}
+        </div>
       )}
     </div>
   );
