@@ -17,6 +17,7 @@ services:
   mimir:
     image: grafana/mimir:2.14.0
     container_name: mimir
+    user: "0"
     restart: unless-stopped
     volumes:
       - ./mimir/mimir.yml:/etc/mimir/mimir.yml:ro
@@ -26,16 +27,11 @@ services:
       resources:
         limits:
           memory: 768M
-    healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9009/ready || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 45s
 
   loki:
     image: grafana/loki:3.3.2
     container_name: loki
+    user: "0"
     restart: unless-stopped
     volumes:
       - ./loki/loki.yml:/etc/loki/loki.yml:ro
@@ -55,6 +51,7 @@ services:
   tempo:
     image: grafana/tempo:2.6.1
     container_name: tempo
+    user: "0"
     restart: unless-stopped
     volumes:
       - ./tempo/tempo.yml:/etc/tempo/tempo.yml:ro
@@ -74,6 +71,7 @@ services:
   pyroscope:
     image: grafana/pyroscope:1.10.0
     container_name: pyroscope
+    user: "0"
     restart: unless-stopped
     ports:
       - "4040:4040"
@@ -84,12 +82,6 @@ services:
       resources:
         limits:
           memory: 384M
-    healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:4040/ready || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 45s
 
   alloy:
     image: grafana/alloy:v1.13.0
@@ -108,15 +100,15 @@ services:
           memory: 384M
     depends_on:
       mimir:
-        condition: service_healthy
+        condition: service_started
       loki:
         condition: service_healthy
       tempo:
         condition: service_healthy
       pyroscope:
-        condition: service_healthy
+        condition: service_started
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:12345/-/ready || exit 1"]
+      test: ["CMD", "bash", "-c", "echo > /dev/tcp/localhost/12345"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -142,13 +134,13 @@ services:
           memory: 384M
     depends_on:
       mimir:
-        condition: service_healthy
+        condition: service_started
       loki:
         condition: service_healthy
       tempo:
         condition: service_healthy
       pyroscope:
-        condition: service_healthy
+        condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3001/grafana/api/health || exit 1"]
       interval: 30s

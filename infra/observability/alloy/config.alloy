@@ -40,7 +40,7 @@ otelcol.processor.batch "default" {
   send_batch_size = 1000
 
   output {
-    metrics = [otelcol.exporter.prometheusremotewrite.mimir.input]
+    metrics = [otelcol.exporter.prometheus.mimir.input]
     logs    = [otelcol.exporter.loki.default.input]
     traces  = [otelcol.exporter.otlp.tempo.input]
   }
@@ -50,7 +50,7 @@ otelcol.processor.batch "default" {
 // Metrics Export - OTLP metrics to Mimir via Prometheus remote write
 // =============================================================================
 
-otelcol.exporter.prometheusremotewrite "mimir" {
+otelcol.exporter.prometheus "mimir" {
   forward_to = [prometheus.remote_write.mimir.receiver]
 }
 

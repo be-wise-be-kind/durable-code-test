@@ -86,6 +86,7 @@ resource "aws_instance" "observability" {
   associate_public_ip_address = true
   iam_instance_profile        = local.observability_instance_profile
   vpc_security_group_ids      = [local.observability_security_group_id]
+  user_data_replace_on_change = true
 
   root_block_device {
     volume_size           = 30
