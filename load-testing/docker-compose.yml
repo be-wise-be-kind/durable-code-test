@@ -23,6 +23,8 @@ services:
     environment:
       - LOCUST_HOST=${LOAD_TEST_HOST:-http://localhost:8000}
       - LOCUST_LOCUSTFILE=locustfiles/http_users.py
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./locustfiles:/load-testing/locustfiles
-    command: ["--master"]
+    command: []

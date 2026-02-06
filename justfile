@@ -936,7 +936,7 @@ _load-test-run *ARGS:
         --rm \
         -e LOCUST_HOST="{{LOAD_TEST_HOST}}" \
         locust-master \
-        --headless --master {{ARGS}}
+        --headless {{ARGS}}
     echo -e "{{GREEN}}✓ Load test complete{{NC}}"
 
 # Internal: Stop Locust containers
