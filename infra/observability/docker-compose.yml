@@ -122,7 +122,6 @@ services:
       - "3001:3001"
     volumes:
       - ./grafana/grafana.ini:/etc/grafana/grafana.ini:ro
-      - ./grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
       - ./grafana/dashboard-provisioning.yml:/etc/grafana/provisioning/dashboards/dashboard-provisioning.yml:ro
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
       - grafana-data:/var/lib/grafana

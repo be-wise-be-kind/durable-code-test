@@ -108,7 +108,6 @@ resource "aws_instance" "observability" {
       docker_compose                 = file("${local.observability_config_path}/docker-compose.yml")
       grafana_admin_password         = var.grafana_admin_password
       grafana_ini                    = file("${local.observability_config_path}/grafana/grafana.ini")
-      grafana_datasources            = file("${local.observability_config_path}/grafana/datasources.yml")
       grafana_dashboard_provisioning = file("${local.observability_config_path}/grafana/dashboard-provisioning.yml")
       mimir_config                   = local.mimir_config
       loki_config                    = local.loki_config
