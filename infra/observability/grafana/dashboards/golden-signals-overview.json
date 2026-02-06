@@ -329,7 +329,7 @@
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
         {
-          "expr": "sum(rate(http_errors_total[$__rate_interval])) / sum(rate(http_requests_total[$__rate_interval])) * 100",
+          "expr": "(sum(rate(http_errors_total[$__rate_interval])) or vector(0)) / sum(rate(http_requests_total[$__rate_interval])) * 100",
           "legendFormat": "Error %",
           "refId": "A"
         }
@@ -366,7 +366,7 @@
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
         {
-          "expr": "sum(rate(http_errors_total[$__rate_interval])) / sum(rate(http_requests_total[$__rate_interval])) * 100",
+          "expr": "(sum(rate(http_errors_total[$__rate_interval])) or vector(0)) / sum(rate(http_requests_total[$__rate_interval])) * 100",
           "refId": "A"
         }
       ],

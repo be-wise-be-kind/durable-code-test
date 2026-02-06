@@ -4,10 +4,12 @@ Purpose: Structured JSON logging with OpenTelemetry trace context injection for 
 Scope: Backend application logging configuration for observability correlation
 
 Overview: Provides a structured JSON loguru sink that embeds OpenTelemetry trace_id and
-    span_id into every log line, enabling log-to-trace correlation in Grafana Loki. Extracts
-    span context from the active OpenTelemetry span and formats log records as JSON with
-    all extra fields preserved. Only replaces the default loguru handler when OTEL_ENABLED
-    is set to 'true', preserving the developer-friendly default format in local development.
+    span_id into every log line, enabling log-to-trace correlation in Grafana Loki. Also
+    bridges loguru messages to standard logging so the OTel LoggingHandler (configured in
+    telemetry.py) can export them via OTLP to Alloy and then Loki. Extracts span context
+    from the active OpenTelemetry span and formats log records as JSON with all extra fields
+    preserved. Only replaces the default loguru handler when OTEL_ENABLED is set to 'true',
+    preserving the developer-friendly default format in local development.
 
 Dependencies: loguru, opentelemetry-api (optional, used when OTEL_ENABLED)
 
@@ -24,6 +26,7 @@ Implementation: Uses loguru's custom sink mechanism with a JSON formatter that e
 from __future__ import annotations
 
 import json
+import logging
 import os
 import sys
 from typing import TYPE_CHECKING
@@ -32,6 +35,16 @@ from loguru import logger
 
 if TYPE_CHECKING:
     from loguru import Message
+
+_LOGURU_TO_STDLIB_LEVEL: dict[str, int] = {
+    "TRACE": logging.DEBUG,
+    "DEBUG": logging.DEBUG,
+    "INFO": logging.INFO,
+    "SUCCESS": logging.INFO,
+    "WARNING": logging.WARNING,
+    "ERROR": logging.ERROR,
+    "CRITICAL": logging.CRITICAL,
+}
 
 
 def _get_trace_context() -> dict[str, str]:
@@ -84,6 +97,22 @@ def _json_sink(message: Message) -> None:
     sys.stdout.flush()
 
 
+def _stdlib_sink(message: Message) -> None:
+    """Forward loguru messages to standard logging for OTel LoggingHandler export.
+
+    Bridges loguru records into the standard logging module so the OTel
+    LoggingHandler (attached in telemetry.py) can export them via OTLP
+    to Alloy and then Loki.
+
+    Args:
+        message: The loguru Message object containing the log record.
+    """
+    record = message.record
+    level = _LOGURU_TO_STDLIB_LEVEL.get(record["level"].name, logging.INFO)
+    stdlib_logger = logging.getLogger(record["name"] or "loguru")
+    stdlib_logger.log(level, record["message"])
+
+
 def configure_logging() -> None:
     """Configure structured JSON logging when OpenTelemetry is enabled.
 
@@ -97,4 +126,5 @@ def configure_logging() -> None:
 
     logger.remove()
     logger.add(_json_sink, level="INFO")
-    logger.info("Structured JSON logging configured with trace context injection")
+    logger.add(_stdlib_sink, level="INFO")
+    logger.info("Structured JSON logging configured with trace context and OTLP export")
