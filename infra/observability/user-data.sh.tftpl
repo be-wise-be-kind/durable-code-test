@@ -49,10 +49,6 @@ cat > /opt/observability/grafana/grafana.ini << 'GRAFANA_INI_EOF'
 ${grafana_ini}
 GRAFANA_INI_EOF
 
-cat > /opt/observability/grafana/datasources.yml << 'GRAFANA_DS_EOF'
-${grafana_datasources}
-GRAFANA_DS_EOF
-
 cat > /opt/observability/grafana/dashboard-provisioning.yml << 'GRAFANA_DP_EOF'
 ${grafana_dashboard_provisioning}
 GRAFANA_DP_EOF
