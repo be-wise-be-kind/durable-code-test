@@ -76,6 +76,7 @@ export function useSudoku(): UseSudokuReturn {
   // Input mode state
   const [inputMode, setInputMode] = useState<InputMode>('normal');
   const [isUnsureMode, setIsUnsureMode] = useState(false);
+  const [showCellPopup, setShowCellPopup] = useState(true);
 
   // Stats
   const [mistakes, setMistakes] = useState(0);
@@ -87,9 +88,18 @@ export function useSudoku(): UseSudokuReturn {
   // Original puzzle for reset
   const originalPuzzleRef = useRef<CellState[][]>(grid);
 
-  // Get highlighted value (value of selected cell)
-  const highlightedValue =
+  // Undo stack (ref to avoid unnecessary re-renders)
+  const undoStackRef = useRef<CellState[][][]>([]);
+  const [undoStackLength, setUndoStackLength] = useState(0);
+  const canUndo = undoStackLength > 0;
+
+  // Keypad highlight state
+  const [keypadHighlightValue, setKeypadHighlightValue] = useState<number | null>(null);
+
+  // Get highlighted value (keypad takes precedence over selected cell)
+  const cellValue =
     selectedCell !== null ? grid[selectedCell.row][selectedCell.col].value : null;
+  const highlightedValue = keypadHighlightValue ?? cellValue;
 
   // Calculate stats
   const stats: GameStats = calculateStats(grid, elapsedTime, mistakes);
@@ -115,23 +125,40 @@ export function useSudoku(): UseSudokuReturn {
   }, []);
 
   /**
-   * Select a cell
+   * Push current grid state onto the undo stack
    */
-  const selectCell = useCallback((position: CellPosition | null) => {
-    setSelectedCell(position);
+  const pushUndo = useCallback((currentGrid: CellState[][]) => {
+    const stack = undoStackRef.current;
+    stack.push(cloneGrid(currentGrid));
+    if (stack.length > GAME_CONSTANTS.MAX_UNDO_STACK_SIZE) {
+      stack.shift();
+    }
+    setUndoStackLength(stack.length);
   }, []);
 
   /**
-   * Place a number in the selected cell
+   * Clear the undo stack
    */
-  const placeNumber = useCallback(
-    (num: number) => {
-      if (!selectedCell || gameState !== GameState.PLAYING) return;
+  const clearUndoStack = useCallback(() => {
+    undoStackRef.current = [];
+    setUndoStackLength(0);
+  }, []);
 
-      const cell = grid[selectedCell.row][selectedCell.col];
+  /**
+   * Core placement logic: mutates the grid to place a number at a position.
+   * Handles undo, notes mode, validation, and completion checks.
+   */
+  const performPlacement = useCallback(
+    (num: number, position: CellPosition) => {
+      if (gameState !== GameState.PLAYING) return;
 
-      // Cannot modify original cells
+      const cell = grid[position.row][position.col];
       if (cell.isOriginal) return;
+
+      // Cannot overwrite a cell that already has a value — erase first
+      if (cell.value !== null) return;
+
+      pushUndo(grid);
 
       // In notes mode, toggle the note instead
       if (inputMode === 'notes') {
@@ -141,47 +168,81 @@ export function useSudoku(): UseSudokuReturn {
         } else {
           newNotes.add(num);
         }
-        const updatedGrid = updateCell(grid, selectedCell, { notes: newNotes });
-        setGrid(updatedGrid);
+        setGrid(updateCell(grid, position, { notes: newNotes }));
         return;
       }
 
       // Normal mode - place the number
       const isValid = validatePlacement(
         grid,
-        selectedCell.row,
-        selectedCell.col,
+        position.row,
+        position.col,
         num,
         gridSize,
       );
 
-      // Track mistake if invalid
       if (!isValid) {
         setMistakes((prev) => prev + 1);
       }
 
-      // Update cell with the number
-      let updatedGrid = updateCell(grid, selectedCell, {
+      let updatedGrid = updateCell(grid, position, {
         value: num,
         isUnsure: isUnsureMode,
         notes: new Set<number>(),
       });
 
-      // Clear notes from related cells
-      updatedGrid = clearRelatedNotes(updatedGrid, selectedCell, num, gridSize);
-
-      // Validate entire grid
+      updatedGrid = clearRelatedNotes(updatedGrid, position, num, gridSize);
       updatedGrid = validateGrid(updatedGrid, gridSize);
-
       setGrid(updatedGrid);
 
-      // Check for completion
       if (isPuzzleSolved(updatedGrid)) {
         setGameState(GameState.COMPLETED);
         stopTimer();
       }
     },
-    [selectedCell, grid, gridSize, inputMode, isUnsureMode, gameState, stopTimer],
+    [gameState, grid, gridSize, inputMode, isUnsureMode, pushUndo, stopTimer],
+  );
+
+  /**
+   * Select a cell. Clicking the already-selected cell toggles selection off
+   * (dismissing the popup). Keeps keypad highlight sticky.
+   */
+  const selectCell = useCallback(
+    (position: CellPosition | null) => {
+      if (
+        position !== null &&
+        selectedCell !== null &&
+        position.row === selectedCell.row &&
+        position.col === selectedCell.col
+      ) {
+        setSelectedCell(null);
+        return;
+      }
+      setSelectedCell(position);
+    },
+    [selectedCell],
+  );
+
+  /**
+   * Place a number in the selected cell (called from keypad/keyboard)
+   */
+  const placeNumber = useCallback(
+    (num: number) => {
+      setKeypadHighlightValue(num);
+
+      if (!selectedCell || gameState !== GameState.PLAYING) {
+        setSelectedCell(null);
+        return;
+      }
+
+      if (grid[selectedCell.row][selectedCell.col].isOriginal) {
+        setSelectedCell(null);
+        return;
+      }
+
+      performPlacement(num, selectedCell);
+    },
+    [selectedCell, gameState, grid, performPlacement],
   );
 
   /**
@@ -195,6 +256,9 @@ export function useSudoku(): UseSudokuReturn {
     // Cannot modify original cells
     if (cell.isOriginal) return;
 
+    // Save grid state for undo before mutation
+    pushUndo(grid);
+
     // Clear value and notes
     let updatedGrid = updateCell(grid, selectedCell, {
       value: null,
@@ -206,7 +270,7 @@ export function useSudoku(): UseSudokuReturn {
     updatedGrid = validateGrid(updatedGrid, gridSize);
 
     setGrid(updatedGrid);
-  }, [selectedCell, grid, gridSize, gameState]);
+  }, [selectedCell, grid, gridSize, gameState, pushUndo]);
 
   /**
    * Toggle a note in the selected cell
@@ -248,6 +312,30 @@ export function useSudoku(): UseSudokuReturn {
   }, []);
 
   /**
+   * Toggle cell popup keypad
+   */
+  const toggleCellPopup = useCallback(() => {
+    setShowCellPopup((prev) => !prev);
+  }, []);
+
+  /**
+   * Undo the last grid mutation
+   */
+  const undoGame = useCallback(() => {
+    if (gameState !== GameState.PLAYING) return;
+
+    const stack = undoStackRef.current;
+    const previousGrid = stack.pop();
+    if (!previousGrid) return;
+
+    setUndoStackLength(stack.length);
+
+    // Revalidate and set the restored grid
+    const revalidated = validateGrid(previousGrid, gridSize);
+    setGrid(revalidated);
+  }, [gameState, gridSize]);
+
+  /**
    * Set grid size and start new game
    */
   const setGridSize = useCallback(
@@ -263,10 +351,12 @@ export function useSudoku(): UseSudokuReturn {
       setMistakes(0);
       setElapsedTime(0);
       setGameState(GameState.PLAYING);
+      clearUndoStack();
+      setKeypadHighlightValue(null);
       stopTimer();
       startTimer();
     },
-    [gridSize, difficulty, stopTimer, startTimer],
+    [gridSize, difficulty, stopTimer, startTimer, clearUndoStack],
   );
 
   /**
@@ -285,10 +375,12 @@ export function useSudoku(): UseSudokuReturn {
       setMistakes(0);
       setElapsedTime(0);
       setGameState(GameState.PLAYING);
+      clearUndoStack();
+      setKeypadHighlightValue(null);
       stopTimer();
       startTimer();
     },
-    [gridSize, difficulty, stopTimer, startTimer],
+    [gridSize, difficulty, stopTimer, startTimer, clearUndoStack],
   );
 
   /**
@@ -306,9 +398,11 @@ export function useSudoku(): UseSudokuReturn {
     setInputMode('normal');
     setIsUnsureMode(false);
     setGameState(GameState.PLAYING);
+    clearUndoStack();
+    setKeypadHighlightValue(null);
     stopTimer();
     startTimer();
-  }, [gridSize, difficulty, stopTimer, startTimer]);
+  }, [gridSize, difficulty, stopTimer, startTimer, clearUndoStack]);
 
   /**
    * Start a new game with a specific seed (for playing same puzzle as someone else)
@@ -325,10 +419,12 @@ export function useSudoku(): UseSudokuReturn {
       setInputMode('normal');
       setIsUnsureMode(false);
       setGameState(GameState.PLAYING);
+      clearUndoStack();
+      setKeypadHighlightValue(null);
       stopTimer();
       startTimer();
     },
-    [gridSize, difficulty, stopTimer, startTimer],
+    [gridSize, difficulty, stopTimer, startTimer, clearUndoStack],
   );
 
   /**
@@ -342,9 +438,11 @@ export function useSudoku(): UseSudokuReturn {
     setInputMode('normal');
     setIsUnsureMode(false);
     setGameState(GameState.PLAYING);
+    clearUndoStack();
+    setKeypadHighlightValue(null);
     stopTimer();
     startTimer();
-  }, [stopTimer, startTimer]);
+  }, [stopTimer, startTimer, clearUndoStack]);
 
   /**
    * Pause the game
@@ -383,6 +481,13 @@ export function useSudoku(): UseSudokuReturn {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (gameState !== GameState.PLAYING) return;
+
+      // Ctrl+Z / Cmd+Z for undo
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        e.preventDefault();
+        undoGame();
+        return;
+      }
 
       // Number keys 1-9
       if (e.key >= '1' && e.key <= String(gridSize)) {
@@ -452,6 +557,7 @@ export function useSudoku(): UseSudokuReturn {
     eraseCell,
     toggleInputMode,
     toggleUnsureMode,
+    undoGame,
   ]);
 
   return {
@@ -464,10 +570,12 @@ export function useSudoku(): UseSudokuReturn {
     // Selection state
     selectedCell,
     highlightedValue,
+    keypadHighlightValue,
 
     // Input mode state
     inputMode,
     isUnsureMode,
+    showCellPopup,
 
     // Stats
     stats,
@@ -481,9 +589,14 @@ export function useSudoku(): UseSudokuReturn {
     eraseCell,
     toggleNote,
 
+    // Undo
+    undoGame,
+    canUndo,
+
     // Mode toggles
     toggleInputMode,
     toggleUnsureMode,
+    toggleCellPopup,
 
     // Game actions
     setGridSize,

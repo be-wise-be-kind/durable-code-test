@@ -34,6 +34,7 @@ export function SudokuTab({ className = '' }: SudokuTabProps): ReactElement {
     gameState,
     selectedCell,
     highlightedValue,
+    keypadHighlightValue,
     inputMode,
     isUnsureMode,
     stats,
@@ -41,6 +42,10 @@ export function SudokuTab({ className = '' }: SudokuTabProps): ReactElement {
     selectCell,
     placeNumber,
     eraseCell,
+    undoGame,
+    canUndo,
+    showCellPopup,
+    toggleCellPopup,
     toggleInputMode,
     toggleUnsureMode,
     setGridSize,
@@ -100,7 +105,9 @@ export function SudokuTab({ className = '' }: SudokuTabProps): ReactElement {
             gridSize={gridSize}
             selectedCell={selectedCell}
             highlightedValue={highlightedValue}
+            showCellPopup={showCellPopup}
             onCellClick={selectCell}
+            onNumberPlace={placeNumber}
             className={styles.grid}
           />
         </div>
@@ -110,12 +117,17 @@ export function SudokuTab({ className = '' }: SudokuTabProps): ReactElement {
           {/* Number pad */}
           <NumberPad
             gridSize={gridSize}
+            activeNumber={keypadHighlightValue}
             onNumberClick={placeNumber}
             onEraseClick={eraseCell}
+            onUndoClick={undoGame}
+            canUndo={canUndo}
             inputMode={inputMode}
             isUnsureMode={isUnsureMode}
+            showCellPopup={showCellPopup}
             onToggleInputMode={toggleInputMode}
             onToggleUnsureMode={toggleUnsureMode}
+            onToggleCellPopup={toggleCellPopup}
             disabledNumbers={disabledNumbers}
             className={styles.numberPad}
           />
@@ -154,7 +166,7 @@ export function SudokuTab({ className = '' }: SudokuTabProps): ReactElement {
           <li>
             Share the <strong>Seed</strong> number with others to play the same puzzle
           </li>
-          <li>Arrow keys to navigate, Delete/Backspace to erase</li>
+          <li>Arrow keys to navigate, Delete/Backspace to erase, Ctrl+Z to undo</li>
         </ul>
       </div>
     </div>

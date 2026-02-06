@@ -52,7 +52,7 @@
 
 /* Same value as selected cell */
 .sameValue {
-  background: var(--color-primary-50);
+  background: var(--color-primary-200);
 }
 
 /* Cell value (base style) */
@@ -119,6 +119,59 @@
 
 .noteActive {
   color: var(--color-text-tertiary);
+}
+
+/* Quick-entry popup */
+.popup {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3px;
+  padding: 6px;
+  background: var(--color-surface);
+  border: 2px solid var(--color-primary-400);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 20%);
+  z-index: 10;
+  white-space: nowrap;
+}
+
+.popupBelow {
+  top: 100%;
+  margin-top: 4px;
+}
+
+.popupAbove {
+  bottom: 100%;
+  margin-bottom: 4px;
+}
+
+.popupButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border-light);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.1s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.popupButton:hover {
+  background: var(--color-primary-100);
+  border-color: var(--color-primary-300);
+}
+
+.popupButton:active {
+  background: var(--color-primary-200);
 }
 
 /* Responsive sizing */

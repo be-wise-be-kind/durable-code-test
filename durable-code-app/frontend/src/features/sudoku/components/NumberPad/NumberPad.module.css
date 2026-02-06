@@ -63,6 +63,12 @@
   background: var(--color-border-light);
 }
 
+.numberButton.active {
+  background: var(--color-primary-200);
+  border-color: var(--color-primary-400);
+  box-shadow: inset 0 0 0 1px var(--color-primary-400);
+}
+
 /* Action buttons */
 .actionButtons {
   display: flex;
@@ -86,9 +92,14 @@
   transition: all 0.15s ease;
 }
 
-.actionButton:hover {
+.actionButton:hover:not(.actionDisabled) {
   background: var(--color-primary-50);
   border-color: var(--color-primary-300);
+}
+
+.actionButton.actionDisabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .actionIcon {

@@ -21,12 +21,17 @@ import styles from './NumberPad.module.css';
  */
 function NumberPadComponent({
   gridSize,
+  activeNumber,
   onNumberClick,
   onEraseClick,
+  onUndoClick,
+  canUndo,
   inputMode,
   isUnsureMode,
+  showCellPopup,
   onToggleInputMode,
   onToggleUnsureMode,
+  onToggleCellPopup,
   disabledNumbers,
   className = '',
 }: NumberPadProps): ReactElement {
@@ -55,20 +60,31 @@ function NumberPadComponent({
     <div className={containerClasses}>
       {/* Number buttons */}
       <div className={styles.numberGrid} data-grid-size={gridSize}>
-        {numbers.map((num) => (
-          <button
-            key={num}
-            type="button"
-            className={`${styles.numberButton} ${
-              disabledNumbers.has(num) ? styles.disabled : ''
-            }`}
-            onClick={() => handleNumberClick(num)}
-            disabled={disabledNumbers.has(num)}
-            aria-label={`Place number ${num}`}
-          >
-            {num}
-          </button>
-        ))}
+        {numbers.map((num) => {
+          const isDisabled = disabledNumbers.has(num);
+          const isActive = activeNumber === num && !isDisabled;
+          const buttonClass = [
+            styles.numberButton,
+            isDisabled ? styles.disabled : '',
+            isActive ? styles.active : '',
+          ]
+            .filter(Boolean)
+            .join(' ');
+
+          return (
+            <button
+              key={num}
+              type="button"
+              className={buttonClass}
+              onClick={() => handleNumberClick(num)}
+              disabled={isDisabled}
+              aria-label={`Place number ${num}`}
+              aria-pressed={isActive}
+            >
+              {num}
+            </button>
+          );
+        })}
       </div>
 
       {/* Action buttons */}
@@ -81,6 +97,16 @@ function NumberPadComponent({
         >
           <span className={styles.actionIcon}>x</span>
           <span className={styles.actionLabel}>Erase</span>
+        </button>
+        <button
+          type="button"
+          className={`${styles.actionButton} ${!canUndo ? styles.actionDisabled : ''}`}
+          onClick={onUndoClick}
+          disabled={!canUndo}
+          aria-label="Undo last action"
+        >
+          <span className={styles.actionIcon}>&#8617;</span>
+          <span className={styles.actionLabel}>Undo</span>
         </button>
       </div>
 
@@ -111,11 +137,24 @@ function NumberPadComponent({
           <span className={styles.modeIcon}>?</span>
           <span className={styles.modeLabel}>Unsure</span>
         </button>
+
+        <button
+          type="button"
+          className={`${styles.modeButton} ${showCellPopup ? styles.modeActive : ''}`}
+          onClick={onToggleCellPopup}
+          aria-label={`Cell popup ${showCellPopup ? 'on' : 'off'}`}
+          aria-pressed={showCellPopup}
+        >
+          <span className={styles.modeIcon}>#</span>
+          <span className={styles.modeLabel}>Popup</span>
+        </button>
       </div>
 
       {/* Keyboard shortcuts hint */}
       <div className={styles.hints}>
-        <span>Keyboard: 1-{gridSize} to place, N for notes, U for unsure</span>
+        <span>
+          Keyboard: 1-{gridSize} to place, N for notes, U for unsure, Ctrl+Z to undo
+        </span>
       </div>
     </div>
   );
