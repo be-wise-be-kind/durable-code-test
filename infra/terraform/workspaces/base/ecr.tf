@@ -9,7 +9,7 @@ locals {
 # Frontend ECR Repository
 resource "aws_ecr_repository" "frontend" {
   name                 = "${local.ecr_name_prefix}-frontend"
-  image_tag_mutability = "IMMUTABLE"
+  image_tag_mutability = "MUTABLE"
   force_delete         = true
 
   image_scanning_configuration {
@@ -35,7 +35,7 @@ resource "aws_ecr_repository" "frontend" {
 # Backend ECR Repository
 resource "aws_ecr_repository" "backend" {
   name                 = "${local.ecr_name_prefix}-backend"
-  image_tag_mutability = "IMMUTABLE"
+  image_tag_mutability = "MUTABLE"
   force_delete         = true
 
   image_scanning_configuration {
