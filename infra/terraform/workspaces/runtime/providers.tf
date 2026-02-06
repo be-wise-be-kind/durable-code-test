@@ -32,7 +32,7 @@ provider "aws" {
 }
 
 provider "grafana" {
-  url        = "http://${aws_lb.main.dns_name}/grafana/"
+  url        = var.grafana_url
   auth       = "admin:${var.grafana_admin_password}"
   retries    = 40
   retry_wait = 15

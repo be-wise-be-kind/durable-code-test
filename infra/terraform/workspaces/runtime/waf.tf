@@ -60,15 +60,6 @@ resource "aws_wafv2_web_acl" "main" {
         name        = "AWSManagedRulesCommonRuleSet"
         vendor_name = "AWS"
 
-        # Override SizeRestrictions_BODY from BLOCK to COUNT. The default 8KB
-        # body limit blocks legitimate Grafana API calls (dashboard JSON
-        # payloads exceed 8KB). Count mode still logs oversized requests.
-        rule_action_override {
-          name = "SizeRestrictions_BODY"
-          action_to_use {
-            count {}
-          }
-        }
       }
     }
 

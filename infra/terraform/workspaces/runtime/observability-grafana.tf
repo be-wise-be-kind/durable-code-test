@@ -7,8 +7,8 @@
 #     all observability pillars (Mimir for metrics, Loki for logs, Tempo for traces, Pyroscope for
 #     profiles) with cross-pillar correlation configured. Seven dashboards are loaded from JSON files
 #     in infra/observability/grafana/dashboards/. Organization preferences set the home dashboard.
-#     All resources depend on the EC2 instance, ALB target group attachment, and listener rule to ensure
-#     Grafana is reachable before the provider attempts API calls.
+#     All resources depend on the EC2 instance being created. The Grafana provider connects via an
+#     SSM port-forward tunnel (localhost:3001), not through the ALB.
 # Dependencies: Grafana provider, observability EC2 instance, ALB routing, dashboard JSON files
 # Exports: Grafana datasource and dashboard resources for observability visualization
 # Configuration: Datasource URLs use Docker Compose service hostnames (resolved inside the container network)
@@ -41,8 +41,6 @@ resource "grafana_data_source" "mimir" {
 
   depends_on = [
     aws_instance.observability,
-    aws_lb_target_group_attachment.grafana,
-    aws_lb_listener_rule.grafana_http,
   ]
 }
 
@@ -68,8 +66,6 @@ resource "grafana_data_source" "loki" {
 
   depends_on = [
     aws_instance.observability,
-    aws_lb_target_group_attachment.grafana,
-    aws_lb_listener_rule.grafana_http,
   ]
 }
 
@@ -98,7 +94,7 @@ resource "grafana_data_source" "tempo" {
       tags = [
         {
           key   = "service.name"
-          value = "service"
+          value = "service_name"
         }
       ]
     }
@@ -122,8 +118,6 @@ resource "grafana_data_source" "tempo" {
 
   depends_on = [
     aws_instance.observability,
-    aws_lb_target_group_attachment.grafana,
-    aws_lb_listener_rule.grafana_http,
   ]
 }
 
@@ -137,8 +131,6 @@ resource "grafana_data_source" "pyroscope" {
 
   depends_on = [
     aws_instance.observability,
-    aws_lb_target_group_attachment.grafana,
-    aws_lb_listener_rule.grafana_http,
   ]
 }
 

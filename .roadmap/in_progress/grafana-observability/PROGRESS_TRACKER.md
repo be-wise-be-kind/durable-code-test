@@ -5,7 +5,7 @@
 **Scope**: Complete observability implementation using the Grafana stack (Mimir, Loki, Tempo, Pyroscope) with Alloy collector, covering metrics, logs, traces, and profiling for both frontend and backend
 
 **Overview**: Primary handoff document for AI agents working on the Grafana Stack Full Observability feature.
-    Tracks implementation progress across 10 pull requests that deliver the 4 pillars of observability
+    Tracks implementation progress across 12 pull requests that deliver the 4 pillars of observability
     (metrics, logs, traces, profiling) using cost-optimized infrastructure on AWS. Contains current status,
     prerequisite validation, PR dashboard, detailed checklists, implementation strategy, success metrics,
     and AI agent instructions. Essential for maintaining development continuity and ensuring systematic
@@ -29,8 +29,8 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Grafana St
 4. **Update this document** after completing each PR
 
 ## Current Status
-**Current PR**: PR 9 - Alerting & SLO Monitoring
-**Infrastructure State**: Base workspace has S3, IAM, security group; Runtime workspace has EC2 instance, ALB target groups, listener rules; Docker Compose stack with all 6 observability services; Backend OTel instrumentation with tracing, metrics, logging, profiling; Frontend Faro SDK with error boundary, W3C trace propagation; 7 Grafana dashboards (home, golden signals, RED, web vitals, USE, trace analysis, profiling); Custom spans for WebSocket and racing operations; Trace-to-profile correlation via Pyroscope tag_wrapper (all behind feature flags)
+**Current PR**: PR 9 - Dashboard Audit & Security Fixes (in progress on branch `fix/dashboard-audit`)
+**Infrastructure State**: Base workspace has S3, IAM, security group; Runtime workspace has EC2 instance, ALB target groups (Faro only - Grafana removed from ALB for security), listener rules; Docker Compose stack with 8 observability services (added node-exporter and cAdvisor); Backend OTel instrumentation with tracing, metrics, logging, profiling; Frontend Faro SDK with error boundary, W3C trace propagation; 7 Grafana dashboards (home, golden signals, RED, web vitals, USE, trace analysis, profiling) with corrected queries; Custom spans for WebSocket and racing operations; Trace-to-profile correlation via Pyroscope tag_wrapper (all behind feature flags); Grafana accessible only via SSM port forwarding
 **Feature Target**: Complete 4-pillar observability (metrics, logs, traces, profiling) with cross-pillar correlation
 
 ## Required Documents Location
@@ -43,33 +43,47 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Grafana St
 
 ## Next PR to Implement
 
-### START HERE: PR 9 - Alerting & SLO Monitoring
+### IN PROGRESS: PR 9 - Dashboard Audit & Security Fixes
 
 **Quick Summary**:
-Create Grafana alerting rules (error rate, latency, service down, saturation, SLO burn-rate), contact points, and notification policies. Enable unified alerting in grafana.ini and mount alerting directory in docker-compose.
+Audit all 7 Grafana dashboards for query correctness and data availability. Fix dashboard queries (service label mismatch, active_connections grouping, Web Vitals LogQL format). Add node-exporter and cAdvisor for Infrastructure USE dashboard. Fix critical security issue: remove Grafana from public ALB, enforce SSM-only access. Update justfile `grafana login` to use SSM tunnel. Verify each dashboard shows meaningful data after load testing.
 
 **Pre-flight Checklist**:
-- [ ] Read AI_CONTEXT.md for alerting design patterns
-- [ ] Review PR_BREAKDOWN.md PR 9 section for file list and success criteria
-- [ ] Verify dashboards and metrics are available from PRs 5-8
+- [x] Read AI_CONTEXT.md for dashboard architecture
+- [x] Review all 7 dashboard JSON files for query correctness
+- [x] Cross-reference queries against actual metric/log sources (metrics.py, config.alloy, tempo.yml)
+- [x] Identify and fix security exposure (Grafana on public ALB)
 
 **Prerequisites Complete**:
-- [x] PR 1 merged (architecture documentation approved)
-- [x] PR 2 merged (S3, IAM, security group in base workspace)
-- [x] PR 3 merged (EC2 instance, ALB target groups, listener rules)
-- [x] PR 4 merged (Docker Compose stack with all 6 observability services)
-- [x] PR 5 merged (Backend OTel instrumentation with tracing, metrics, logging, profiling)
-- [x] PR 6 merged (Frontend Faro SDK with error boundary and W3C trace propagation)
-- [x] PR 7 merged (Golden Signals, RED, Web Vitals, USE dashboards)
-- [x] PR 8 merged (Trace analysis, profiling dashboards, custom spans, trace-to-profile correlation)
+- [x] PR 1-8 merged (all infrastructure, instrumentation, and dashboards deployed)
+
+**Work Completed (pending commit/PR)**:
+- [x] Fixed Golden Signals panel 17: removed invalid `by (path)` grouping on active_connections
+- [x] Fixed Trace Analysis: `service` → `service_name` in template variable and all 7 queries
+- [x] Fixed Trace Analysis: replaced PromQL nodeGraph with Tempo serviceMap query
+- [x] Fixed Terraform tracesToMetrics tag: `service` → `service_name`
+- [x] Added node-exporter and cAdvisor to docker-compose.yml for Infrastructure USE dashboard
+- [x] Added prometheus.scrape blocks to config.alloy for both exporters
+- [x] Fixed Frontend Web Vitals: added Alloy faro.receiver extra_log_labels and loki.process pipeline
+- [x] Rewrote all Web Vitals LogQL queries from JSON to logfmt format
+- [x] **SECURITY**: Removed Grafana target group, attachment, and ALB listener rules (HTTP + HTTPS)
+- [x] **SECURITY**: Changed Grafana Terraform provider to use SSM tunnel (localhost:3001)
+- [x] **SECURITY**: Removed WAF body size exception (only needed for Grafana ALB traffic)
+- [x] Updated justfile `grafana login` to start SSM port-forward tunnel
+- [x] All changes deployed and verified
+
+**Remaining (next session)**:
+- [ ] Run load tests and verify each dashboard shows meaningful data with user
+- [ ] Verify profiling dashboard profile type IDs empirically
+- [ ] Commit changes and create PR
 
 ---
 
 ## Overall Progress
-**Total Completion**: 80% (8/10 PRs completed)
+**Total Completion**: 67% (8/12 PRs completed)
 
 ```
-[████████████████░░░░] 80% Complete
+[█████████████░░░░░░░] 67% Complete
 ```
 
 ---
@@ -86,8 +100,10 @@ Create Grafana alerting rules (error rate, latency, service down, saturation, SL
 | 6 | Frontend Grafana Faro SDK | Complete | Medium | Commit 8395b4e, PR #63 |
 | 7 | Golden Signals & Method Dashboards | Complete | Medium | Commit 557d792, PR #64 |
 | 8 | Tracing Deep Dive & Profiling Correlation | Complete | High | Commit 874f5ee, PR #65 |
-| 9 | Alerting & SLO Monitoring | Not Started | Medium | Depends on PR 7 |
-| 10 | Integration, Verification & CI/CD | Not Started | Medium | Depends on all previous |
+| 9 | Dashboard Audit & Security Fixes | In Progress | High | Branch fix/dashboard-audit; critical Grafana ALB security fix |
+| 10 | Comprehensive Security Review | Not Started | High | Full security audit of observability stack |
+| 11 | Alerting & SLO Monitoring | Not Started | Medium | Depends on PR 9 |
+| 12 | Integration, Verification & CI/CD | Not Started | Medium | Depends on all previous |
 
 ### Status Legend
 - Not Started
@@ -183,7 +199,41 @@ Create Grafana alerting rules (error rate, latency, service down, saturation, SL
 - [x] Add custom span to racing/api/routes.py (racing.generate_procedural_track)
 - [x] Add http.target to Tempo span_metrics dimensions
 
-## PR 9: Alerting & SLO Monitoring
+## PR 9: Dashboard Audit & Security Fixes
+**Branch**: `fix/dashboard-audit`
+- [x] Audit all 7 dashboard JSON files against actual metric/log sources
+- [x] Fix Golden Signals: remove invalid `by (path)` on active_connections UpDownCounter
+- [x] Fix Trace Analysis: `service` → `service_name` in template variable and all queries
+- [x] Fix Trace Analysis: replace PromQL nodeGraph with Tempo serviceMap query
+- [x] Fix Terraform: tracesToMetrics tag `service` → `service_name`
+- [x] Add node-exporter and cAdvisor to docker-compose.yml
+- [x] Add prometheus.scrape blocks to config.alloy for both exporters
+- [x] Fix Frontend Web Vitals: add Alloy faro.receiver extra_log_labels + loki.process pipeline
+- [x] Rewrite Web Vitals LogQL queries from JSON to logfmt format
+- [x] **SECURITY**: Remove Grafana from public ALB (target group, attachment, listener rules)
+- [x] **SECURITY**: Change Grafana Terraform provider to SSM tunnel (localhost:3001)
+- [x] **SECURITY**: Remove WAF body size exception (only needed for Grafana via ALB)
+- [x] Update justfile `grafana login` to use SSM port-forward tunnel
+- [x] Deploy and verify all changes
+- [ ] Run load tests and verify each dashboard with user
+- [ ] Verify profiling dashboard profile type IDs empirically
+- [ ] Commit and create PR
+
+## PR 10: Comprehensive Security Review
+**Branch**: `security/observability-audit`
+- [ ] Audit all public endpoints (ALB listener rules, paths, authentication)
+- [ ] Review security groups: ingress/egress rules, source restrictions
+- [ ] Review IAM roles and policies: least privilege, resource scoping
+- [ ] Review WAF rules: coverage, effectiveness, logging
+- [ ] Review secrets management: Grafana credentials, API keys, env var handling
+- [ ] Review Docker Compose: privileged containers, volume mounts, network exposure
+- [ ] Review Terraform state: sensitive values, remote state access
+- [ ] Review network architecture: VPC, subnet placement, endpoint access
+- [ ] Verify no credentials in committed files (docker-compose, config files, .env patterns)
+- [ ] Document security posture and remaining risks
+- [ ] Fix any issues found
+
+## PR 11: Alerting & SLO Monitoring
 **Branch**: `feat/observability-alerting`
 - [ ] Create alert rules YAML
 - [ ] Create contact points YAML
@@ -191,7 +241,7 @@ Create Grafana alerting rules (error rate, latency, service down, saturation, SL
 - [ ] Enable unified alerting in grafana.ini
 - [ ] Mount alerting directory in docker-compose
 
-## PR 10: Integration, Verification & CI/CD
+## PR 12: Integration, Verification & CI/CD
 **Branch**: `feat/observability-integration`
 - [ ] Create correlation demo dashboard
 - [ ] Create health check script
@@ -249,14 +299,14 @@ After completing each PR:
 ### Critical Context
 - PR 1 is a review gate: the user reviews architecture documentation before infrastructure PRs proceed
 - All observability resources use `enable_observability` feature flag (default false)
-- EC2 instance runs in private subnet, accessed only via ALB path routing
+- EC2 instance runs in private subnet; Grafana accessed only via SSM port forwarding, Faro receiver via ALB
 - The ebook chapters (Ch. 2-3) provide the conceptual framework being implemented
 
 ### Common Pitfalls to Avoid
 - Do not create resources without the feature flag conditional
 - Do not use pull-based monitoring (Fargate has no host agent access)
 - Do not put S3 buckets in runtime workspace (data lost on destroy)
-- Do not expose Grafana/Alloy ports directly (use ALB path routing)
+- Do not expose Grafana publicly (SSM-only access; Faro receiver uses ALB path routing)
 - Memory limits on t3.medium (4GB) require careful Docker Compose resource allocation
 
 ### Resources
@@ -268,9 +318,9 @@ After completing each PR:
 ## Definition of Done
 
 The feature is considered complete when:
-- [ ] All 10 PRs merged
+- [ ] All 12 PRs merged
 - [ ] `just infra up base` + `just infra up runtime` with `enable_observability = true` deploys full stack
-- [ ] Grafana accessible at `<ALB>/grafana/` with all 4 datasources green
+- [ ] Grafana accessible via SSM tunnel (`just grafana login`) with all 4 datasources green
 - [ ] Golden Signals dashboard shows live data after traffic generation
 - [ ] Full correlation path works: metric exemplar -> trace waterfall -> correlated logs -> flame graph
 - [ ] Frontend spans connect to backend spans (distributed tracing)

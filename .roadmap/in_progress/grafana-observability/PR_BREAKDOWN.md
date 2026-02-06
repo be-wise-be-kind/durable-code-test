@@ -4,7 +4,7 @@
 
 **Scope**: Complete feature implementation from architecture documentation through integration verification
 
-**Overview**: Comprehensive breakdown of the Grafana Stack Full Observability feature into 10 manageable, atomic
+**Overview**: Comprehensive breakdown of the Grafana Stack Full Observability feature into 12 manageable, atomic
     pull requests. Each PR is designed to be self-contained, testable, and maintains application functionality
     while incrementally building toward complete 4-pillar observability. Includes detailed implementation steps,
     file structures, testing requirements, and success criteria for each PR.
@@ -32,7 +32,7 @@
 - [x] PR 8: Tracing Deep Dive & Profiling Correlation
 
 ### NEXT PR TO IMPLEMENT
-START HERE: **PR 9** - Alerting & SLO Monitoring
+IN PROGRESS: **PR 9** - Dashboard Audit & Security Fixes (branch: `fix/dashboard-audit`)
 
 ### Remaining PRs
 - [x] PR 1: Observability Architecture Documentation
@@ -43,10 +43,12 @@ START HERE: **PR 9** - Alerting & SLO Monitoring
 - [x] PR 6: Frontend Grafana Faro SDK
 - [x] PR 7: Golden Signals & Method Dashboards
 - [x] PR 8: Tracing Deep Dive & Profiling Correlation
-- [ ] PR 9: Alerting & SLO Monitoring
-- [ ] PR 10: Integration, Verification & CI/CD
+- [ ] PR 9: Dashboard Audit & Security Fixes
+- [ ] PR 10: Comprehensive Security Review
+- [ ] PR 11: Alerting & SLO Monitoring
+- [ ] PR 12: Integration, Verification & CI/CD
 
-**Progress**: 80% Complete (8/10 PRs)
+**Progress**: 67% Complete (8/12 PRs)
 
 ---
 
@@ -288,10 +290,74 @@ This document breaks down the Grafana Stack Full Observability feature into 10 m
 
 ---
 
-## PR 9: Alerting & SLO Monitoring
+## PR 9: Dashboard Audit & Security Fixes
+
+**Branch**: `fix/dashboard-audit`
+**Complexity**: High | **Dependencies**: PRs 7, 8
+
+### Context
+Comprehensive audit of all 7 Grafana dashboards revealed issues ranging from minor (correct queries, just need traffic) to critical (queries referencing non-existent metrics/labels, Grafana exposed on public ALB without authentication). This PR fixes all dashboard query issues, adds missing infrastructure metrics exporters, and resolves the critical security exposure.
+
+### Modified Files
+- `infra/observability/grafana/dashboards/golden-signals-overview.json` - Fix panel 17: remove invalid `by (path)` on active_connections (UpDownCounter has no attributes)
+- `infra/observability/grafana/dashboards/trace-analysis.json` - Fix `service` → `service_name` in template variable and all 7 PromQL queries; replace PromQL nodeGraph with Tempo serviceMap query
+- `infra/observability/grafana/dashboards/frontend-web-vitals.json` - Rewrite all LogQL queries from JSON to logfmt format matching Faro SDK output
+- `infra/observability/grafana/dashboards/infrastructure-use-method.json` - Update info panel text for active exporters
+- `infra/observability/docker-compose.yml` - Add node-exporter (v1.8.2, 64MB) and cAdvisor (v0.49.1, 128MB)
+- `infra/observability/alloy/config.alloy` - Add prometheus.scrape for node-exporter/cAdvisor; add faro.receiver extra_log_labels and loki.process pipeline for kind label extraction
+- `infra/terraform/workspaces/runtime/observability-grafana.tf` - Fix tracesToMetrics tag `service` → `service_name`; remove ALB depends_on
+- `infra/terraform/workspaces/runtime/observability-alb.tf` - **SECURITY**: Remove Grafana target group, attachment, HTTP/HTTPS listener rules
+- `infra/terraform/workspaces/runtime/providers.tf` - Change Grafana provider URL to `var.grafana_url` (SSM tunnel)
+- `infra/terraform/workspaces/runtime/variables.tf` - Add `grafana_url` variable (default: localhost:3001)
+- `infra/terraform/workspaces/runtime/outputs.tf` - Update Grafana URL output for SSM access
+- `infra/terraform/workspaces/runtime/waf.tf` - Remove SizeRestrictions_BODY override (only needed for Grafana via ALB)
+- `justfile` - Rewrite `_grafana-login` to start SSM port-forward tunnel
+
+### Success Criteria
+- All 7 dashboards load and show meaningful data after load testing
+- Template variable dropdowns populate correctly
+- No unexplained "No data" panels
+- Grafana NOT accessible via public ALB (returns frontend SPA HTML, not Grafana)
+- Grafana accessible only via SSM tunnel (`just grafana login`)
+- `just infra up runtime` works with SSM tunnel active
+- Cross-dashboard navigation links work
+
+---
+
+## PR 10: Comprehensive Security Review
+
+**Branch**: `security/observability-audit`
+**Complexity**: High | **Dependencies**: PR 9
+
+### Context
+The Grafana public ALB exposure discovered during the dashboard audit revealed a gap in security review. This PR conducts a thorough security audit of the entire observability stack and broader infrastructure to identify and fix any similar issues.
+
+### Audit Areas
+1. **Public endpoints**: ALB listener rules, path routing, authentication requirements
+2. **Security groups**: Ingress/egress rules, source restrictions, overly permissive rules
+3. **IAM**: Role policies, least privilege, resource scoping, instance profiles
+4. **WAF**: Rule coverage, effectiveness, logging completeness
+5. **Secrets management**: Grafana credentials, API keys, environment variable handling, .env patterns
+6. **Docker Compose security**: Privileged containers, volume mounts, network exposure, image pinning
+7. **Terraform state**: Sensitive values in state, remote state access controls
+8. **Network architecture**: VPC design, subnet placement, endpoint access, NACLs
+9. **Data in transit/at rest**: TLS usage, S3 encryption, internal communication security
+10. **Committed secrets**: Scan for credentials in config files, docker-compose, .env patterns
+
+### Success Criteria
+- Complete security audit documented with findings and remediation
+- All critical and high findings fixed
+- No credentials in committed files
+- All public endpoints require appropriate authentication or authorization
+- Principle of least privilege verified for all IAM roles
+- Docker containers run without unnecessary privileges
+
+---
+
+## PR 11: Alerting & SLO Monitoring
 
 **Branch**: `feat/observability-alerting`
-**Complexity**: Medium | **Dependencies**: PR 7
+**Complexity**: Medium | **Dependencies**: PR 9
 
 ### New Files (under `infra/observability/grafana/alerting/`)
 - `alert-rules.yml` - Error rate >5%, latency >2s p99, service down, saturation >85%, SLO burn-rate (multi-window)
@@ -309,7 +375,7 @@ This document breaks down the Grafana Stack Full Observability feature into 10 m
 
 ---
 
-## PR 10: Integration, Verification & CI/CD
+## PR 12: Integration, Verification & CI/CD
 
 **Branch**: `feat/observability-integration`
 **Complexity**: Medium | **Dependencies**: All previous PRs
@@ -354,9 +420,11 @@ This document breaks down the Grafana Stack Full Observability feature into 10 m
 ### Security Considerations
 - No public access to S3 observability bucket
 - EC2 in private subnet only
-- ALB routes are the only external access path
+- Grafana accessible only via SSM port forwarding (removed from public ALB in PR 9)
+- Faro receiver (/collect/*) is the only observability endpoint on the public ALB
 - Grafana anonymous access limited to viewer role (read-only)
 - No secrets in Docker Compose (use environment variables)
+- Comprehensive security review in PR 10 covers IAM, SGs, WAF, secrets, and network
 
 ### Performance Targets
 - Grafana dashboard load time < 3 seconds
@@ -375,10 +443,16 @@ EC2 instance, ALB routing, Docker Compose stack
 ### Phase 3: Instrumentation (PRs 5-6)
 Backend OTel SDK, frontend Faro SDK
 
-### Phase 4: Visualization & Alerting (PRs 7-9)
-Dashboards, cross-pillar correlation, alerting rules
+### Phase 4: Visualization (PRs 7-8)
+Dashboards, cross-pillar correlation
 
-### Phase 5: Integration (PR 10)
+### Phase 5: Audit & Hardening (PRs 9-10)
+Dashboard audit, query fixes, security review, Grafana access lockdown
+
+### Phase 6: Alerting (PR 11)
+Alerting rules, contact points, notification policies
+
+### Phase 7: Integration (PR 12)
 Health checks, CI/CD integration, demo dashboard
 
 ## Success Metrics
