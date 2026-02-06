@@ -27,9 +27,14 @@ function SudokuGridComponent({
   gridSize,
   selectedCell,
   highlightedValue,
+  keypadHighlightValue,
+  inputMode,
+  isUnsureMode,
   showCellPopup,
   onCellClick,
   onNumberPlace,
+  onToggleInputMode,
+  onToggleUnsureMode,
   className = '',
 }: SudokuGridProps): ReactElement {
   // Memoize cell click handlers
@@ -71,9 +76,14 @@ function SudokuGridComponent({
               isHighlighted={false}
               isRelated={isRelated}
               isSameValue={isSameValueCell}
+              keypadHighlightValue={keypadHighlightValue}
+              inputMode={inputMode}
+              isUnsureMode={isUnsureMode}
               showCellPopup={showCellPopup}
               onClick={() => handleCellClick(position)}
               onNumberPlace={onNumberPlace}
+              onToggleInputMode={onToggleInputMode}
+              onToggleUnsureMode={onToggleUnsureMode}
             />
           );
         }),

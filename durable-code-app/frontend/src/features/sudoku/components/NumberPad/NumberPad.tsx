@@ -112,31 +112,35 @@ function NumberPadComponent({
 
       {/* Mode toggles */}
       <div className={styles.modeToggles}>
-        <button
-          type="button"
-          className={`${styles.modeButton} ${
-            inputMode === 'notes' ? styles.modeActive : ''
-          }`}
-          onClick={onToggleInputMode}
-          aria-label={`Notes mode ${inputMode === 'notes' ? 'on' : 'off'}`}
-          aria-pressed={inputMode === 'notes'}
-        >
-          <span className={styles.modeIcon}>N</span>
-          <span className={styles.modeLabel}>Notes</span>
-        </button>
+        {!showCellPopup && (
+          <>
+            <button
+              type="button"
+              className={`${styles.modeButton} ${
+                inputMode === 'notes' ? styles.modeActive : ''
+              }`}
+              onClick={onToggleInputMode}
+              aria-label={`Notes mode ${inputMode === 'notes' ? 'on' : 'off'}`}
+              aria-pressed={inputMode === 'notes'}
+            >
+              <span className={styles.modeIcon}>N</span>
+              <span className={styles.modeLabel}>Notes</span>
+            </button>
 
-        <button
-          type="button"
-          className={`${styles.modeButton} ${
-            isUnsureMode ? styles.modeActive : ''
-          } ${styles.unsureButton}`}
-          onClick={onToggleUnsureMode}
-          aria-label={`Unsure mode ${isUnsureMode ? 'on' : 'off'}`}
-          aria-pressed={isUnsureMode}
-        >
-          <span className={styles.modeIcon}>?</span>
-          <span className={styles.modeLabel}>Unsure</span>
-        </button>
+            <button
+              type="button"
+              className={`${styles.modeButton} ${
+                isUnsureMode ? styles.modeActive : ''
+              } ${styles.unsureButton}`}
+              onClick={onToggleUnsureMode}
+              aria-label={`Unsure mode ${isUnsureMode ? 'on' : 'off'}`}
+              aria-pressed={isUnsureMode}
+            >
+              <span className={styles.modeIcon}>?</span>
+              <span className={styles.modeLabel}>Unsure</span>
+            </button>
+          </>
+        )}
 
         <button
           type="button"

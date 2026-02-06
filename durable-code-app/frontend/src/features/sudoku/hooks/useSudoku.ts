@@ -219,8 +219,14 @@ export function useSudoku(): UseSudokuReturn {
         return;
       }
       setSelectedCell(position);
+      if (position !== null) {
+        const value = grid[position.row][position.col].value;
+        if (value !== null) {
+          setKeypadHighlightValue(value);
+        }
+      }
     },
-    [selectedCell],
+    [selectedCell, grid],
   );
 
   /**
@@ -236,6 +242,11 @@ export function useSudoku(): UseSudokuReturn {
       }
 
       if (grid[selectedCell.row][selectedCell.col].isOriginal) {
+        setSelectedCell(null);
+        return;
+      }
+
+      if (grid[selectedCell.row][selectedCell.col].value !== null) {
         setSelectedCell(null);
         return;
       }

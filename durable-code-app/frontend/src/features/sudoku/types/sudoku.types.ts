@@ -112,9 +112,14 @@ export interface SudokuGridProps {
   gridSize: GridSize;
   selectedCell: CellPosition | null;
   highlightedValue: number | null;
+  keypadHighlightValue: number | null;
+  inputMode: InputMode;
+  isUnsureMode: boolean;
   showCellPopup: boolean;
   onCellClick: (position: CellPosition) => void;
   onNumberPlace: (num: number) => void;
+  onToggleInputMode: () => void;
+  onToggleUnsureMode: () => void;
   className?: string;
 }
 
@@ -129,9 +134,14 @@ export interface SudokuCellProps {
   isHighlighted: boolean;
   isRelated: boolean;
   isSameValue: boolean;
+  keypadHighlightValue: number | null;
+  inputMode: InputMode;
+  isUnsureMode: boolean;
   showCellPopup: boolean;
   onClick: () => void;
   onNumberPlace: (num: number) => void;
+  onToggleInputMode: () => void;
+  onToggleUnsureMode: () => void;
 }
 
 /**

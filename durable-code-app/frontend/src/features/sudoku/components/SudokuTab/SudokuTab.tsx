@@ -99,15 +99,22 @@ export function SudokuTab({ className = '' }: SudokuTabProps): ReactElement {
       {/* Main game area */}
       <div className={styles.gameArea}>
         {/* Grid section */}
-        <div className={styles.gridSection}>
+        <div
+          className={`${styles.gridSection} ${gameState === GameState.PAUSED ? styles.gridPaused : ''}`}
+        >
           <SudokuGrid
             grid={grid}
             gridSize={gridSize}
             selectedCell={selectedCell}
             highlightedValue={highlightedValue}
+            keypadHighlightValue={keypadHighlightValue}
+            inputMode={inputMode}
+            isUnsureMode={isUnsureMode}
             showCellPopup={showCellPopup}
             onCellClick={selectCell}
             onNumberPlace={placeNumber}
+            onToggleInputMode={toggleInputMode}
+            onToggleUnsureMode={toggleUnsureMode}
             className={styles.grid}
           />
         </div>
