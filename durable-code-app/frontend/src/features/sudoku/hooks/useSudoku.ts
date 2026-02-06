@@ -240,6 +240,11 @@ export function useSudoku(): UseSudokuReturn {
         return;
       }
 
+      if (grid[selectedCell.row][selectedCell.col].value !== null) {
+        setSelectedCell(null);
+        return;
+      }
+
       performPlacement(num, selectedCell);
     },
     [selectedCell, gameState, grid, performPlacement],
