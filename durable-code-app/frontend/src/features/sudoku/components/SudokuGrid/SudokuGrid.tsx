@@ -15,7 +15,12 @@ import { memo, useCallback, useMemo } from 'react';
 import type { ReactElement } from 'react';
 import type { CellPosition, SudokuGridProps } from '../../types/sudoku.types';
 import { SudokuCell } from '../SudokuCell';
-import { hasSameValue, isRelatedCell, positionsEqual } from '../../utils/sudokuHelpers';
+import {
+  getSuggestedNumber,
+  hasSameValue,
+  isRelatedCell,
+  positionsEqual,
+} from '../../utils/sudokuHelpers';
 import styles from './SudokuGrid.module.css';
 
 /**
@@ -65,6 +70,10 @@ function SudokuGridComponent({
           const isRelated = isRelatedCell(position, selectedCell, gridSize);
           const isSameValueCell =
             highlightedValue !== null && hasSameValue(grid, position, highlightedValue);
+          const popupSuggested =
+            isSelected && cell.value === null
+              ? getSuggestedNumber(grid, position, gridSize)
+              : null;
 
           return (
             <SudokuCell
@@ -77,6 +86,7 @@ function SudokuGridComponent({
               isRelated={isRelated}
               isSameValue={isSameValueCell}
               keypadHighlightValue={keypadHighlightValue}
+              popupSuggestedNumber={popupSuggested}
               inputMode={inputMode}
               isUnsureMode={isUnsureMode}
               showCellPopup={showCellPopup}

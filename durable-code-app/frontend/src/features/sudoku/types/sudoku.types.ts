@@ -135,6 +135,7 @@ export interface SudokuCellProps {
   isRelated: boolean;
   isSameValue: boolean;
   keypadHighlightValue: number | null;
+  popupSuggestedNumber: number | null;
   inputMode: InputMode;
   isUnsureMode: boolean;
   showCellPopup: boolean;
