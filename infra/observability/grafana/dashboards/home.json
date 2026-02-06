@@ -1,0 +1,187 @@
+{
+  "_header": {
+    "purpose": "Grafana home dashboard serving as the navigation hub for the observability stack",
+    "scope": "Default landing page linking to all observability dashboards (Golden Signals, RED, Web Vitals, USE, Traces, Profiling)",
+    "overview": "Provides a centralized navigation hub for the Grafana observability stack. Displays system health status panels and links to all specialized dashboards. Configured as the default home dashboard in grafana.ini. Uses stat panels for quick health indicators and text panels with markdown links for dashboard navigation.",
+    "dependencies": "Grafana 11.4+, Mimir datasource for health metrics, all other dashboards for navigation links",
+    "exports": "Default home dashboard loaded on Grafana startup",
+    "interfaces": "Referenced by grafana.ini default_home_dashboard_path as /var/lib/grafana/dashboards/home.json",
+    "environment": "Identical across dev/staging/prod deployments",
+    "related": "grafana.ini, dashboard-provisioning.yml, golden-signals-overview.json, backend-red-method.json, frontend-web-vitals.json, infrastructure-use-method.json, trace-analysis.json, profiling.json",
+    "implementation": "Grafana dashboard JSON schema version 39 with stat and text panels for navigation"
+  },
+  "uid": "home",
+  "title": "Durable Code - Observability Home",
+  "description": "Navigation hub for all observability dashboards",
+  "tags": ["home", "navigation"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": false,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [],
+  "panels": [
+    {
+      "type": "text",
+      "title": "",
+      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "options": {
+        "mode": "markdown",
+        "content": "# Durable Code Observability\nFour-pillar observability: **Metrics** | **Logs** | **Traces** | **Profiling**"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Backend Request Rate",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 3 },
+      "id": 2,
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total[$__rate_interval]))",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 50 },
+              { "color": "red", "value": 100 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "area"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Error Rate",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 3 },
+      "id": 3,
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [
+        {
+          "expr": "sum(rate(http_errors_total[$__rate_interval])) / sum(rate(http_requests_total[$__rate_interval])) * 100",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 5 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "area"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "P99 Latency",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 3 },
+      "id": 4,
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[$__rate_interval])) by (le))",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.5 },
+              { "color": "red", "value": 2 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "area"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Active Connections",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 3 },
+      "id": 5,
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [
+        {
+          "expr": "sum(http_active_connections)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 50 },
+              { "color": "red", "value": 100 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "area"
+      }
+    },
+    {
+      "type": "text",
+      "title": "Dashboards",
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 7 },
+      "id": 6,
+      "options": {
+        "mode": "markdown",
+        "content": "### Metrics Dashboards\n- [Golden Signals Overview](/grafana/d/golden-signals-overview) - Latency, Traffic, Errors, Saturation\n- [Backend RED Method](/grafana/d/backend-red-method) - Rate, Errors, Duration per endpoint\n- [Frontend Web Vitals](/grafana/d/frontend-web-vitals) - LCP, INP, CLS, JS errors\n- [Infrastructure USE Method](/grafana/d/infrastructure-use-method) - Utilization, Saturation, Errors\n\n### Tracing & Profiling\n- [Trace Analysis](/grafana/d/trace-analysis) - Trace search, service graph, span analysis\n- [Profiling](/grafana/d/profiling) - CPU and memory flame graphs"
+      }
+    },
+    {
+      "type": "text",
+      "title": "Quick Links",
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 7 },
+      "id": 7,
+      "options": {
+        "mode": "markdown",
+        "content": "### Explore\n- [Explore Metrics](/grafana/explore?orgId=1&left=%7B%22datasource%22:%22mimir%22%7D) - Ad-hoc metric queries\n- [Explore Logs](/grafana/explore?orgId=1&left=%7B%22datasource%22:%22loki%22%7D) - Log search and analysis\n- [Explore Traces](/grafana/explore?orgId=1&left=%7B%22datasource%22:%22tempo%22%7D) - Trace search by ID\n- [Explore Profiles](/grafana/explore?orgId=1&left=%7B%22datasource%22:%22pyroscope%22%7D) - Profile analysis\n\n### Architecture\n- **Metrics**: Mimir (Prometheus-compatible)\n- **Logs**: Loki (LogQL)\n- **Traces**: Tempo (TraceQL)\n- **Profiles**: Pyroscope (flame graphs)\n- **Collector**: Alloy (OTLP + Faro)"
+      }
+    }
+  ],
+  "time": { "from": "now-1h", "to": "now" },
+  "refresh": "30s",
+  "templating": { "list": [] }
+}

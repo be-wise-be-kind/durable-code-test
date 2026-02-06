@@ -1,0 +1,365 @@
+{
+  "_header": {
+    "purpose": "Frontend Web Vitals dashboard displaying Core Web Vitals (LCP, INP, CLS) and JavaScript error metrics",
+    "scope": "Frontend performance and error monitoring via Grafana Faro SDK telemetry",
+    "overview": "Displays Core Web Vitals (LCP, INP, CLS) with threshold indicators following Google performance standards, JavaScript error rates, and session counts. Faro Web Vitals arrive as Loki logs (not Mimir metrics) because the Alloy Faro receiver outputs to logs and traces only, not metrics. Dashboard uses LogQL with unwrap for numeric extraction from structured log fields. Includes threshold indicators (Good/Needs Improvement/Poor) per Google Web Vitals standards.",
+    "dependencies": "Loki datasource (uid: loki) for Faro log data, Grafana Faro SDK in frontend sending to Alloy Faro receiver",
+    "exports": "Provisioned Grafana dashboard accessible at /grafana/d/frontend-web-vitals",
+    "interfaces": "LogQL queries against Faro-formatted logs with json parsing and unwrap for metric extraction",
+    "environment": "Identical across dev/staging/prod",
+    "related": "home.json for navigation, golden-signals-overview.json for backend metrics, alloy config.alloy for Faro receiver configuration",
+    "implementation": "Grafana dashboard JSON schema version 39 with LogQL unwrap queries for Web Vitals extraction from Faro logs"
+  },
+  "uid": "frontend-web-vitals",
+  "title": "Frontend Web Vitals",
+  "description": "Core Web Vitals (LCP, INP, CLS) and JS error tracking from Faro SDK",
+  "tags": ["frontend", "web-vitals", "faro", "user-experience"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": false,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [
+    {
+      "title": "Home",
+      "url": "/grafana/d/home",
+      "type": "link",
+      "icon": "external link"
+    },
+    {
+      "title": "Golden Signals",
+      "url": "/grafana/d/golden-signals-overview",
+      "type": "link",
+      "icon": "external link"
+    }
+  ],
+  "panels": [
+    {
+      "type": "row",
+      "title": "Core Web Vitals",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "collapsed": false
+    },
+    {
+      "type": "stat",
+      "title": "LCP (Largest Contentful Paint)",
+      "description": "Good: <2.5s | Needs Improvement: 2.5-4s | Poor: >4s",
+      "gridPos": { "h": 5, "w": 8, "x": 0, "y": 1 },
+      "id": 2,
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "avg_over_time({app=\"durable-code-frontend\", kind=\"measurement\"} | json | type=\"web-vitals\" | unwrap values_lcp_value [$__range])",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 2500 },
+              { "color": "red", "value": 4000 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "area"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "INP (Interaction to Next Paint)",
+      "description": "Good: <200ms | Needs Improvement: 200-500ms | Poor: >500ms",
+      "gridPos": { "h": 5, "w": 8, "x": 8, "y": 1 },
+      "id": 3,
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "avg_over_time({app=\"durable-code-frontend\", kind=\"measurement\"} | json | type=\"web-vitals\" | unwrap values_inp_value [$__range])",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 200 },
+              { "color": "red", "value": 500 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "area"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "CLS (Cumulative Layout Shift)",
+      "description": "Good: <0.1 | Needs Improvement: 0.1-0.25 | Poor: >0.25",
+      "gridPos": { "h": 5, "w": 8, "x": 16, "y": 1 },
+      "id": 4,
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "avg_over_time({app=\"durable-code-frontend\", kind=\"measurement\"} | json | type=\"web-vitals\" | unwrap values_cls_value [$__range])",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 3,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.1 },
+              { "color": "red", "value": 0.25 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "area"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "LCP Over Time",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 6 },
+      "id": 5,
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "avg_over_time({app=\"durable-code-frontend\", kind=\"measurement\"} | json | type=\"web-vitals\" | unwrap values_lcp_value [5m])",
+          "legendFormat": "LCP",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 10
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 2500 },
+              { "color": "red", "value": 4000 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "single" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "INP Over Time",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 6 },
+      "id": 6,
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "avg_over_time({app=\"durable-code-frontend\", kind=\"measurement\"} | json | type=\"web-vitals\" | unwrap values_inp_value [5m])",
+          "legendFormat": "INP",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 10
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 200 },
+              { "color": "red", "value": 500 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "single" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "CLS Over Time",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 6 },
+      "id": 7,
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "avg_over_time({app=\"durable-code-frontend\", kind=\"measurement\"} | json | type=\"web-vitals\" | unwrap values_cls_value [5m])",
+          "legendFormat": "CLS",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 3,
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 10
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.1 },
+              { "color": "red", "value": 0.25 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "single" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      }
+    },
+    {
+      "type": "row",
+      "title": "JavaScript Errors & Sessions",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
+      "id": 8,
+      "collapsed": false
+    },
+    {
+      "type": "timeseries",
+      "title": "JS Error Rate",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 15 },
+      "id": 9,
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "sum(count_over_time({app=\"durable-code-frontend\", kind=\"error\"} [5m]))",
+          "legendFormat": "JS Errors",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 50
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 5 },
+              { "color": "red", "value": 20 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "single" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Active Sessions",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 15 },
+      "id": 10,
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "count(count_over_time({app=\"durable-code-frontend\", kind=\"measurement\"} [5m]) by (session_id))",
+          "legendFormat": "Sessions",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 20
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "single" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      }
+    },
+    {
+      "type": "logs",
+      "title": "Recent Frontend Errors",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 23 },
+      "id": 11,
+      "datasource": { "type": "loki", "uid": "loki" },
+      "targets": [
+        {
+          "expr": "{app=\"durable-code-frontend\", kind=\"error\"}",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "prettifyLogMessage": true,
+        "enableLogDetails": true,
+        "sortOrder": "Descending"
+      }
+    },
+    {
+      "type": "text",
+      "title": "Web Vitals Thresholds Reference",
+      "gridPos": { "h": 5, "w": 24, "x": 0, "y": 31 },
+      "id": 12,
+      "options": {
+        "mode": "markdown",
+        "content": "| Metric | Good | Needs Improvement | Poor |\n|--------|------|-------------------|------|\n| **LCP** (Largest Contentful Paint) | < 2.5s | 2.5s - 4.0s | > 4.0s |\n| **INP** (Interaction to Next Paint) | < 200ms | 200ms - 500ms | > 500ms |\n| **CLS** (Cumulative Layout Shift) | < 0.1 | 0.1 - 0.25 | > 0.25 |\n\n*Data source: Grafana Faro SDK logs via Loki. Web Vitals arrive as structured logs (not metrics) because the Alloy Faro receiver outputs to Loki only.*"
+      }
+    }
+  ],
+  "time": { "from": "now-1h", "to": "now" },
+  "refresh": "30s",
+  "templating": { "list": [] }
+}
