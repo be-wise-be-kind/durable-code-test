@@ -1,9 +1,10 @@
 # Purpose: Docker Compose orchestration for the Grafana observability stack on EC2
-# Scope: Six-service observability stack (Grafana, Mimir, Loki, Tempo, Pyroscope, Alloy) with memory limits
+# Scope: Eight-service observability stack (Grafana, Mimir, Loki, Tempo, Pyroscope, Alloy, node-exporter, cAdvisor) with memory limits
 # Overview: Defines the complete Grafana observability stack as Docker Compose services running on a single
 #     EC2 t3.medium instance (4GB RAM). Services are organized with health checks and dependency ordering:
-#     storage backends (Mimir, Loki, Tempo, Pyroscope) start first, then the collector (Alloy) and
-#     visualization layer (Grafana). Total memory allocation is ~2.7GB leaving headroom for the OS.
+#     storage backends (Mimir, Loki, Tempo, Pyroscope) start first, infrastructure exporters (node-exporter,
+#     cAdvisor) start in parallel, then the collector (Alloy) and visualization layer (Grafana).
+#     Total memory allocation is ~2.9GB leaving headroom for the OS.
 #     All services communicate over a shared Docker bridge network using service names as hostnames.
 #     Data volumes persist across container restarts; long-term storage uses S3 via instance profile credentials.
 # Dependencies: Docker Engine, Docker Compose plugin, config files mounted from /opt/observability/
@@ -83,6 +84,56 @@ services:
         limits:
           memory: 384M
 
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    container_name: node-exporter
+    restart: unless-stopped
+    pid: host
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - "--path.rootfs=/rootfs"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9100/metrics"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: cadvisor
+    restart: unless-stopped
+    privileged: true
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    command:
+      - "--housekeeping_interval=30s"
+      - "--docker_only=true"
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
   alloy:
     image: grafana/alloy:v1.13.0
     container_name: alloy
@@ -107,6 +158,10 @@ services:
         condition: service_healthy
       pyroscope:
         condition: service_started
+      node-exporter:
+        condition: service_healthy
+      cadvisor:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "bash", "-c", "echo > /dev/tcp/localhost/12345"]
       interval: 30s

@@ -58,7 +58,7 @@ The Durable Code Test project demonstrates AI-ready development practices with a
 
 ### Data Flow
 1. **Frontend**: Faro SDK captures web vitals, errors, sessions, and traces; sends to ALB `/collect/*`
-2. **ALB**: Routes `/collect/*` to Alloy port 12347, `/grafana/*` to Grafana port 3001
+2. **ALB**: Routes `/collect/*` to Alloy port 12347 (Grafana not on ALB; uses SSM tunnel)
 3. **Backend**: OTel SDK sends metrics, traces, and logs via OTLP gRPC to Alloy port 4317
 4. **Alloy**: Receives all telemetry, batches, and forwards to appropriate backends
 5. **Backends**: Mimir/Loki/Tempo/Pyroscope store data in S3 with local caching
@@ -71,7 +71,7 @@ The Durable Code Test project demonstrates AI-ready development practices with a
 | IAM role + instance profile | Base | Persistent | Stable identity for EC2 |
 | Security group (observability) | Base | Persistent | Referenced by ALB and ECS SGs |
 | EC2 instance (Grafana stack) | Runtime | Ephemeral | Destroyed with `just infra down runtime` |
-| ALB target groups + rules | Runtime | Ephemeral | Path routing for /grafana/* and /collect/* |
+| ALB target groups + rules | Runtime | Ephemeral | Path routing for /collect/* (Faro only; Grafana uses SSM) |
 | ECS task env vars | Runtime | Ephemeral | OTel endpoint configuration |
 
 ## Key Decisions Made
@@ -100,9 +100,9 @@ The Durable Code Test project demonstrates AI-ready development practices with a
 **Decision**: `enable_observability` boolean variable on all resources
 **Rationale**: Follows the project's cost-first philosophy. When disabled, zero additional cost. All resources use `count = var.enable_observability ? 1 : 0`.
 
-### 7. ALB Path Routing
-**Decision**: `/grafana/*` and `/collect/*` routes on existing ALB
-**Rationale**: Reuses existing ALB (no additional load balancer cost). Path-based routing provides clean separation. Grafana runs at a subpath natively.
+### 7. SSM-Only Grafana Access (Updated in PR 9)
+**Decision**: Grafana accessible only via SSM port forwarding; `/collect/*` route on ALB for Faro receiver only
+**Rationale**: Grafana was initially on the ALB at `/grafana/*` but this exposed it publicly without authentication. PR 9 removed the Grafana ALB listener rules and target group. Grafana is now accessible only via `just grafana login` which starts an SSM port-forward tunnel (localhost:3001 → EC2:3001). The Terraform Grafana provider also uses this tunnel. Faro receiver remains on the ALB since browsers need to send telemetry.
 
 ## Integration Points
 
@@ -129,9 +129,10 @@ The Durable Code Test project demonstrates AI-ready development practices with a
 
 ## Technical Constraints
 - **t3.medium memory**: 4GB total, allocate ~2.7GB to Docker containers, leave headroom for OS
-- **Private subnet**: EC2 has no public IP; accessed only via ALB or SSM Session Manager
+- **Private subnet**: EC2 in private subnet; Grafana accessed only via SSM port forwarding, Faro receiver via ALB
 - **Fargate networking**: No host networking mode; OTLP must use EC2 private IP
-- **ALB path routing**: Grafana subpath requires `GF_SERVER_ROOT_URL` and `GF_SERVER_SERVE_FROM_SUB_PATH`
+- **Grafana subpath**: Grafana runs at `/grafana/` subpath; Terraform provider connects via SSM tunnel (localhost:3001)
+- **SSM tunnel requirement**: `just grafana login` (or manual SSM port-forward) required before `just infra up runtime`
 - **S3 permissions**: EC2 instance profile requires specific S3 bucket policy
 
 ## Architecture Documentation
@@ -199,6 +200,8 @@ Failure to update these documents causes the next AI agent session to re-impleme
 | Trace-to-Profile Correlation | PR 8 | Tempo -> Pyroscope via span labels |
 | RED Method | PR 7 | Backend Rate/Errors/Duration dashboard |
 | USE Method | PR 7 | Infrastructure Utilization/Saturation/Errors |
-| SLO-based Alerting | PR 9 | Multi-window burn rate rules |
+| Dashboard Verification | PR 9 | Audit queries, fix data sources, load test validation |
+| Security Hardening | PRs 9, 10 | SSM-only Grafana access, comprehensive security audit |
+| SLO-based Alerting | PR 11 | Multi-window burn rate rules |
 | Sampling Strategies | PR 5 | Head-based sampling |
 | Frontend Observability | PR 6 | Faro: LCP, INP, CLS, errors, sessions |

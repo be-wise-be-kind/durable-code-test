@@ -2,7 +2,7 @@
   "_header": {
     "purpose": "Infrastructure USE method dashboard for monitoring Utilization, Saturation, and Errors of compute resources",
     "scope": "EC2 and container infrastructure metrics using standard node_exporter and cAdvisor metric names",
-    "overview": "Implements the USE (Utilization, Saturation, Errors) method for infrastructure monitoring. Uses standard node_exporter (node_*) and cAdvisor (container_*) metric names that auto-populate when those exporters are deployed. Infrastructure metrics collection is not yet active (no node_exporter or cAdvisor deployed); panels display placeholder queries with correct standard metric names. Includes an informational panel explaining the data availability status.",
+    "overview": "Implements the USE (Utilization, Saturation, Errors) method for infrastructure monitoring. Uses node_exporter (node_*) and cAdvisor (container_*) metrics scraped by Alloy every 30 seconds and stored in Mimir. Both exporters run in the Docker Compose stack alongside the observability services.",
     "dependencies": "Mimir datasource (uid: mimir), node_exporter metrics (node_*), cAdvisor metrics (container_*)",
     "exports": "Provisioned Grafana dashboard accessible at /grafana/d/infrastructure-use-method",
     "interfaces": "PromQL queries against standard node_exporter and cAdvisor metric names",
@@ -42,7 +42,7 @@
       "id": 1,
       "options": {
         "mode": "markdown",
-        "content": "### Infrastructure Metrics Status\nThis dashboard uses standard **node_exporter** (`node_*`) and **cAdvisor** (`container_*`) metric names. Panels auto-populate when these exporters are deployed. Until then, panels show \"No data\" which is expected behavior."
+        "content": "### Infrastructure Metrics Status\nThis dashboard uses **node_exporter** (`node_*`) and **cAdvisor** (`container_*`) metrics scraped by Alloy. Metrics refresh every 30 seconds."
       }
     },
     {

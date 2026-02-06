@@ -88,10 +88,34 @@ otelcol.exporter.otlp "tempo" {
 }
 
 // =============================================================================
+// Infrastructure Metrics - node-exporter and cAdvisor scraping
+// =============================================================================
+
+prometheus.scrape "node_exporter" {
+  targets = [{
+    __address__ = "node-exporter:9100",
+  }]
+  scrape_interval = "30s"
+  forward_to      = [prometheus.remote_write.mimir.receiver]
+}
+
+prometheus.scrape "cadvisor" {
+  targets = [{
+    __address__ = "cadvisor:8080",
+  }]
+  scrape_interval = "30s"
+  forward_to      = [prometheus.remote_write.mimir.receiver]
+}
+
+// =============================================================================
 // Faro Receiver - Frontend browser telemetry
 // =============================================================================
 
 faro.receiver "default" {
+  extra_log_labels = {
+    app = "durable-code-frontend",
+  }
+
   server {
     listen_address           = "0.0.0.0"
     listen_port              = 12347
@@ -101,7 +125,27 @@ faro.receiver "default" {
   }
 
   output {
-    logs   = [loki.write.default.receiver]
+    logs   = [loki.process.faro.receiver]
     traces = [otelcol.exporter.otlp.tempo.input]
   }
+}
+
+// =============================================================================
+// Faro Log Processing - Extract kind label from Faro logfmt body
+// =============================================================================
+
+loki.process "faro" {
+  stage.logfmt {
+    mapping = {
+      kind = "",
+    }
+  }
+
+  stage.labels {
+    values = {
+      kind = "",
+    }
+  }
+
+  forward_to = [loki.write.default.receiver]
 }

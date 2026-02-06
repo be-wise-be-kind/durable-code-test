@@ -465,15 +465,20 @@
     },
     {
       "type": "timeseries",
-      "title": "Request Queue Depth (by path)",
+      "title": "Active Connections Over Time",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 28 },
       "id": 17,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
         {
-          "expr": "sum(http_active_connections) by (path)",
-          "legendFormat": "{{path}}",
+          "expr": "sum(http_active_connections)",
+          "legendFormat": "Active connections",
           "refId": "A"
+        },
+        {
+          "expr": "avg_over_time(sum(http_active_connections)[$__rate_interval])",
+          "legendFormat": "Avg connections",
+          "refId": "B"
         }
       ],
       "fieldConfig": {
@@ -483,6 +488,14 @@
             "drawStyle": "line",
             "lineInterpolation": "smooth",
             "fillOpacity": 10
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 50 },
+              { "color": "red", "value": 100 }
+            ]
           }
         },
         "overrides": []

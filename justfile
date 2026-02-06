@@ -1026,32 +1026,30 @@ _grafana-dispatch SUBCOMMAND:
             ;;
     esac
 
-# Internal: Show Grafana credentials and open UI
+# Internal: Start SSM tunnel and open Grafana UI
 _grafana-login:
     #!/usr/bin/env bash
+    set -euo pipefail
     CYAN='\033[0;36m'
     GREEN='\033[0;32m'
     YELLOW='\033[0;33m'
+    RED='\033[0;31m'
     NC='\033[0m'
 
+    LOCAL_PORT=3001
+    GRAFANA_URL="http://localhost:${LOCAL_PORT}/grafana/"
+
     echo -e "${CYAN}╔════════════════════════════════════════════════════════════╗${NC}"
-    echo -e "${CYAN}║              Grafana Login Credentials                    ║${NC}"
+    echo -e "${CYAN}║              Grafana Login (via SSM tunnel)               ║${NC}"
     echo -e "${CYAN}╚════════════════════════════════════════════════════════════╝${NC}"
     echo ""
     echo -e "${GREEN}Username:${NC} ${GRAFANA_ADMIN_USER:-admin}"
     echo -e "${GREEN}Password:${NC} ${GRAFANA_ADMIN_PASSWORD:-admin}"
     echo ""
 
-    # Try to get ALB URL from Terraform outputs
-    ALB_DNS=""
-    if [ -n "${AWS_PROFILE:-}" ]; then
-        ALB_DNS=$(aws elbv2 describe-load-balancers --names "durable-code-{{ENV}}-alb" \
-            --profile "${AWS_PROFILE}" --region "{{AWS_REGION}}" \
-            --query 'LoadBalancers[0].DNSName' --output text 2>/dev/null || true)
-    fi
-
-    if [ -n "$ALB_DNS" ] && [ "$ALB_DNS" != "None" ]; then
-        GRAFANA_URL="http://${ALB_DNS}/grafana/"
+    # Check if tunnel is already running on the local port
+    if curl -sf "http://localhost:${LOCAL_PORT}/grafana/api/health" > /dev/null 2>&1; then
+        echo -e "${GREEN}✓ SSM tunnel already active on port ${LOCAL_PORT}${NC}"
         echo -e "${GREEN}Grafana URL:${NC} ${GRAFANA_URL}"
         echo ""
         echo -e "${YELLOW}Opening Grafana in browser...${NC}"
@@ -1062,11 +1060,61 @@ _grafana-login:
         else
             echo -e "${YELLOW}Please open: ${GRAFANA_URL}${NC}"
         fi
-    else
-        echo -e "${YELLOW}⚠ Could not determine Grafana URL (infrastructure may not be deployed)${NC}"
-        echo -e "${YELLOW}  Deploy with: just infra up runtime${NC}"
-        echo -e "${YELLOW}  Then access: http://<ALB_DNS>/grafana/${NC}"
+        exit 0
     fi
+
+    # Get EC2 instance ID
+    INSTANCE_ID=""
+    INSTANCE_ID=$(aws ec2 describe-instances \
+        --filters "Name=tag:Name,Values=durable-code-{{ENV}}-observability" \
+                  "Name=instance-state-name,Values=running" \
+        --profile "{{AWS_PROFILE}}" --region "{{AWS_REGION}}" \
+        --query 'Reservations[0].Instances[0].InstanceId' --output text 2>/dev/null || true)
+
+    if [ -z "$INSTANCE_ID" ] || [ "$INSTANCE_ID" = "None" ]; then
+        echo -e "${RED}✗ No running observability EC2 instance found${NC}"
+        echo -e "${YELLOW}  Deploy with: just infra up runtime${NC}"
+        exit 1
+    fi
+
+    echo -e "${YELLOW}Starting SSM port-forward tunnel to ${INSTANCE_ID}...${NC}"
+    echo -e "${YELLOW}  Local port ${LOCAL_PORT} → EC2 port 3001${NC}"
+    echo ""
+
+    # Start SSM tunnel in background
+    aws ssm start-session \
+        --target "$INSTANCE_ID" \
+        --document-name AWS-StartPortForwardingSession \
+        --parameters "{\"portNumber\":[\"3001\"],\"localPortNumber\":[\"${LOCAL_PORT}\"]}" \
+        --profile "{{AWS_PROFILE}}" --region "{{AWS_REGION}}" &
+    SSM_PID=$!
+
+    # Wait for tunnel to be ready
+    echo -e "${YELLOW}Waiting for tunnel...${NC}"
+    for i in $(seq 1 30); do
+        if curl -sf "http://localhost:${LOCAL_PORT}/grafana/api/health" > /dev/null 2>&1; then
+            echo -e "${GREEN}✓ Tunnel established${NC}"
+            echo -e "${GREEN}Grafana URL:${NC} ${GRAFANA_URL}"
+            echo ""
+            echo -e "${YELLOW}Opening Grafana in browser...${NC}"
+            if command -v xdg-open > /dev/null; then
+                xdg-open "$GRAFANA_URL"
+            elif command -v open > /dev/null; then
+                open "$GRAFANA_URL"
+            else
+                echo -e "${YELLOW}Please open: ${GRAFANA_URL}${NC}"
+            fi
+            echo ""
+            echo -e "${YELLOW}SSM tunnel running (PID: ${SSM_PID}). Press Ctrl+C to close.${NC}"
+            wait $SSM_PID
+            exit 0
+        fi
+        sleep 1
+    done
+
+    echo -e "${RED}✗ Tunnel failed to establish after 30s${NC}"
+    kill $SSM_PID 2>/dev/null || true
+    exit 1
 
 # Internal: Open Grafana UI (alias for login)
 _grafana-open: _grafana-login

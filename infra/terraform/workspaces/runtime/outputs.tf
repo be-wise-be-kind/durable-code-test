@@ -192,8 +192,8 @@ output "observability_ec2_private_ip" {
 }
 
 output "observability_grafana_url" {
-  description = "Grafana URL via ALB"
-  value       = var.enable_observability ? "http://${aws_lb.main.dns_name}/grafana/" : ""
+  description = "Grafana URL via SSM port-forward tunnel (localhost:3001)"
+  value       = var.enable_observability ? "http://localhost:3001/grafana/" : ""
 }
 
 output "observability_ec2_instance_id" {

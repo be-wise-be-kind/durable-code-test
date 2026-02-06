@@ -2,13 +2,13 @@
   "_header": {
     "purpose": "Frontend Web Vitals dashboard displaying Core Web Vitals (LCP, INP, CLS) and JavaScript error metrics",
     "scope": "Frontend performance and error monitoring via Grafana Faro SDK telemetry",
-    "overview": "Displays Core Web Vitals (LCP, INP, CLS) with threshold indicators following Google performance standards, JavaScript error rates, and session counts. Faro Web Vitals arrive as Loki logs (not Mimir metrics) because the Alloy Faro receiver outputs to logs and traces only, not metrics. Dashboard uses LogQL with unwrap for numeric extraction from structured log fields. Includes threshold indicators (Good/Needs Improvement/Poor) per Google Web Vitals standards.",
-    "dependencies": "Loki datasource (uid: loki) for Faro log data, Grafana Faro SDK in frontend sending to Alloy Faro receiver",
+    "overview": "Displays Core Web Vitals (LCP, INP, CLS) with threshold indicators following Google performance standards, JavaScript error rates, and session counts. Faro Web Vitals arrive as Loki logs (not Mimir metrics) because the Alloy Faro receiver outputs to logs and traces only, not metrics. Dashboard uses LogQL with logfmt parsing and unwrap for numeric extraction from structured log fields. The Alloy faro.receiver adds app and kind as Loki labels via extra_log_labels and loki.process pipeline. Includes threshold indicators (Good/Needs Improvement/Poor) per Google Web Vitals standards.",
+    "dependencies": "Loki datasource (uid: loki) for Faro log data, Grafana Faro SDK in frontend sending to Alloy Faro receiver, Alloy faro.receiver with extra_log_labels and loki.process for label extraction",
     "exports": "Provisioned Grafana dashboard accessible at /grafana/d/frontend-web-vitals",
-    "interfaces": "LogQL queries against Faro-formatted logs with json parsing and unwrap for metric extraction",
+    "interfaces": "LogQL queries against Faro-formatted logs with logfmt parsing and unwrap for metric extraction",
     "environment": "Identical across dev/staging/prod",
     "related": "home.json for navigation, golden-signals-overview.json for backend metrics, alloy config.alloy for Faro receiver configuration",
-    "implementation": "Grafana dashboard JSON schema version 39 with LogQL unwrap queries for Web Vitals extraction from Faro logs"
+    "implementation": "Grafana dashboard JSON schema version 39 with LogQL unwrap queries for Web Vitals extraction from Faro logfmt logs"
   },
   "uid": "frontend-web-vitals",
   "title": "Frontend Web Vitals",
@@ -51,7 +51,7 @@
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
-          "expr": "avg_over_time({app=\"durable-code-frontend\", kind=\"measurement\"} | json | type=\"web-vitals\" | unwrap values_lcp_value [$__range])",
+          "expr": "avg_over_time({app=\"durable-code-frontend\", kind=\"measurement\"} |= \" lcp=\" | logfmt | unwrap lcp [$__range])",
           "refId": "A"
         }
       ],
@@ -84,7 +84,7 @@
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
-          "expr": "avg_over_time({app=\"durable-code-frontend\", kind=\"measurement\"} | json | type=\"web-vitals\" | unwrap values_inp_value [$__range])",
+          "expr": "avg_over_time({app=\"durable-code-frontend\", kind=\"measurement\"} |= \" inp=\" | logfmt | unwrap inp [$__range])",
           "refId": "A"
         }
       ],
@@ -117,7 +117,7 @@
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
-          "expr": "avg_over_time({app=\"durable-code-frontend\", kind=\"measurement\"} | json | type=\"web-vitals\" | unwrap values_cls_value [$__range])",
+          "expr": "avg_over_time({app=\"durable-code-frontend\", kind=\"measurement\"} |= \"cls\" | logfmt | unwrap cls [$__range])",
           "refId": "A"
         }
       ],
@@ -150,7 +150,7 @@
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
-          "expr": "avg_over_time({app=\"durable-code-frontend\", kind=\"measurement\"} | json | type=\"web-vitals\" | unwrap values_lcp_value [5m])",
+          "expr": "avg_over_time({app=\"durable-code-frontend\", kind=\"measurement\"} |= \" lcp=\" | logfmt | unwrap lcp [5m])",
           "legendFormat": "LCP",
           "refId": "A"
         }
@@ -187,7 +187,7 @@
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
-          "expr": "avg_over_time({app=\"durable-code-frontend\", kind=\"measurement\"} | json | type=\"web-vitals\" | unwrap values_inp_value [5m])",
+          "expr": "avg_over_time({app=\"durable-code-frontend\", kind=\"measurement\"} |= \" inp=\" | logfmt | unwrap inp [5m])",
           "legendFormat": "INP",
           "refId": "A"
         }
@@ -224,7 +224,7 @@
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
-          "expr": "avg_over_time({app=\"durable-code-frontend\", kind=\"measurement\"} | json | type=\"web-vitals\" | unwrap values_cls_value [5m])",
+          "expr": "avg_over_time({app=\"durable-code-frontend\", kind=\"measurement\"} |= \"cls\" | logfmt | unwrap cls [5m])",
           "legendFormat": "CLS",
           "refId": "A"
         }
@@ -298,32 +298,34 @@
       }
     },
     {
-      "type": "timeseries",
+      "type": "stat",
       "title": "Active Sessions",
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 15 },
       "id": 10,
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
         {
-          "expr": "count(count_over_time({app=\"durable-code-frontend\", kind=\"measurement\"} [5m]) by (session_id))",
-          "legendFormat": "Sessions",
+          "expr": "sum(count_over_time({app=\"durable-code-frontend\", kind=\"measurement\"} [5m]))",
+          "legendFormat": "Faro Events",
           "refId": "A"
         }
       ],
       "fieldConfig": {
         "defaults": {
           "unit": "short",
-          "custom": {
-            "drawStyle": "line",
-            "lineInterpolation": "smooth",
-            "fillOpacity": 20
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null }
+            ]
           }
         },
         "overrides": []
       },
       "options": {
-        "tooltip": { "mode": "single" },
-        "legend": { "displayMode": "list", "placement": "bottom" }
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "area"
       }
     },
     {
@@ -355,7 +357,7 @@
       "id": 12,
       "options": {
         "mode": "markdown",
-        "content": "| Metric | Good | Needs Improvement | Poor |\n|--------|------|-------------------|------|\n| **LCP** (Largest Contentful Paint) | < 2.5s | 2.5s - 4.0s | > 4.0s |\n| **INP** (Interaction to Next Paint) | < 200ms | 200ms - 500ms | > 500ms |\n| **CLS** (Cumulative Layout Shift) | < 0.1 | 0.1 - 0.25 | > 0.25 |\n\n*Data source: Grafana Faro SDK logs via Loki. Web Vitals arrive as structured logs (not metrics) because the Alloy Faro receiver outputs to Loki only.*"
+        "content": "| Metric | Good | Needs Improvement | Poor |\n|--------|------|-------------------|------|\n| **LCP** (Largest Contentful Paint) | < 2.5s | 2.5s - 4.0s | > 4.0s |\n| **INP** (Interaction to Next Paint) | < 200ms | 200ms - 500ms | > 500ms |\n| **CLS** (Cumulative Layout Shift) | < 0.1 | 0.1 - 0.25 | > 0.25 |\n\n*Data source: Grafana Faro SDK logs via Loki. Web Vitals arrive as logfmt-structured logs via the Alloy Faro receiver with `app` and `kind` labels.*"
       }
     }
   ],

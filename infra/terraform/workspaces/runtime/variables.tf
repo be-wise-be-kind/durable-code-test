@@ -247,6 +247,12 @@ variable "grafana_admin_password" {
   sensitive   = true
 }
 
+variable "grafana_url" {
+  description = "Grafana API URL for Terraform provider. Requires SSM port-forward tunnel: aws ssm start-session --target <instance-id> --document-name AWS-StartPortForwardingSession --parameters portNumber=3001,localPortNumber=3001"
+  type        = string
+  default     = "http://localhost:3001/grafana/"
+}
+
 variable "observability_instance_type" {
   description = "EC2 instance type for observability stack"
   type        = map(string)
