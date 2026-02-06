@@ -902,6 +902,77 @@ gh-check-details:
 lint-all: lint
 
 ################################################################################
+# Grafana Observability Targets
+################################################################################
+
+# Grafana management (Examples: grafana login, grafana open)
+grafana SUBCOMMAND="login":
+    @just _grafana-dispatch {{SUBCOMMAND}}
+
+# Internal: Dispatch grafana subcommands
+_grafana-dispatch SUBCOMMAND:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    case "{{SUBCOMMAND}}" in
+        login)
+            just _grafana-login
+            ;;
+        open)
+            just _grafana-open
+            ;;
+        *)
+            echo -e "{{RED}}Error: Unknown subcommand '{{SUBCOMMAND}}'{{NC}}"
+            echo -e "{{YELLOW}}Valid subcommands: login, open{{NC}}"
+            exit 1
+            ;;
+    esac
+
+# Internal: Show Grafana credentials and open UI
+_grafana-login:
+    #!/usr/bin/env bash
+    CYAN='\033[0;36m'
+    GREEN='\033[0;32m'
+    YELLOW='\033[0;33m'
+    NC='\033[0m'
+
+    echo -e "${CYAN}╔════════════════════════════════════════════════════════════╗${NC}"
+    echo -e "${CYAN}║              Grafana Login Credentials                    ║${NC}"
+    echo -e "${CYAN}╚════════════════════════════════════════════════════════════╝${NC}"
+    echo ""
+    echo -e "${GREEN}Username:${NC} ${GRAFANA_ADMIN_USER:-admin}"
+    echo -e "${GREEN}Password:${NC} ${GRAFANA_ADMIN_PASSWORD:-admin}"
+    echo ""
+
+    # Try to get ALB URL from Terraform outputs
+    ALB_DNS=""
+    if [ -n "${AWS_PROFILE:-}" ]; then
+        ALB_DNS=$(aws elbv2 describe-load-balancers --names "durable-code-{{ENV}}-alb" \
+            --profile "${AWS_PROFILE}" --region "{{AWS_REGION}}" \
+            --query 'LoadBalancers[0].DNSName' --output text 2>/dev/null || true)
+    fi
+
+    if [ -n "$ALB_DNS" ] && [ "$ALB_DNS" != "None" ]; then
+        GRAFANA_URL="http://${ALB_DNS}/grafana/"
+        echo -e "${GREEN}Grafana URL:${NC} ${GRAFANA_URL}"
+        echo ""
+        echo -e "${YELLOW}Opening Grafana in browser...${NC}"
+        if command -v xdg-open > /dev/null; then
+            xdg-open "$GRAFANA_URL"
+        elif command -v open > /dev/null; then
+            open "$GRAFANA_URL"
+        else
+            echo -e "${YELLOW}Please open: ${GRAFANA_URL}${NC}"
+        fi
+    else
+        echo -e "${YELLOW}⚠ Could not determine Grafana URL (infrastructure may not be deployed)${NC}"
+        echo -e "${YELLOW}  Deploy with: just infra up runtime${NC}"
+        echo -e "${YELLOW}  Then access: http://<ALB_DNS>/grafana/${NC}"
+    fi
+
+# Internal: Open Grafana UI (alias for login)
+_grafana-open: _grafana-login
+
+################################################################################
 # Installation Targets
 ################################################################################
 

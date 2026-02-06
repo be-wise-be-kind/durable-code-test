@@ -80,14 +80,15 @@ locals {
 resource "aws_instance" "observability" {
   count = var.enable_observability ? 1 : 0
 
-  ami                    = data.aws_ami.al2023[0].id
-  instance_type          = lookup(var.observability_instance_type, var.environment, "t3.medium")
-  subnet_id              = tolist(data.aws_subnets.private.ids)[0]
-  iam_instance_profile   = local.observability_instance_profile
-  vpc_security_group_ids = [local.observability_security_group_id]
+  ami                         = data.aws_ami.al2023[0].id
+  instance_type               = lookup(var.observability_instance_type, var.environment, "t3.medium")
+  subnet_id                   = tolist(data.aws_subnets.public.ids)[0]
+  associate_public_ip_address = true
+  iam_instance_profile        = local.observability_instance_profile
+  vpc_security_group_ids      = [local.observability_security_group_id]
 
   root_block_device {
-    volume_size           = 20
+    volume_size           = 30
     volume_type           = "gp3"
     encrypted             = true
     delete_on_termination = true
@@ -100,10 +101,11 @@ resource "aws_instance" "observability" {
     instance_metadata_tags      = "enabled"
   }
 
-  user_data = base64encode(templatefile(
+  user_data_base64 = base64gzip(templatefile(
     "${local.observability_config_path}/user-data.sh.tftpl",
     {
       docker_compose                 = file("${local.observability_config_path}/docker-compose.yml")
+      grafana_admin_password         = var.grafana_admin_password
       grafana_ini                    = file("${local.observability_config_path}/grafana/grafana.ini")
       grafana_datasources            = file("${local.observability_config_path}/grafana/datasources.yml")
       grafana_dashboard_provisioning = file("${local.observability_config_path}/grafana/dashboard-provisioning.yml")
