@@ -29,8 +29,8 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Grafana St
 4. **Update this document** after completing each PR
 
 ## Current Status
-**Current PR**: PR 7 - Golden Signals & Method Dashboards
-**Infrastructure State**: Base workspace has S3, IAM, security group; Runtime workspace has EC2 instance, ALB target groups, listener rules; Docker Compose stack with all 6 observability services; Backend OTel instrumentation with tracing, metrics, logging, profiling; Frontend Faro SDK with error boundary, W3C trace propagation (all behind feature flags)
+**Current PR**: PR 9 - Alerting & SLO Monitoring
+**Infrastructure State**: Base workspace has S3, IAM, security group; Runtime workspace has EC2 instance, ALB target groups, listener rules; Docker Compose stack with all 6 observability services; Backend OTel instrumentation with tracing, metrics, logging, profiling; Frontend Faro SDK with error boundary, W3C trace propagation; 7 Grafana dashboards (home, golden signals, RED, web vitals, USE, trace analysis, profiling); Custom spans for WebSocket and racing operations; Trace-to-profile correlation via Pyroscope tag_wrapper (all behind feature flags)
 **Feature Target**: Complete 4-pillar observability (metrics, logs, traces, profiling) with cross-pillar correlation
 
 ## Required Documents Location
@@ -43,15 +43,15 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Grafana St
 
 ## Next PR to Implement
 
-### START HERE: PR 7 - Golden Signals & Method Dashboards
+### START HERE: PR 9 - Alerting & SLO Monitoring
 
 **Quick Summary**:
-Create Grafana dashboards for Golden Signals overview, backend RED method, frontend Web Vitals, and infrastructure USE method. Mount dashboards directory in Docker Compose.
+Create Grafana alerting rules (error rate, latency, service down, saturation, SLO burn-rate), contact points, and notification policies. Enable unified alerting in grafana.ini and mount alerting directory in docker-compose.
 
 **Pre-flight Checklist**:
-- [ ] Read AI_CONTEXT.md for dashboard design patterns
-- [ ] Review PR_BREAKDOWN.md PR 7 section for file list and success criteria
-- [ ] Verify Grafana datasources are configured from PR 4
+- [ ] Read AI_CONTEXT.md for alerting design patterns
+- [ ] Review PR_BREAKDOWN.md PR 9 section for file list and success criteria
+- [ ] Verify dashboards and metrics are available from PRs 5-8
 
 **Prerequisites Complete**:
 - [x] PR 1 merged (architecture documentation approved)
@@ -60,14 +60,16 @@ Create Grafana dashboards for Golden Signals overview, backend RED method, front
 - [x] PR 4 merged (Docker Compose stack with all 6 observability services)
 - [x] PR 5 merged (Backend OTel instrumentation with tracing, metrics, logging, profiling)
 - [x] PR 6 merged (Frontend Faro SDK with error boundary and W3C trace propagation)
+- [x] PR 7 merged (Golden Signals, RED, Web Vitals, USE dashboards)
+- [x] PR 8 merged (Trace analysis, profiling dashboards, custom spans, trace-to-profile correlation)
 
 ---
 
 ## Overall Progress
-**Total Completion**: 60% (6/10 PRs completed)
+**Total Completion**: 80% (8/10 PRs completed)
 
 ```
-[████████████░░░░░░░░] 60% Complete
+[████████████████░░░░] 80% Complete
 ```
 
 ---
@@ -82,8 +84,8 @@ Create Grafana dashboards for Golden Signals overview, backend RED method, front
 | 4 | Docker Compose & Component Configs | Complete | High | Commit 0ef67cb |
 | 5 | Backend OpenTelemetry Instrumentation | Complete | High | Commit ee057ef |
 | 6 | Frontend Grafana Faro SDK | Complete | Medium | Commit 8395b4e, PR #63 |
-| 7 | Golden Signals & Method Dashboards | Not Started | Medium | Depends on PRs 5, 6 |
-| 8 | Tracing Deep Dive & Profiling Correlation | Not Started | High | Depends on PRs 5, 6 |
+| 7 | Golden Signals & Method Dashboards | Complete | Medium | Commit 557d792, PR #64 |
+| 8 | Tracing Deep Dive & Profiling Correlation | Complete | High | Commit 874f5ee, PR #65 |
 | 9 | Alerting & SLO Monitoring | Not Started | Medium | Depends on PR 7 |
 | 10 | Integration, Verification & CI/CD | Not Started | Medium | Depends on all previous |
 
@@ -163,20 +165,23 @@ Create Grafana dashboards for Golden Signals overview, backend RED method, front
 
 ## PR 7: Golden Signals & Method Dashboards
 **Branch**: `feat/golden-signals-dashboards`
-- [ ] Create `golden-signals-overview.json` dashboard
-- [ ] Create `backend-red-method.json` dashboard
-- [ ] Create `frontend-web-vitals.json` dashboard
-- [ ] Create `infrastructure-use-method.json` dashboard
-- [ ] Update docker-compose.yml to mount dashboards
+- [x] Create `home.json` navigation hub dashboard
+- [x] Create `golden-signals-overview.json` dashboard
+- [x] Create `backend-red-method.json` dashboard
+- [x] Create `frontend-web-vitals.json` dashboard
+- [x] Create `infrastructure-use-method.json` dashboard
+- [x] Docker Compose already has dashboards volume mount (no change needed)
 
 ## PR 8: Tracing Deep Dive & Profiling Correlation
 **Branch**: `feat/tracing-profiling-deep-dive`
-- [ ] Create trace analysis dashboard
-- [ ] Create profiling dashboard
-- [ ] Add custom spans to telemetry.py
-- [ ] Configure Pyroscope trace-to-profile labels
-- [ ] Enable Tempo metrics generator
-- [ ] Configure cross-pillar datasource links
+- [x] Create `trace-analysis.json` dashboard (trace search, span metrics, service graph, error analysis)
+- [x] Create `profiling.json` dashboard (CPU/memory flame graphs, diff guide)
+- [x] Add `server_request_hook` to telemetry.py for deployment.environment on spans
+- [x] Add `get_tracer()` helper to telemetry.py for custom span creation
+- [x] Add `profile_with_trace_context()` to profiling.py with Pyroscope tag_wrapper
+- [x] Add custom spans to oscilloscope.py (websocket.connect, process_command, send_data)
+- [x] Add custom span to racing/api/routes.py (racing.generate_procedural_track)
+- [x] Add http.target to Tempo span_metrics dimensions
 
 ## PR 9: Alerting & SLO Monitoring
 **Branch**: `feat/observability-alerting`
