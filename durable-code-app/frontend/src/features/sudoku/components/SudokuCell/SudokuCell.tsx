@@ -50,6 +50,7 @@ function areEqual(
     prev.cell.isValid === next.cell.isValid &&
     prev.showCellPopup === next.showCellPopup &&
     prev.keypadHighlightValue === next.keypadHighlightValue &&
+    prev.popupSuggestedNumber === next.popupSuggestedNumber &&
     prev.inputMode === next.inputMode &&
     prev.isUnsureMode === next.isUnsureMode &&
     setsEqual(prev.cell.notes, next.cell.notes)
@@ -69,6 +70,7 @@ function SudokuCellComponent({
   isRelated,
   isSameValue,
   keypadHighlightValue,
+  popupSuggestedNumber,
   inputMode,
   isUnsureMode,
   showCellPopup,
@@ -160,20 +162,23 @@ function SudokuCellComponent({
           role="group"
           aria-label="Quick number entry"
         >
-          {popupNumbers.map((num) => (
-            <button
-              key={num}
-              type="button"
-              className={`${styles.popupButton} ${num === keypadHighlightValue ? styles.popupButtonActive : ''}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                onNumberPlace(num);
-              }}
-              aria-label={`Place ${num}`}
-            >
-              {num}
-            </button>
-          ))}
+          {popupNumbers.map((num) => {
+            const highlightNum = popupSuggestedNumber ?? keypadHighlightValue;
+            return (
+              <button
+                key={num}
+                type="button"
+                className={`${styles.popupButton} ${num === highlightNum ? styles.popupButtonActive : ''}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNumberPlace(num);
+                }}
+                aria-label={`Place ${num}`}
+              >
+                {num}
+              </button>
+            );
+          })}
           <div className={styles.popupModeRow}>
             <button
               type="button"

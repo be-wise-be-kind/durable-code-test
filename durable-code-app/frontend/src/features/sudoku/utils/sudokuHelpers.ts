@@ -16,7 +16,7 @@ import type {
   GameStats,
   GridSize,
 } from '../types/sudoku.types';
-import { getBoxPosition } from '../config/sudoku.constants';
+import { BOX_DIMENSIONS, getBoxPosition } from '../config/sudoku.constants';
 
 /**
  * Create a deep copy of the grid
@@ -216,6 +216,77 @@ export function updateCell(
       return cell;
     }),
   );
+}
+
+/**
+ * For an empty cell, check if it is the last empty cell in its row, column,
+ * or box. If so, return the single missing number. Otherwise return null.
+ */
+export function getSuggestedNumber(
+  grid: CellState[][],
+  position: CellPosition,
+  gridSize: GridSize,
+): number | null {
+  const { row, col } = position;
+  if (grid[row][col].value !== null) return null;
+
+  // Check row
+  const rowValues = new Set<number>();
+  let rowEmpty = 0;
+  for (let c = 0; c < gridSize; c++) {
+    const v = grid[row][c].value;
+    if (v !== null) {
+      rowValues.add(v);
+    } else {
+      rowEmpty++;
+    }
+  }
+  if (rowEmpty === 1) {
+    for (let n = 1; n <= gridSize; n++) {
+      if (!rowValues.has(n)) return n;
+    }
+  }
+
+  // Check column
+  const colValues = new Set<number>();
+  let colEmpty = 0;
+  for (let r = 0; r < gridSize; r++) {
+    const v = grid[r][col].value;
+    if (v !== null) {
+      colValues.add(v);
+    } else {
+      colEmpty++;
+    }
+  }
+  if (colEmpty === 1) {
+    for (let n = 1; n <= gridSize; n++) {
+      if (!colValues.has(n)) return n;
+    }
+  }
+
+  // Check box
+  const { rows: boxRows, cols: boxCols } = BOX_DIMENSIONS[gridSize];
+  const boxStartRow = Math.floor(row / boxRows) * boxRows;
+  const boxStartCol = Math.floor(col / boxCols) * boxCols;
+  const boxValues = new Set<number>();
+  let boxEmpty = 0;
+  for (let r = boxStartRow; r < boxStartRow + boxRows; r++) {
+    for (let c = boxStartCol; c < boxStartCol + boxCols; c++) {
+      const v = grid[r][c].value;
+      if (v !== null) {
+        boxValues.add(v);
+      } else {
+        boxEmpty++;
+      }
+    }
+  }
+  if (boxEmpty === 1) {
+    for (let n = 1; n <= gridSize; n++) {
+      if (!boxValues.has(n)) return n;
+    }
+  }
+
+  return null;
 }
 
 /**
