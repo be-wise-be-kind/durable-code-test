@@ -22,11 +22,11 @@ server:
 
 blocks_storage:
   backend: s3
+  storage_prefix: mimirblocks
   s3:
     bucket_name: ${s3_bucket}
     endpoint: s3.${aws_region}.amazonaws.com
     region: ${aws_region}
-    storage_prefix: mimir/blocks
   tsdb:
     dir: /data/mimir/tsdb
   bucket_store:
@@ -55,11 +55,11 @@ store_gateway:
 
 ruler_storage:
   backend: s3
+  storage_prefix: mimirruler
   s3:
     bucket_name: ${s3_bucket}
     endpoint: s3.${aws_region}.amazonaws.com
     region: ${aws_region}
-    storage_prefix: mimir/ruler
 
 limits:
   max_global_series_per_user: 0

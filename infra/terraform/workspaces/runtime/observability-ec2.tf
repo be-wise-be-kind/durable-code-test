@@ -83,9 +83,10 @@ resource "aws_instance" "observability" {
   ami                         = data.aws_ami.al2023[0].id
   instance_type               = lookup(var.observability_instance_type, var.environment, "t3.medium")
   subnet_id                   = tolist(data.aws_subnets.public.ids)[0]
-  associate_public_ip_address = true
-  iam_instance_profile        = local.observability_instance_profile
-  vpc_security_group_ids      = [local.observability_security_group_id]
+  associate_public_ip_address    = true
+  iam_instance_profile           = local.observability_instance_profile
+  vpc_security_group_ids         = [local.observability_security_group_id]
+  user_data_replace_on_change    = true
 
   root_block_device {
     volume_size           = 30
