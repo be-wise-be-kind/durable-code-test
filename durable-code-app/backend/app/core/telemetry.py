@@ -14,14 +14,16 @@ Overview: Configures OpenTelemetry TracerProvider and MeterProvider with OTLP gR
 Dependencies: opentelemetry-api, opentelemetry-sdk, opentelemetry-exporter-otlp-proto-grpc,
     opentelemetry-instrumentation-fastapi, FastAPI
 
-Exports: configure_telemetry, shutdown_telemetry
+Exports: configure_telemetry, shutdown_telemetry, get_tracer
 
 Interfaces: configure_telemetry(app: FastAPI) initializes tracing and metrics;
-    shutdown_telemetry() flushes and shuts down providers
+    shutdown_telemetry() flushes and shuts down providers;
+    get_tracer(name) returns a Tracer instance (no-op when OTel disabled)
 
 Implementation: Uses OTLP gRPC protocol for export, TraceIdRatioBased sampler for head-based
     sampling, and BatchSpanProcessor for efficient span batching. Resource attributes identify
-    the service in the Grafana stack backends.
+    the service in the Grafana stack backends. A server_request_hook enriches auto-instrumented
+    FastAPI spans with deployment.environment attribute.
 """
 
 from __future__ import annotations
@@ -36,6 +38,7 @@ if TYPE_CHECKING:
     from opentelemetry.sdk.metrics import MeterProvider
     from opentelemetry.sdk.resources import Resource
     from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.trace import Tracer
 
 
 class _TelemetryState:
@@ -111,11 +114,28 @@ def _configure_meter_provider(resource: Resource) -> None:
     _state.meter_provider = provider
 
 
+def _server_request_hook(span: object, scope: dict[str, object]) -> None:
+    """Enrich auto-instrumented FastAPI spans with custom attributes.
+
+    Adds deployment.environment to every incoming request span for filtering
+    traces by environment in Grafana Tempo.
+
+    Args:
+        span: The OpenTelemetry Span object for the request.
+        scope: The ASGI scope dictionary for the request.
+    """
+    from opentelemetry.trace import Span
+
+    if isinstance(span, Span) and span.is_recording():
+        environment = os.getenv("ENVIRONMENT", "dev")
+        span.set_attribute("deployment.environment", environment)
+
+
 def _instrument_fastapi(app: FastAPI) -> None:
     """Instrument the FastAPI application for automatic HTTP span creation."""
     from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
-    FastAPIInstrumentor.instrument_app(app)
+    FastAPIInstrumentor.instrument_app(app, server_request_hook=_server_request_hook)
 
 
 def configure_telemetry(app: FastAPI) -> None:
@@ -144,3 +164,20 @@ def shutdown_telemetry() -> None:
         _state.tracer_provider.shutdown()
     if _state.meter_provider is not None:
         _state.meter_provider.shutdown()
+
+
+def get_tracer(name: str) -> Tracer:
+    """Return a Tracer instance for creating custom spans.
+
+    Returns a no-op tracer when OpenTelemetry is disabled, so callers can
+    unconditionally use trace.get_tracer() without checking enablement.
+
+    Args:
+        name: The instrumentation scope name for the tracer.
+
+    Returns:
+        An OpenTelemetry Tracer (real or no-op).
+    """
+    from opentelemetry import trace
+
+    return trace.get_tracer(name)

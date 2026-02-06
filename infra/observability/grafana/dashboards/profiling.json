@@ -1,0 +1,183 @@
+{
+  "_header": {
+    "purpose": "Profiling dashboard for CPU and memory flame graph visualization with trace correlation",
+    "scope": "Continuous profiling analysis using Pyroscope datasource for CPU and memory profile types",
+    "overview": "Provides flame graph visualization for CPU and memory profiles collected by Pyroscope. Includes CPU flame graph panel, memory allocation flame graph panel, CPU profile over time, and instructions for differential flame graph analysis. Profiles can be correlated with traces when trace_id tags are present (configured via profile_with_trace_context in profiling.py). The Tempo datasource tracesToProfiles configuration enables direct navigation from trace spans to associated flame graphs.",
+    "dependencies": "Pyroscope datasource (uid: pyroscope), Tempo datasource (uid: tempo) for trace-to-profile links, profiling.py tag_wrapper for trace correlation",
+    "exports": "Provisioned Grafana dashboard accessible at /grafana/d/profiling",
+    "interfaces": "Pyroscope queries for process_cpu and memory profile types",
+    "environment": "Identical across dev/staging/prod",
+    "related": "home.json for navigation, trace-analysis.json for trace-to-profile correlation, profiling.py for Pyroscope SDK configuration",
+    "implementation": "Grafana dashboard JSON schema version 39 with flamegraph panels using Pyroscope datasource"
+  },
+  "uid": "profiling",
+  "title": "Profiling",
+  "description": "CPU and memory flame graphs with trace correlation",
+  "tags": ["profiling", "pyroscope", "flame-graph", "cpu", "memory"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": false,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [
+    {
+      "title": "Home",
+      "url": "/grafana/d/home",
+      "type": "link",
+      "icon": "external link"
+    },
+    {
+      "title": "Trace Analysis",
+      "url": "/grafana/d/trace-analysis",
+      "type": "link",
+      "icon": "external link"
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "label": "Service",
+        "type": "query",
+        "datasource": { "type": "grafana-pyroscope-datasource", "uid": "pyroscope" },
+        "query": "label_values(service_name)",
+        "includeAll": false,
+        "multi": false,
+        "refresh": 2,
+        "sort": 1,
+        "current": {
+          "text": "durable-code-backend",
+          "value": "durable-code-backend"
+        }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "row",
+      "title": "CPU Profiling",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "collapsed": false
+    },
+    {
+      "type": "flamegraph",
+      "title": "CPU Flame Graph",
+      "gridPos": { "h": 14, "w": 24, "x": 0, "y": 1 },
+      "id": 2,
+      "datasource": { "type": "grafana-pyroscope-datasource", "uid": "pyroscope" },
+      "targets": [
+        {
+          "queryType": "profile",
+          "profileTypeId": "process_cpu:cpu:nanoseconds:cpu:nanoseconds",
+          "labelSelector": "{service_name=\"$service\"}",
+          "refId": "A"
+        }
+      ],
+      "options": {}
+    },
+    {
+      "type": "timeseries",
+      "title": "CPU Profile Over Time",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 15 },
+      "id": 3,
+      "datasource": { "type": "grafana-pyroscope-datasource", "uid": "pyroscope" },
+      "targets": [
+        {
+          "queryType": "metrics",
+          "profileTypeId": "process_cpu:cpu:nanoseconds:cpu:nanoseconds",
+          "labelSelector": "{service_name=\"$service\"}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ns",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 20
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "single" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      }
+    },
+    {
+      "type": "row",
+      "title": "Memory Profiling",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 23 },
+      "id": 4,
+      "collapsed": false
+    },
+    {
+      "type": "flamegraph",
+      "title": "Memory Allocation Flame Graph",
+      "gridPos": { "h": 14, "w": 24, "x": 0, "y": 24 },
+      "id": 5,
+      "datasource": { "type": "grafana-pyroscope-datasource", "uid": "pyroscope" },
+      "targets": [
+        {
+          "queryType": "profile",
+          "profileTypeId": "memory:alloc_objects:count:space:bytes",
+          "labelSelector": "{service_name=\"$service\"}",
+          "refId": "A"
+        }
+      ],
+      "options": {}
+    },
+    {
+      "type": "timeseries",
+      "title": "Memory Allocation Over Time",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 38 },
+      "id": 6,
+      "datasource": { "type": "grafana-pyroscope-datasource", "uid": "pyroscope" },
+      "targets": [
+        {
+          "queryType": "metrics",
+          "profileTypeId": "memory:alloc_objects:count:space:bytes",
+          "labelSelector": "{service_name=\"$service\"}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 20
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "single" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      }
+    },
+    {
+      "type": "row",
+      "title": "Trace-to-Profile Correlation",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 46 },
+      "id": 7,
+      "collapsed": false
+    },
+    {
+      "type": "text",
+      "title": "Differential Flame Graph Guide",
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 47 },
+      "id": 8,
+      "options": {
+        "mode": "markdown",
+        "content": "### Trace-to-Profile Correlation\n\nProfiles are tagged with `trace_id` and `span_id` when the `profile_with_trace_context()` context manager is used in backend code. This enables:\n\n1. **Trace -> Profile**: From the [Trace Analysis](/grafana/d/trace-analysis) dashboard, click a span to see its associated flame graph\n2. **Profile Filtering**: Use Pyroscope label selector `{trace_id=\"<hex_id>\"}` to find profiles for a specific trace\n\n### Differential Flame Graphs\n\nTo compare profiles between two time periods:\n1. Open **Explore** > Select **Pyroscope** datasource\n2. Select profile type (CPU or Memory)\n3. Use the **Diff** query type\n4. Set baseline and comparison time ranges\n5. Red areas = increased CPU/memory usage, Blue areas = decreased usage"
+      }
+    }
+  ],
+  "time": { "from": "now-1h", "to": "now" },
+  "refresh": "30s"
+}

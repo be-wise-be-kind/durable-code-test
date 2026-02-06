@@ -15,6 +15,7 @@ from typing import Annotated
 from fastapi import APIRouter, HTTPException, Query
 from loguru import logger
 
+from app.core.telemetry import get_tracer
 from app.famous_tracks import (
     generate_laguna_seca_track,
     generate_monaco_style_track,
@@ -38,6 +39,8 @@ from ..types import (
     MIN_TRACK_WIDTH,
     TrackConfig,
 )
+
+_tracer = get_tracer("durable-code.racing")
 
 # API Router
 router = APIRouter(
@@ -262,9 +265,18 @@ async def generate_track(params: TrackGenerationParams) -> SimpleTrack:
     # passing an RNG instance through the call chain (future enhancement in PR3).
 
     try:
-        track_width = DIFFICULTY_PARAMS[params.difficulty]["track_width"]
-        boundaries = _select_track_layout(params, track_width)
-        start_position = _calculate_start_position(boundaries, params.width, params.height)
+        with _tracer.start_as_current_span(
+            "racing.generate_procedural_track",
+            attributes={
+                "racing.difficulty": params.difficulty,
+                "racing.layout": params.layout or "procedural",
+                "racing.width": params.width,
+                "racing.height": params.height,
+            },
+        ):
+            track_width = DIFFICULTY_PARAMS[params.difficulty]["track_width"]
+            boundaries = _select_track_layout(params, track_width)
+            start_position = _calculate_start_position(boundaries, params.width, params.height)
 
         return SimpleTrack(
             width=params.width,

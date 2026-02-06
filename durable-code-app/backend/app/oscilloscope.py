@@ -26,8 +26,11 @@ from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect
 from loguru import logger
 from pydantic import BaseModel, Field, validator
 
+from .core.telemetry import get_tracer
 from .racing.state_machine import WebSocketState, WebSocketStateMachine
 from .security import get_rate_limiter, get_security_config, validate_numeric_range
+
+_tracer = get_tracer("durable-code.oscilloscope")
 
 # Constants for waveform generation
 SAMPLE_RATE = 1000  # Samples per second
@@ -331,8 +334,12 @@ async def _process_command(
         try:
             data = json.loads(message)
             command = OscilloscopeCommand(**data)
-            log_msg = await _handle_command(command, generator, state_machine)
-            logger.info(log_msg)
+            with _tracer.start_as_current_span(
+                "websocket.process_command",
+                attributes={"ws.command_type": command.command},
+            ):
+                log_msg = await _handle_command(command, generator, state_machine)
+                logger.info(log_msg)
         except (json.JSONDecodeError, ValueError) as e:
             logger.error("Invalid command received", error=str(e), exc_info=True)
             await websocket.send_json({"error": str(e)})
@@ -343,19 +350,20 @@ async def _process_command(
 
 async def _send_data(websocket: WebSocket, generator: WaveformGenerator) -> None:
     """Send oscilloscope data over WebSocket."""
-    samples = generator.generate_samples(BUFFER_SIZE)
-    response_data = OscilloscopeData(
-        timestamp=time.time(),
-        samples=samples,
-        sample_rate=SAMPLE_RATE,
-        wave_type=generator.wave_type,
-        parameters={
-            "frequency": generator.frequency,
-            "amplitude": generator.amplitude,
-            "offset": generator.offset,
-        },
-    )
-    await websocket.send_json(response_data.dict())
+    with _tracer.start_as_current_span("websocket.send_data"):
+        samples = generator.generate_samples(BUFFER_SIZE)
+        response_data = OscilloscopeData(
+            timestamp=time.time(),
+            samples=samples,
+            sample_rate=SAMPLE_RATE,
+            wave_type=generator.wave_type,
+            parameters={
+                "frequency": generator.frequency,
+                "amplitude": generator.amplitude,
+                "offset": generator.offset,
+            },
+        )
+        await websocket.send_json(response_data.dict())
 
 
 async def _handle_timeout_error(websocket: WebSocket, state_machine: WebSocketStateMachine, client_ip: str) -> None:
@@ -483,8 +491,12 @@ async def oscilloscope_stream(websocket: WebSocket) -> None:
         logger.warning("WebSocket connection rejected due to rate limit", client_ip=client_ip)
         return
 
-    await websocket.accept()
-    logger.info("Oscilloscope WebSocket connection established", client_ip=client_ip)
+    with _tracer.start_as_current_span(
+        "websocket.connect",
+        attributes={"ws.client_ip": client_ip},
+    ):
+        await websocket.accept()
+        logger.info("Oscilloscope WebSocket connection established", client_ip=client_ip)
 
     # Initialize state machine and generator
     state_machine = WebSocketStateMachine(state=WebSocketState.CONNECTED)
