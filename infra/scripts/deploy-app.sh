@@ -100,11 +100,16 @@ docker build -t "${ECR_PREFIX}-${ENV}-backend:${TAG}" \
   .
 docker tag "${ECR_PREFIX}-${ENV}-backend:${TAG}" "${ECR_REGISTRY}/${ECR_PREFIX}-${ENV}-backend:${TAG}"
 
-# Push images to ECR (versioned tags only - task definitions are updated with versioned tags)
-# Note: We don't push 'latest' tags because ECR has immutable tags enabled for security
+# Push images to ECR (versioned tags for auditability, latest for infra recovery)
 echo "Pushing images to ECR..."
 docker push "${ECR_REGISTRY}/${ECR_PREFIX}-${ENV}-frontend:${TAG}"
 docker push "${ECR_REGISTRY}/${ECR_PREFIX}-${ENV}-backend:${TAG}"
+
+# Tag and push 'latest' so Terraform task definitions referencing :latest always resolve
+docker tag "${ECR_REGISTRY}/${ECR_PREFIX}-${ENV}-frontend:${TAG}" "${ECR_REGISTRY}/${ECR_PREFIX}-${ENV}-frontend:latest"
+docker tag "${ECR_REGISTRY}/${ECR_PREFIX}-${ENV}-backend:${TAG}" "${ECR_REGISTRY}/${ECR_PREFIX}-${ENV}-backend:latest"
+docker push "${ECR_REGISTRY}/${ECR_PREFIX}-${ENV}-frontend:latest"
+docker push "${ECR_REGISTRY}/${ECR_PREFIX}-${ENV}-backend:latest"
 
 echo "=== Registering New Task Definitions ==="
 echo "Creating new task definitions with updated images..."
