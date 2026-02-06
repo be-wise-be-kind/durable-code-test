@@ -1,0 +1,21 @@
+# Purpose: Python project metadata and dependency management for Locust load testing
+# Scope: Load testing package configuration with Locust framework dependency
+# Overview: PEP 621 project configuration for the load testing package. Defines the project
+#     metadata and runtime dependencies required for HTTP load testing against the deployed
+#     application. Uses pip-installable format for containerized builds. Locust provides the
+#     load testing framework with built-in web UI, statistics collection, and distributed
+#     testing capabilities.
+# Dependencies: Locust load testing framework
+# Exports: Installable Python package for Docker container builds
+# Environment: Docker container via Dockerfile, targeting deployed web instances
+# Related: Dockerfile for container build, locustfiles/ for test scenarios
+# Implementation: PEP 621 project metadata with minimal dependency set
+
+[project]
+name = "durable-code-load-testing"
+version = "0.1.0"
+description = "Locust load testing for the Durable Code application"
+requires-python = ">=3.11"
+dependencies = [
+    "locust>=2.29.0",
+]

@@ -1,0 +1,28 @@
+# Purpose: Docker Compose orchestration for Locust load testing service
+# Scope: Single-service configuration for running Locust against deployed web instances
+# Overview: Defines the locust-master service that runs the Locust load testing framework
+#     with a web UI on port 8089. Targets external URLs (deployed web instances) configured
+#     via the LOCUST_HOST environment variable, which defaults to the LOAD_TEST_HOST value
+#     from the project .env file or can be overridden at runtime. Volume-mounts locustfiles
+#     for live editing during test development. Workers are deferred to a later PR.
+# Dependencies: Docker Compose, Dockerfile in same directory, LOAD_TEST_HOST env var
+# Exports: Locust master service with web UI
+# Interfaces: Port 8089 (Locust web UI), LOCUST_HOST env var for target URL
+# Environment: Local Docker runtime, targeting deployed web instances
+# Related: Dockerfile for image build, locustfiles/ for test scenarios, justfile for commands
+# Implementation: Single master service with volume mount for locustfiles and env-based host config
+
+services:
+  locust-master:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: durable-code-locust-master
+    ports:
+      - "8089:8089"
+    environment:
+      - LOCUST_HOST=${LOAD_TEST_HOST:-http://localhost:8000}
+      - LOCUST_LOCUSTFILE=locustfiles/http_users.py
+    volumes:
+      - ./locustfiles:/load-testing/locustfiles
+    command: ["--master"]
