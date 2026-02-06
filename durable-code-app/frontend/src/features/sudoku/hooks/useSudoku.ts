@@ -322,7 +322,8 @@ export function useSudoku(): UseSudokuReturn {
 
   /**
    * Auto-fill notes with all valid candidates for a given cell position.
-   * When exactly one candidate exists, place the value directly instead.
+   * When AUTO_PLACE_SINGLE_CANDIDATE is enabled, places the value directly
+   * if only one candidate exists (intended for a future learning mode).
    */
   const autoFillNotes = useCallback(
     (position: CellPosition) => {
@@ -341,7 +342,7 @@ export function useSudoku(): UseSudokuReturn {
 
       pushUndo(currentGrid);
 
-      if (candidates.size === 1) {
+      if (GAME_CONSTANTS.AUTO_PLACE_SINGLE_CANDIDATE && candidates.size === 1) {
         const value = candidates.values().next().value as number;
         let updatedGrid = updateCell(currentGrid, position, {
           value,

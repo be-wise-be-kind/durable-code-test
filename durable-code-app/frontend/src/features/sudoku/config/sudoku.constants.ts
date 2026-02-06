@@ -60,6 +60,8 @@ export const GAME_CONSTANTS = {
   ANIMATION_DURATION: 200,
   /** Maximum undo stack depth to prevent memory bloat */
   MAX_UNDO_STACK_SIZE: 10,
+  /** Auto-place value when long-press reveals a single candidate (learning mode) */
+  AUTO_PLACE_SINGLE_CANDIDATE: false,
 } as const;
 
 /**
