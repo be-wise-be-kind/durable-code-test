@@ -28,9 +28,11 @@
 - [x] PR 4: Docker Compose & Component Configs
 - [x] PR 5: Backend OpenTelemetry Instrumentation
 - [x] PR 6: Frontend Grafana Faro SDK
+- [x] PR 7: Golden Signals & Method Dashboards
+- [x] PR 8: Tracing Deep Dive & Profiling Correlation
 
 ### NEXT PR TO IMPLEMENT
-START HERE: **PR 7** - Golden Signals & Method Dashboards
+START HERE: **PR 9** - Alerting & SLO Monitoring
 
 ### Remaining PRs
 - [x] PR 1: Observability Architecture Documentation
@@ -39,12 +41,12 @@ START HERE: **PR 7** - Golden Signals & Method Dashboards
 - [x] PR 4: Docker Compose & Component Configs
 - [x] PR 5: Backend OpenTelemetry Instrumentation
 - [x] PR 6: Frontend Grafana Faro SDK
-- [ ] PR 7: Golden Signals & Method Dashboards
-- [ ] PR 8: Tracing Deep Dive & Profiling Correlation
+- [x] PR 7: Golden Signals & Method Dashboards
+- [x] PR 8: Tracing Deep Dive & Profiling Correlation
 - [ ] PR 9: Alerting & SLO Monitoring
 - [ ] PR 10: Integration, Verification & CI/CD
 
-**Progress**: 60% Complete (6/10 PRs)
+**Progress**: 80% Complete (8/10 PRs)
 
 ---
 
