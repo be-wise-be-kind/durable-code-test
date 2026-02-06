@@ -11,7 +11,7 @@
  * State/Behavior: Stateless component, controlled by parent via props
  */
 
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback, useMemo, useRef } from 'react';
 import type { ReactElement } from 'react';
 import type { SudokuCellProps } from '../../types/sudoku.types';
 import { isBoxBoundary } from '../../config/sudoku.constants';
@@ -77,6 +77,7 @@ function SudokuCellComponent({
   onClick,
   onNumberPlace,
   onToggleInputMode,
+  onAutoFillNotes,
   onToggleUnsureMode,
 }: SudokuCellProps): ReactElement {
   // Determine box boundaries for thick borders
@@ -131,10 +132,43 @@ function SudokuCellComponent({
     [gridSize],
   );
 
+  // Long-press detection for auto-filling notes on the cell itself
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressFiredRef = useRef(false);
+
+  const clearLongPress = useCallback(() => {
+    if (longPressTimerRef.current !== null) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  }, []);
+
+  const handleCellPointerDown = useCallback(() => {
+    longPressFiredRef.current = false;
+    clearLongPress();
+    longPressTimerRef.current = setTimeout(() => {
+      longPressFiredRef.current = true;
+      onAutoFillNotes(position);
+    }, 500);
+  }, [clearLongPress, onAutoFillNotes, position]);
+
+  const handleCellPointerUp = useCallback(() => {
+    clearLongPress();
+    if (!longPressFiredRef.current) {
+      onClick();
+    }
+  }, [clearLongPress, onClick]);
+
+  const handleCellPointerLeave = useCallback(() => {
+    clearLongPress();
+  }, [clearLongPress]);
+
   return (
     <div
       className={cellClasses}
-      onClick={onClick}
+      onPointerDown={handleCellPointerDown}
+      onPointerUp={handleCellPointerUp}
+      onPointerLeave={handleCellPointerLeave}
       onKeyDown={(e: React.KeyboardEvent) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
@@ -158,6 +192,8 @@ function SudokuCellComponent({
           className={`${styles.popup} ${popupPositionClass}`}
           data-grid-size={gridSize}
           onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+          onPointerUp={(e) => e.stopPropagation()}
           onKeyDown={(e) => e.stopPropagation()}
           role="group"
           aria-label="Quick number entry"
