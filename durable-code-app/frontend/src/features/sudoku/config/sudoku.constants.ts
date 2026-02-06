@@ -60,6 +60,8 @@ export const GAME_CONSTANTS = {
   ANIMATION_DURATION: 200,
   /** Maximum undo stack depth to prevent memory bloat */
   MAX_UNDO_STACK_SIZE: 10,
+  /** Enable long-press on cell to auto-fill notes with valid candidates */
+  LONG_PRESS_AUTO_FILL: false,
 } as const;
 
 /**

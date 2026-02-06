@@ -26,6 +26,7 @@ import { GameState } from '../types/sudoku.types';
 import { GAME_CONSTANTS } from '../config/sudoku.constants';
 import { generatePuzzle } from '../utils/puzzleGenerator';
 import {
+  getCandidates,
   isPuzzleSolved,
   validateGrid,
   validatePlacement,
@@ -84,6 +85,10 @@ export function useSudoku(): UseSudokuReturn {
 
   // Timer ref
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Ref to always access the latest grid (avoids stale closures in long-press timers)
+  const gridRef = useRef(grid);
+  gridRef.current = grid;
 
   // Original puzzle for reset
   const originalPuzzleRef = useRef<CellState[][]>(grid);
@@ -314,6 +319,50 @@ export function useSudoku(): UseSudokuReturn {
   const toggleInputMode = useCallback(() => {
     setInputMode((prev) => (prev === 'normal' ? 'notes' : 'normal'));
   }, []);
+
+  /**
+   * Auto-fill notes with all valid candidates for a given cell position.
+   * If only one candidate exists, places the value directly.
+   * Gated behind GAME_CONSTANTS.LONG_PRESS_AUTO_FILL feature flag.
+   */
+  const autoFillNotes = useCallback(
+    (position: CellPosition) => {
+      if (!GAME_CONSTANTS.LONG_PRESS_AUTO_FILL) return;
+      if (gameState !== GameState.PLAYING) return;
+
+      const currentGrid = gridRef.current;
+      const cell = currentGrid[position.row][position.col];
+      if (cell.isOriginal || cell.value !== null) return;
+
+      const candidates = getCandidates(
+        currentGrid,
+        position.row,
+        position.col,
+        gridSize,
+      );
+
+      pushUndo(currentGrid);
+
+      if (candidates.size === 1) {
+        const value = candidates.values().next().value as number;
+        let updatedGrid = updateCell(currentGrid, position, {
+          value,
+          notes: new Set<number>(),
+        });
+        updatedGrid = clearRelatedNotes(updatedGrid, position, value, gridSize);
+        updatedGrid = validateGrid(updatedGrid, gridSize);
+        setGrid(updatedGrid);
+
+        if (isPuzzleSolved(updatedGrid)) {
+          setGameState(GameState.COMPLETED);
+          stopTimer();
+        }
+      } else {
+        setGrid(updateCell(currentGrid, position, { notes: candidates }));
+      }
+    },
+    [gameState, gridSize, pushUndo, stopTimer],
+  );
 
   /**
    * Toggle unsure mode
@@ -606,6 +655,7 @@ export function useSudoku(): UseSudokuReturn {
 
     // Mode toggles
     toggleInputMode,
+    autoFillNotes,
     toggleUnsureMode,
     toggleCellPopup,
 
