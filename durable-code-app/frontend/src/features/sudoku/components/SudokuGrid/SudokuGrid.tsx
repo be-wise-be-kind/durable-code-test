@@ -39,6 +39,7 @@ function SudokuGridComponent({
   onCellClick,
   onNumberPlace,
   onToggleInputMode,
+  onAutoFillNotes,
   onToggleUnsureMode,
   className = '',
 }: SudokuGridProps): ReactElement {
@@ -62,6 +63,7 @@ function SudokuGridComponent({
       className={gridClasses}
       role="grid"
       aria-label={`${gridSize}x${gridSize} Sudoku grid`}
+      onContextMenu={(e) => e.preventDefault()}
     >
       {grid.map((row, rowIdx) =>
         row.map((cell, colIdx) => {
@@ -93,6 +95,7 @@ function SudokuGridComponent({
               onClick={() => handleCellClick(position)}
               onNumberPlace={onNumberPlace}
               onToggleInputMode={onToggleInputMode}
+              onAutoFillNotes={onAutoFillNotes}
               onToggleUnsureMode={onToggleUnsureMode}
             />
           );

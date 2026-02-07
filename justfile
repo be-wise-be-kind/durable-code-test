@@ -927,16 +927,82 @@ _load-test-ui:
     echo -e "{{YELLOW}}Web UI: http://localhost:8089{{NC}}"
     echo -e "{{YELLOW}}Target: {{LOAD_TEST_HOST}}{{NC}}"
 
-# Internal: Run Locust headless with args passthrough
+# Internal: Run Locust headless with args passthrough and optional --profile support
 _load-test-run *ARGS:
     #!/usr/bin/env bash
+    set -eo pipefail
+    ALL_ARGS=({{ARGS}})
+    PROFILE_NAME=""
+    PASSTHROUGH_ARGS=()
+    PROFILE_USERS=""
+    PROFILE_SPAWN_RATE=""
+    PROFILE_DURATION=""
+    PROFILE_HTTP_WEIGHT=""
+    PROFILE_WS_WEIGHT=""
+
+    # Extract --profile flag from arguments
+    i=0
+    while [ $i -lt ${#ALL_ARGS[@]} ]; do
+        if [ "${ALL_ARGS[$i]}" = "--profile" ] && [ $((i + 1)) -lt ${#ALL_ARGS[@]} ]; then
+            PROFILE_NAME="${ALL_ARGS[$((i + 1))]}"
+            i=$((i + 2))
+        else
+            PASSTHROUGH_ARGS+=("${ALL_ARGS[$i]}")
+            i=$((i + 1))
+        fi
+    done
+
+    # If a profile was specified, parse its YAML file with bash-native tools
+    if [ -n "$PROFILE_NAME" ]; then
+        PROFILE_FILE="load-testing/profiles/${PROFILE_NAME}.yml"
+        if [ ! -f "$PROFILE_FILE" ]; then
+            echo -e "{{RED}}Error: Profile '${PROFILE_NAME}' not found at ${PROFILE_FILE}{{NC}}"
+            AVAILABLE=$(ls load-testing/profiles/*.yml 2>/dev/null | xargs -I{} basename {} .yml | tr '\n' ', ' | sed 's/,$//')
+            echo -e "{{YELLOW}}Available profiles: ${AVAILABLE:-none}{{NC}}"
+            exit 1
+        fi
+        echo -e "{{CYAN}}Loading profile: ${PROFILE_NAME}{{NC}}"
+        PROFILE_USERS=$(grep "^users:" "$PROFILE_FILE" | awk '{print $2}')
+        PROFILE_SPAWN_RATE=$(grep "^spawn_rate:" "$PROFILE_FILE" | awk '{print $2}')
+        PROFILE_DURATION=$(grep "^duration:" "$PROFILE_FILE" | awk '{print $2}')
+        PROFILE_HTTP_WEIGHT=$(grep "^http_weight:" "$PROFILE_FILE" | awk '{print $2}')
+        PROFILE_WS_WEIGHT=$(grep "^websocket_weight:" "$PROFILE_FILE" | awk '{print $2}')
+        echo -e "{{YELLOW}}  Users: ${PROFILE_USERS}, Spawn rate: ${PROFILE_SPAWN_RATE}, Duration: ${PROFILE_DURATION}{{NC}}"
+        echo -e "{{YELLOW}}  Weights: HTTP=${PROFILE_HTTP_WEIGHT}%, WS=${PROFILE_WS_WEIGHT}%{{NC}}"
+    fi
+
+    # Build Locust CLI args: profile values first, then passthrough args (which can override)
+    LOCUST_ARGS=()
+    if [ -n "$PROFILE_USERS" ]; then
+        LOCUST_ARGS+=(--users "$PROFILE_USERS")
+    fi
+    if [ -n "$PROFILE_SPAWN_RATE" ]; then
+        LOCUST_ARGS+=(--spawn-rate "$PROFILE_SPAWN_RATE")
+    fi
+    if [ -n "$PROFILE_DURATION" ]; then
+        LOCUST_ARGS+=(--run-time "$PROFILE_DURATION")
+    fi
+    if [ ${#PASSTHROUGH_ARGS[@]} -gt 0 ]; then
+        LOCUST_ARGS+=("${PASSTHROUGH_ARGS[@]}")
+    fi
+
+    # Build docker compose env overrides for weights
+    ENV_ARGS=()
+    if [ -n "$PROFILE_HTTP_WEIGHT" ]; then
+        ENV_ARGS+=(-e "HTTP_WEIGHT=${PROFILE_HTTP_WEIGHT}")
+    fi
+    if [ -n "$PROFILE_WS_WEIGHT" ]; then
+        ENV_ARGS+=(-e "WS_WEIGHT=${PROFILE_WS_WEIGHT}")
+    fi
+
     echo -e "{{CYAN}}Running Locust load test (headless)...{{NC}}"
     echo -e "{{YELLOW}}Target host: {{LOAD_TEST_HOST}}{{NC}}"
     LOAD_TEST_HOST="{{LOAD_TEST_HOST}}" {{COMPOSE_CMD}} -f load-testing/docker-compose.yml run \
         --rm \
         -e LOCUST_HOST="{{LOAD_TEST_HOST}}" \
+        ${ENV_ARGS[@]+"${ENV_ARGS[@]}"} \
         locust-master \
-        --headless {{ARGS}}
+        --headless ${LOCUST_ARGS[@]+"${LOCUST_ARGS[@]}"}
     echo -e "{{GREEN}}✓ Load test complete{{NC}}"
 
 # Internal: Stop Locust containers
@@ -965,6 +1031,13 @@ _load-test-help:
     @echo -e "  {{YELLOW}}status{{NC}}                   Show Locust container status"
     @echo -e "  {{YELLOW}}help{{NC}}                     Show this help message"
     @echo ""
+    @echo -e "{{GREEN}}Profiles:{{NC}}"
+    @echo -e "  Use {{YELLOW}}--profile <name>{{NC}} to load predefined test configurations:"
+    @echo -e "  {{YELLOW}}smoke{{NC}}    5 users,   30s duration,  80/20 HTTP/WS weight"
+    @echo -e "  {{YELLOW}}load{{NC}}     50 users,  5m duration,   70/30 HTTP/WS weight"
+    @echo -e "  {{YELLOW}}stress{{NC}}   200 users, 10m duration,  60/40 HTTP/WS weight"
+    @echo -e "  {{YELLOW}}soak{{NC}}     30 users,  30m duration,  70/30 HTTP/WS weight"
+    @echo ""
     @echo -e "{{GREEN}}Configuration:{{NC}}"
     @echo -e "  Set {{YELLOW}}LOAD_TEST_HOST{{NC}} in .env or pass via environment:"
     @echo -e "  {{CYAN}}LOAD_TEST_HOST=https://my-app.example.com just load-test ui{{NC}}"
@@ -973,6 +1046,9 @@ _load-test-help:
     @echo -e "  {{CYAN}}just load-test{{NC}}                                            # Start web UI"
     @echo -e "  {{CYAN}}just load-test ui{{NC}}                                         # Start web UI"
     @echo -e "  {{CYAN}}just load-test run --users 10 --spawn-rate 2 --run-time 60s{{NC}} # Headless run"
+    @echo -e "  {{CYAN}}just load-test run --profile smoke{{NC}}                         # Run smoke profile"
+    @echo -e "  {{CYAN}}just load-test run --profile load{{NC}}                          # Run standard load test"
+    @echo -e "  {{CYAN}}just load-test run --profile smoke --users 2{{NC}}               # Profile with override"
     @echo -e "  {{CYAN}}just load-test stop{{NC}}                                       # Stop containers"
     @echo -e "  {{CYAN}}just load-test status{{NC}}                                     # Check status"
     @echo ""

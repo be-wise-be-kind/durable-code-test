@@ -47,6 +47,7 @@ export function SudokuTab({ className = '' }: SudokuTabProps): ReactElement {
     showCellPopup,
     toggleCellPopup,
     toggleInputMode,
+    autoFillNotes,
     toggleUnsureMode,
     setGridSize,
     setDifficulty,
@@ -114,6 +115,7 @@ export function SudokuTab({ className = '' }: SudokuTabProps): ReactElement {
             onCellClick={selectCell}
             onNumberPlace={placeNumber}
             onToggleInputMode={toggleInputMode}
+            onAutoFillNotes={autoFillNotes}
             onToggleUnsureMode={toggleUnsureMode}
             className={styles.grid}
           />

@@ -1,0 +1,22 @@
+# Purpose: Standard load test profile simulating typical production traffic patterns
+# Scope: Moderate load test with sustained user count for baseline performance measurement
+# Overview: Defines a standard load test profile with 50 concurrent users over 5 minutes.
+#     Intended for measuring baseline application performance under typical production-like
+#     traffic patterns. The 70/30 HTTP-to-WebSocket weight ratio reflects expected real-world
+#     usage where HTTP API calls significantly outnumber WebSocket streaming sessions.
+#     Results from this profile establish performance baselines for comparison against
+#     stress and soak test results.
+# Dependencies: Locust load testing framework, mixed_users.py locustfile
+# Exports: Profile configuration consumed by justfile --profile flag and profile_loader.py
+# Environment: Local development or staging environment performance testing
+# Related: smoke.yml for quick validation, stress.yml for peak load, soak.yml for endurance
+# Implementation: Flat YAML structure with fields mapped to Locust CLI arguments and
+#     environment variables by the justfile or profile_loader.py
+
+name: load
+description: Standard load test
+users: 50
+spawn_rate: 5
+duration: 5m
+http_weight: 70
+websocket_weight: 30

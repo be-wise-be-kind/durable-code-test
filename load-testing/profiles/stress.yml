@@ -1,0 +1,22 @@
+# Purpose: Stress test profile for identifying application breaking points under heavy load
+# Scope: High-concurrency load test pushing the application beyond normal operating capacity
+# Overview: Defines a stress test profile with 200 concurrent users over 10 minutes.
+#     Intended for identifying application breaking points, error thresholds, and degradation
+#     patterns under heavy load. The 60/40 HTTP-to-WebSocket weight ratio increases WebSocket
+#     pressure relative to other profiles, stressing the oscilloscope streaming endpoint with
+#     more concurrent connections. Results reveal capacity limits, error rate curves, and
+#     response time degradation under peak load conditions.
+# Dependencies: Locust load testing framework, mixed_users.py locustfile
+# Exports: Profile configuration consumed by justfile --profile flag and profile_loader.py
+# Environment: Dedicated test environment (avoid running against shared resources)
+# Related: smoke.yml for validation, load.yml for baseline, soak.yml for endurance
+# Implementation: Flat YAML structure with fields mapped to Locust CLI arguments and
+#     environment variables by the justfile or profile_loader.py
+
+name: stress
+description: Find breaking points
+users: 200
+spawn_rate: 20
+duration: 10m
+http_weight: 60
+websocket_weight: 40

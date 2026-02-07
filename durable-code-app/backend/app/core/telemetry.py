@@ -188,14 +188,22 @@ def _server_request_hook(span: object, scope: dict[str, object]) -> None:
         span.set_attribute("deployment.environment", environment)
 
 
+def _instrument_httpx() -> None:
+    """Instrument httpx for automatic trace context propagation."""
+    from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
+
+    HTTPXClientInstrumentor().instrument()
+
+
 def configure_telemetry(app: FastAPI) -> None:
     """Configure OpenTelemetry providers without adding request middleware.
 
     Initializes TracerProvider, MeterProvider, and LoggerProvider with OTLP
-    exporters. Does NOT add the FastAPI tracing middleware; call
-    instrument_fastapi() separately after adding the metrics middleware so
-    the tracing middleware is outermost and the span is active during metric
-    recording (required for exemplars).
+    exporters. Also instruments httpx for automatic trace context propagation.
+    Does NOT add the FastAPI tracing middleware; call instrument_fastapi()
+    separately after adding the metrics middleware so the tracing middleware
+    is outermost and the span is active during metric recording (required
+    for exemplars).
 
     No-ops when OTEL_ENABLED environment variable is not set to 'true'.
 
@@ -210,6 +218,7 @@ def configure_telemetry(app: FastAPI) -> None:
     _configure_tracer_provider(resource)
     _configure_meter_provider(resource)
     _configure_logger_provider(resource)
+    _instrument_httpx()
     logger.info("OpenTelemetry providers configured with OTLP gRPC export (traces, metrics, logs)")
 
 

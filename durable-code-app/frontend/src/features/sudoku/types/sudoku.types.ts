@@ -119,6 +119,7 @@ export interface SudokuGridProps {
   onCellClick: (position: CellPosition) => void;
   onNumberPlace: (num: number) => void;
   onToggleInputMode: () => void;
+  onAutoFillNotes: (position: CellPosition) => void;
   onToggleUnsureMode: () => void;
   className?: string;
 }
@@ -142,6 +143,7 @@ export interface SudokuCellProps {
   onClick: () => void;
   onNumberPlace: (num: number) => void;
   onToggleInputMode: () => void;
+  onAutoFillNotes: (position: CellPosition) => void;
   onToggleUnsureMode: () => void;
 }
 
@@ -228,6 +230,7 @@ export interface UseSudokuReturn {
 
   // Mode toggles
   toggleInputMode: () => void;
+  autoFillNotes: (position: CellPosition) => void;
   toggleUnsureMode: () => void;
 
   // Game actions

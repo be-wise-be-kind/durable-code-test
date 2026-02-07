@@ -1,0 +1,21 @@
+# Purpose: Smoke test profile for quick validation of load testing infrastructure
+# Scope: Minimal load test verifying HTTP and WebSocket scenarios function correctly
+# Overview: Defines a lightweight smoke test profile with 5 users and 30-second duration.
+#     Intended for rapid validation that the load testing infrastructure, Locust scenarios,
+#     and target application are all functioning correctly before running heavier profiles.
+#     Uses an 80/20 HTTP-to-WebSocket weight ratio to emphasize HTTP endpoint coverage
+#     while still validating WebSocket connectivity.
+# Dependencies: Locust load testing framework, mixed_users.py locustfile
+# Exports: Profile configuration consumed by justfile --profile flag and profile_loader.py
+# Environment: Local development or CI/CD pipeline quick-check
+# Related: load.yml, stress.yml, soak.yml for progressively heavier test profiles
+# Implementation: Flat YAML structure with fields mapped to Locust CLI arguments and
+#     environment variables by the justfile or profile_loader.py
+
+name: smoke
+description: Quick validation test
+users: 5
+spawn_rate: 1
+duration: 30s
+http_weight: 80
+websocket_weight: 20
