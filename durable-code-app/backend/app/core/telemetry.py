@@ -138,11 +138,19 @@ def _instrument_fastapi(app: FastAPI) -> None:
     FastAPIInstrumentor.instrument_app(app, server_request_hook=_server_request_hook)
 
 
+def _instrument_httpx() -> None:
+    """Instrument httpx for automatic trace context propagation."""
+    from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
+
+    HTTPXClientInstrumentor().instrument()
+
+
 def configure_telemetry(app: FastAPI) -> None:
     """Configure OpenTelemetry tracing and metrics for the application.
 
     No-ops when OTEL_ENABLED environment variable is not set to 'true'.
-    Initializes TracerProvider, MeterProvider, and instruments FastAPI.
+    Initializes TracerProvider, MeterProvider, instruments FastAPI, and
+    instruments httpx for automatic trace context propagation.
 
     Args:
         app: The FastAPI application instance to instrument.
@@ -155,6 +163,7 @@ def configure_telemetry(app: FastAPI) -> None:
     _configure_tracer_provider(resource)
     _configure_meter_provider(resource)
     _instrument_fastapi(app)
+    _instrument_httpx()
     logger.info("OpenTelemetry configured with OTLP gRPC export")
 
 

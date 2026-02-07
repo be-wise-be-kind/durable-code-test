@@ -21,6 +21,7 @@ from fastapi.responses import JSONResponse
 from loguru import logger
 
 from .core.exceptions import AppExceptionError, ValidationError
+from .delay import router as delay_router
 from .oscilloscope import router as oscilloscope_router
 from .racing import router as racing_router
 from .security import SecurityMiddleware, get_rate_limiter, get_security_config
@@ -218,6 +219,7 @@ async def _shutdown_telemetry() -> None:
 
 
 # Include routers
+app.include_router(delay_router)
 app.include_router(oscilloscope_router)
 app.include_router(racing_router)
 
