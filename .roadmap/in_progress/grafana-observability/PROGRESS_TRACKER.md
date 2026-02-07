@@ -29,7 +29,7 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Grafana St
 4. **Update this document** after completing each PR
 
 ## Current Status
-**Current PR**: PR 9 - Dashboard Audit & Security Fixes (merged as PR #77, commit 3ee52a4; QA fixes on branch `fix/dashboard-qa`)
+**Current PR**: PR 10 - Comprehensive Security Review (branch `security/observability-audit`)
 **Infrastructure State**: Base workspace has S3, IAM, security group; Runtime workspace has EC2 instance, ALB target groups (Faro only - Grafana removed from ALB for security), listener rules; Docker Compose stack with 8 observability services (added node-exporter and cAdvisor); Backend OTel instrumentation with tracing, metrics, logging, profiling, OTLP log export to Loki; Frontend Faro SDK with error boundary, W3C trace propagation; 7 Grafana dashboards (home, golden signals, RED, web vitals, USE, trace analysis, profiling) with corrected queries and verified with load testing; Custom spans for WebSocket and racing operations; Trace-to-profile correlation via Pyroscope tag_wrapper (all behind feature flags); Grafana accessible only via SSM port forwarding
 **Feature Target**: Complete 4-pillar observability (metrics, logs, traces, profiling) with cross-pillar correlation
 
@@ -42,6 +42,24 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Grafana St
 ```
 
 ## Next PR to Implement
+
+### PR 11 - Alerting & SLO Monitoring
+
+**Quick Summary**:
+Create alert rules YAML, contact points YAML, notification policies YAML. Enable unified alerting in grafana.ini. Mount alerting directory in docker-compose.
+
+**Branch**: `feat/observability-alerting`
+
+---
+
+### COMPLETE: PR 10 - Comprehensive Security Review
+
+**Quick Summary**:
+Full security audit of observability stack. Fixed wildcard CORS on Faro receiver (templated to app domain), removed stale Grafana ALB→EC2:3001 SG rule, removed root users from 4 containers (non-root UID 10001 with bind mounts), replaced cAdvisor `privileged: true` with minimal device access, removed default Grafana admin password fallback, added security posture documentation comments, verified no committed credentials, added Security & Attack Vectors section to architecture docs.
+
+**Branch**: `security/observability-audit`
+
+---
 
 ### COMPLETE: PR 9 - Dashboard Audit & Security Fixes
 
@@ -66,10 +84,10 @@ Audit all 7 Grafana dashboards for query correctness and data availability. Fix 
 ---
 
 ## Overall Progress
-**Total Completion**: 75% (9/12 PRs completed)
+**Total Completion**: 83% (10/12 PRs completed)
 
 ```
-[███████████████░░░░░] 75% Complete
+[████████████████░░░░] 83% Complete
 ```
 
 ---
@@ -87,7 +105,7 @@ Audit all 7 Grafana dashboards for query correctness and data availability. Fix 
 | 7 | Golden Signals & Method Dashboards | Complete | Medium | Commit 557d792, PR #64 |
 | 8 | Tracing Deep Dive & Profiling Correlation | Complete | High | Commit 874f5ee, PR #65 |
 | 9 | Dashboard Audit & Security Fixes | Complete | High | PR #77 (3ee52a4); QA fixes on branch fix/dashboard-qa |
-| 10 | Comprehensive Security Review | Not Started | High | Full security audit of observability stack |
+| 10 | Comprehensive Security Review | Complete | High | Branch security/observability-audit |
 | 11 | Alerting & SLO Monitoring | Not Started | Medium | Depends on PR 9 |
 | 12 | Integration, Verification & CI/CD | Not Started | Medium | Depends on all previous |
 
@@ -207,17 +225,17 @@ Audit all 7 Grafana dashboards for query correctness and data availability. Fix 
 
 ## PR 10: Comprehensive Security Review
 **Branch**: `security/observability-audit`
-- [ ] Audit all public endpoints (ALB listener rules, paths, authentication)
-- [ ] Review security groups: ingress/egress rules, source restrictions
-- [ ] Review IAM roles and policies: least privilege, resource scoping
-- [ ] Review WAF rules: coverage, effectiveness, logging
-- [ ] Review secrets management: Grafana credentials, API keys, env var handling
-- [ ] Review Docker Compose: privileged containers, volume mounts, network exposure
-- [ ] Review Terraform state: sensitive values, remote state access
-- [ ] Review network architecture: VPC, subnet placement, endpoint access
-- [ ] Verify no credentials in committed files (docker-compose, config files, .env patterns)
-- [ ] Document security posture and remaining risks
-- [ ] Fix any issues found
+- [x] Fix Faro receiver wildcard CORS → templated to app domain via tftpl
+- [x] Reduce Faro max payload size from 10MiB to 4MiB
+- [x] Remove stale Grafana ALB→EC2:3001 SG rule (defense in depth)
+- [x] Remove root users from 4 containers (mimir, loki, tempo, pyroscope → UID 10001)
+- [x] Switch from named volumes to bind mounts for data directories
+- [x] Replace cAdvisor `privileged: true` with minimal device access + no-new-privileges
+- [x] Remove default Grafana admin password fallback (:-admin)
+- [x] Add security posture comments to grafana.ini, config.alloy.tftpl, observability-ec2.tf
+- [x] Verify no credentials in committed files
+- [x] Add Security & Attack Vectors section to observability-architecture.html
+- [x] Update roadmap documents
 
 ## PR 11: Alerting & SLO Monitoring
 **Branch**: `feat/observability-alerting`

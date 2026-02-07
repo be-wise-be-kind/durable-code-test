@@ -80,8 +80,12 @@ locals {
 resource "aws_instance" "observability" {
   count = var.enable_observability ? 1 : 0
 
-  ami                         = data.aws_ami.al2023[0].id
-  instance_type               = lookup(var.observability_instance_type, var.environment, "t3.medium")
+  ami           = data.aws_ami.al2023[0].id
+  instance_type = lookup(var.observability_instance_type, var.environment, "t3.medium")
+  # SECURITY: Public subnet with public IP is used for Docker image pulling without NAT
+  # gateway cost (~$32/month saved). All inbound traffic is restricted by security group
+  # to ALB (Faro only) and ECS task sources. Grafana has no ALB listener rule and no SG
+  # ingress — it is accessible only via SSM port forwarding which requires AWS IAM credentials.
   subnet_id                   = tolist(data.aws_subnets.public.ids)[0]
   associate_public_ip_address = true
   iam_instance_profile        = local.observability_instance_profile
@@ -113,7 +117,12 @@ resource "aws_instance" "observability" {
       loki_config                    = local.loki_config
       tempo_config                   = local.tempo_config
       pyroscope_config               = local.pyroscope_config
-      alloy_config                   = file("${local.observability_config_path}/alloy/config.alloy")
+      alloy_config = templatefile(
+        "${local.observability_config_path}/alloy/config.alloy.tftpl",
+        {
+          domain_name = var.domain_name
+        }
+      )
     }
   ))
 

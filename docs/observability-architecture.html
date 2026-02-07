@@ -1003,7 +1003,7 @@
             <!-- Section 7: Network & Security -->
             <section class="section">
                 <h2>Network &amp; Security</h2>
-                <p>The observability EC2 instance runs in a private subnet with no public IP. All external access routes through the ALB. Management access uses SSM Session Manager.</p>
+                <p>The observability EC2 instance runs in a public subnet (for Docker image pulling without NAT gateway cost). All inbound traffic is restricted by security group to ALB and ECS task sources. Grafana has no ALB listener rule &mdash; it is accessible only via SSM port forwarding.</p>
 
                 <table>
                     <thead>
@@ -1016,16 +1016,10 @@
                     </thead>
                     <tbody>
                         <tr>
-                            <td>3001</td>
-                            <td>HTTP</td>
-                            <td>ALB Security Group</td>
-                            <td>Grafana UI via /grafana/* path</td>
-                        </tr>
-                        <tr>
                             <td>12347</td>
                             <td>HTTP</td>
                             <td>ALB Security Group</td>
-                            <td>Faro telemetry collection via /collect/* path</td>
+                            <td>Faro telemetry collection via /collect/* path (only observability endpoint on public ALB)</td>
                         </tr>
                         <tr>
                             <td>4317</td>
@@ -1045,20 +1039,355 @@
                             <td>ECS Security Group</td>
                             <td>Pyroscope push endpoint for profiling data</td>
                         </tr>
+                        <tr>
+                            <td>3001</td>
+                            <td>HTTP</td>
+                            <td>SSM tunnel only (localhost)</td>
+                            <td>Grafana UI &mdash; no ALB route, no SG ingress from ALB</td>
+                        </tr>
                     </tbody>
                 </table>
 
                 <h3>Security Posture</h3>
                 <ul>
-                    <li><strong>Private subnet placement:</strong> EC2 has no public IP; accessible only via ALB or SSM</li>
-                    <li><strong>ALB as sole external access:</strong> Path-based routing restricts which services are exposed</li>
-                    <li><strong>S3 bucket policy:</strong> Blocked public access, instance profile grants write permission</li>
-                    <li><strong>Grafana anonymous access:</strong> Limited to viewer role (read-only dashboards)</li>
+                    <li><strong>Public subnet, private access:</strong> EC2 has a public IP for outbound Docker pulls; all inbound restricted by security group</li>
+                    <li><strong>Grafana isolation:</strong> No ALB listener rule, no security group ingress from ALB. Accessible only via SSM port forwarding (requires AWS IAM credentials)</li>
+                    <li><strong>/collect/* is the sole public endpoint:</strong> Protected by WAF rate limiting (2000 req/5min/IP), OWASP Core Rules, and CORS origin restriction</li>
+                    <li><strong>S3 bucket policy:</strong> Blocked public access, instance profile grants write permission, AES-256 encryption at rest</li>
+                    <li><strong>Non-root containers:</strong> Storage backends run as UID 10001; cAdvisor uses no-new-privileges</li>
                     <li><strong>SSM Session Manager:</strong> Management access without SSH keys or bastion hosts</li>
                 </ul>
             </section>
 
-            <!-- Section 8: Cost Analysis -->
+            <!-- Section 8: Security & Attack Vectors -->
+            <section class="section">
+                <h2>Security &amp; Attack Vectors</h2>
+                <p>This section documents the publicly visible attack surfaces, threat models, and defense-in-depth layers protecting the observability stack. Since this is a public repository, all security relies on infrastructure controls rather than secrets in code.</p>
+
+                <h3>Attack Surface Inventory</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Surface</th>
+                            <th>Exposure</th>
+                            <th>Protocol</th>
+                            <th>Authentication</th>
+                            <th>Rate Limited</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>/collect/*</code> (Faro)</td>
+                            <td>Public ALB</td>
+                            <td>HTTPS</td>
+                            <td>CORS origin restriction</td>
+                            <td>WAF 2000 req/5min/IP</td>
+                        </tr>
+                        <tr>
+                            <td><code>/api/*</code> (Backend)</td>
+                            <td>Public ALB</td>
+                            <td>HTTPS</td>
+                            <td>None (app-level)</td>
+                            <td>WAF 2000 req/5min/IP</td>
+                        </tr>
+                        <tr>
+                            <td>Grafana UI (:3001)</td>
+                            <td>SSM tunnel only</td>
+                            <td>HTTP (localhost)</td>
+                            <td>Anonymous Viewer + Admin password</td>
+                            <td>N/A (not internet-facing)</td>
+                        </tr>
+                        <tr>
+                            <td>OTLP gRPC (:4317)</td>
+                            <td>ECS tasks SG only</td>
+                            <td>HTTP/2</td>
+                            <td>Security group source restriction</td>
+                            <td>N/A (private network)</td>
+                        </tr>
+                        <tr>
+                            <td>OTLP HTTP (:4318)</td>
+                            <td>ECS tasks SG only</td>
+                            <td>HTTP</td>
+                            <td>Security group source restriction</td>
+                            <td>N/A (private network)</td>
+                        </tr>
+                        <tr>
+                            <td>Pyroscope (:4040)</td>
+                            <td>ECS tasks SG only</td>
+                            <td>HTTP</td>
+                            <td>Security group source restriction</td>
+                            <td>N/A (private network)</td>
+                        </tr>
+                        <tr>
+                            <td>EC2 instance</td>
+                            <td>Public subnet</td>
+                            <td>N/A</td>
+                            <td>Security group (no open inbound)</td>
+                            <td>N/A</td>
+                        </tr>
+                        <tr>
+                            <td>S3 bucket</td>
+                            <td>Private</td>
+                            <td>HTTPS</td>
+                            <td>IAM instance profile</td>
+                            <td>N/A</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Threat Analysis</h3>
+                <div class="info-grid">
+                    <div class="info-card" style="border-left: 3px solid var(--danger);">
+                        <h4>Telemetry Data Poisoning</h4>
+                        <p><strong>Vector:</strong> Attacker sends fake telemetry to <code>/collect/*</code></p>
+                        <p><strong>Mitigations:</strong> CORS restricted to app domain, WAF rate limiting (2000 req/5min/IP), max payload 4MiB, WAF OWASP Core Rules, Known Bad Inputs ruleset</p>
+                        <p><strong>Residual Risk:</strong> Determined attacker can replay from allowed origin (low impact &mdash; polluted dashboards, not data breach)</p>
+                    </div>
+
+                    <div class="info-card" style="border-left: 3px solid var(--danger);">
+                        <h4>Grafana Unauthorized Access</h4>
+                        <p><strong>Vector:</strong> Attacker tries to reach Grafana dashboards</p>
+                        <p><strong>Mitigations:</strong> No ALB listener rule for /grafana/*, no SG rule from ALB to port 3001, SSM-only access requires AWS IAM credentials</p>
+                        <p><strong>Residual Risk:</strong> None &mdash; three independent layers prevent access (ALB routing, SG, SSM auth)</p>
+                    </div>
+
+                    <div class="info-card" style="border-left: 3px solid var(--warning);">
+                        <h4>Container Escape / Privilege Escalation</h4>
+                        <p><strong>Vector:</strong> Compromised container attempts host access</p>
+                        <p><strong>Mitigations:</strong> Non-root containers (UID 10001), no privileged mode, read-only config mounts, Docker bridge network isolation, <code>no-new-privileges</code> on cAdvisor</p>
+                        <p><strong>Residual Risk:</strong> cAdvisor has device access (<code>/dev/kmsg</code>) for kernel metrics</p>
+                    </div>
+
+                    <div class="info-card" style="border-left: 3px solid var(--success);">
+                        <h4>Credential Exposure</h4>
+                        <p><strong>Vector:</strong> Secrets leaked in code or config</p>
+                        <p><strong>Mitigations:</strong> <code>.env</code> in <code>.gitignore</code> (never tracked), Terraform <code>sensitive = true</code>, no default passwords in docker-compose, SSM parameter injection</p>
+                        <p><strong>Residual Risk:</strong> None in committed code &mdash; credentials exist only in runtime environment</p>
+                    </div>
+
+                    <div class="info-card" style="border-left: 3px solid var(--success);">
+                        <h4>S3 Data Exfiltration</h4>
+                        <p><strong>Vector:</strong> Attacker accesses observability data in S3</p>
+                        <p><strong>Mitigations:</strong> S3 public access blocked, IAM scoped to single bucket, AES-256 encryption at rest, VPC-internal access only, 7-day lifecycle deletion</p>
+                        <p><strong>Residual Risk:</strong> Compromised EC2 instance profile could read/write bucket (standard cloud risk, no path from internet)</p>
+                    </div>
+                </div>
+
+                <h3>Telemetry Data Flow with Threat Annotations</h3>
+                <div class="diagram-container">
+                    <svg viewBox="0 0 960 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Security threat model data flow diagram">
+                        <defs>
+                            <linearGradient id="secPublicGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" style="stop-color:#fef2f2"/>
+                                <stop offset="100%" style="stop-color:#fee2e2"/>
+                            </linearGradient>
+                            <linearGradient id="secPrivateGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" style="stop-color:#f0fdf4"/>
+                                <stop offset="100%" style="stop-color:#dcfce7"/>
+                            </linearGradient>
+                            <linearGradient id="secObsGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:#7c3aed"/>
+                                <stop offset="100%" style="stop-color:#6d28d9"/>
+                            </linearGradient>
+                            <marker id="secArrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/>
+                            </marker>
+                            <marker id="secArrowRed" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+                                <path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444"/>
+                            </marker>
+                        </defs>
+
+                        <!-- Public zone (red border) -->
+                        <rect x="10" y="10" width="380" height="400" rx="12" fill="url(#secPublicGrad)" stroke="#ef4444" stroke-width="2" stroke-dasharray="8,4"/>
+                        <text x="30" y="36" fill="#ef4444" font-family="system-ui" font-size="12" font-weight="700">PUBLIC ZONE (Internet-Facing)</text>
+
+                        <!-- Private zone (green border) -->
+                        <rect x="420" y="10" width="530" height="400" rx="12" fill="url(#secPrivateGrad)" stroke="#22c55e" stroke-width="2" stroke-dasharray="8,4"/>
+                        <text x="440" y="36" fill="#166534" font-family="system-ui" font-size="12" font-weight="700">PRIVATE ZONE (SG + SSM Protected)</text>
+
+                        <!-- Browser -->
+                        <rect x="40" y="60" width="140" height="50" rx="8" fill="white" stroke="#94a3b8" stroke-width="1.5"/>
+                        <text x="110" y="82" text-anchor="middle" fill="#1e293b" font-family="system-ui" font-size="11" font-weight="600">Browser</text>
+                        <text x="110" y="98" text-anchor="middle" fill="#64748b" font-family="system-ui" font-size="9">Faro SDK</text>
+
+                        <!-- Threat marker 1: Telemetry poisoning -->
+                        <circle cx="205" cy="85" r="12" fill="#ef4444" opacity="0.9"/>
+                        <text x="205" y="89" text-anchor="middle" fill="white" font-family="system-ui" font-size="10" font-weight="700">!</text>
+                        <text x="205" y="108" text-anchor="middle" fill="#ef4444" font-family="system-ui" font-size="7" font-weight="600">Data Poisoning</text>
+
+                        <!-- WAF Shield -->
+                        <rect x="230" y="55" width="80" height="65" rx="8" fill="#22c55e" opacity="0.15" stroke="#22c55e" stroke-width="1.5"/>
+                        <text x="270" y="78" text-anchor="middle" fill="#166534" font-family="system-ui" font-size="10" font-weight="700">WAF</text>
+                        <text x="270" y="92" text-anchor="middle" fill="#166534" font-family="system-ui" font-size="8">Rate Limit</text>
+                        <text x="270" y="104" text-anchor="middle" fill="#166534" font-family="system-ui" font-size="8">OWASP Rules</text>
+
+                        <!-- ALB -->
+                        <rect x="40" y="150" width="140" height="50" rx="8" fill="white" stroke="#94a3b8" stroke-width="1.5"/>
+                        <text x="110" y="172" text-anchor="middle" fill="#1e293b" font-family="system-ui" font-size="11" font-weight="600">ALB</text>
+                        <text x="110" y="188" text-anchor="middle" fill="#64748b" font-family="system-ui" font-size="9">HTTPS + path routing</text>
+
+                        <!-- CORS Shield -->
+                        <rect x="230" y="150" width="80" height="50" rx="8" fill="#22c55e" opacity="0.15" stroke="#22c55e" stroke-width="1.5"/>
+                        <text x="270" y="172" text-anchor="middle" fill="#166534" font-family="system-ui" font-size="10" font-weight="700">CORS</text>
+                        <text x="270" y="186" text-anchor="middle" fill="#166534" font-family="system-ui" font-size="8">Origin Check</text>
+
+                        <!-- /collect/* path label -->
+                        <text x="110" y="225" text-anchor="middle" fill="#64748b" font-family="system-ui" font-size="9">/collect/* only</text>
+
+                        <!-- SSM access path -->
+                        <rect x="40" y="270" width="140" height="50" rx="8" fill="white" stroke="#22c55e" stroke-width="1.5"/>
+                        <text x="110" y="292" text-anchor="middle" fill="#166534" font-family="system-ui" font-size="11" font-weight="600">SSM Tunnel</text>
+                        <text x="110" y="308" text-anchor="middle" fill="#64748b" font-family="system-ui" font-size="9">IAM auth required</text>
+
+                        <!-- IAM Shield -->
+                        <rect x="230" y="270" width="80" height="50" rx="8" fill="#22c55e" opacity="0.15" stroke="#22c55e" stroke-width="1.5"/>
+                        <text x="270" y="292" text-anchor="middle" fill="#166534" font-family="system-ui" font-size="10" font-weight="700">IAM</text>
+                        <text x="270" y="306" text-anchor="middle" fill="#166534" font-family="system-ui" font-size="8">AWS Creds</text>
+
+                        <!-- Threat marker 2: Grafana access blocked -->
+                        <circle cx="110" y="245" r="12" fill="#22c55e" opacity="0.9"/>
+                        <text x="110" y="249" text-anchor="middle" fill="white" font-family="system-ui" font-size="10" font-weight="700">X</text>
+                        <text x="180" y="249" fill="#166534" font-family="system-ui" font-size="7">No /grafana/* route</text>
+
+                        <!-- SG boundary -->
+                        <rect x="435" y="50" width="500" height="175" rx="8" fill="white" opacity="0.5" stroke="#22c55e" stroke-width="1"/>
+                        <text x="455" y="70" fill="#166534" font-family="system-ui" font-size="10" font-weight="600">Security Group Boundary</text>
+
+                        <!-- Alloy -->
+                        <rect x="455" y="80" width="120" height="45" rx="6" fill="url(#secObsGrad)"/>
+                        <text x="515" y="100" text-anchor="middle" fill="white" font-family="system-ui" font-size="11" font-weight="600">Alloy</text>
+                        <text x="515" y="115" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-family="system-ui" font-size="8">:12347 Faro</text>
+
+                        <!-- Mimir -->
+                        <rect x="600" y="80" width="100" height="45" rx="6" fill="url(#secObsGrad)"/>
+                        <text x="650" y="100" text-anchor="middle" fill="white" font-family="system-ui" font-size="11" font-weight="600">Mimir</text>
+                        <text x="650" y="115" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-family="system-ui" font-size="8">Metrics</text>
+
+                        <!-- Loki -->
+                        <rect x="720" y="80" width="100" height="45" rx="6" fill="url(#secObsGrad)"/>
+                        <text x="770" y="100" text-anchor="middle" fill="white" font-family="system-ui" font-size="11" font-weight="600">Loki</text>
+                        <text x="770" y="115" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-family="system-ui" font-size="8">Logs</text>
+
+                        <!-- Tempo -->
+                        <rect x="840" y="80" width="80" height="45" rx="6" fill="url(#secObsGrad)"/>
+                        <text x="880" y="100" text-anchor="middle" fill="white" font-family="system-ui" font-size="11" font-weight="600">Tempo</text>
+                        <text x="880" y="115" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-family="system-ui" font-size="8">Traces</text>
+
+                        <!-- Grafana (SSM only) -->
+                        <rect x="455" y="150" width="120" height="45" rx="6" fill="url(#secObsGrad)"/>
+                        <text x="515" y="170" text-anchor="middle" fill="white" font-family="system-ui" font-size="11" font-weight="600">Grafana</text>
+                        <text x="515" y="185" text-anchor="middle" fill="rgba(255,255,255,0.8)" font-family="system-ui" font-size="8">:3001 SSM only</text>
+
+                        <!-- ECS Tasks -->
+                        <rect x="455" y="250" width="200" height="45" rx="8" fill="white" stroke="#94a3b8" stroke-width="1.5"/>
+                        <text x="555" y="272" text-anchor="middle" fill="#1e293b" font-family="system-ui" font-size="11" font-weight="600">ECS Tasks (Backend)</text>
+                        <text x="555" y="288" text-anchor="middle" fill="#64748b" font-family="system-ui" font-size="9">OTLP push to :4317/:4318</text>
+
+                        <!-- SG Shield for ECS -->
+                        <rect x="680" y="250" width="80" height="45" rx="8" fill="#22c55e" opacity="0.15" stroke="#22c55e" stroke-width="1.5"/>
+                        <text x="720" y="272" text-anchor="middle" fill="#166534" font-family="system-ui" font-size="10" font-weight="700">SG</text>
+                        <text x="720" y="286" text-anchor="middle" fill="#166534" font-family="system-ui" font-size="8">ECS SG only</text>
+
+                        <!-- S3 -->
+                        <rect x="455" y="340" width="200" height="45" rx="8" fill="white" stroke="#94a3b8" stroke-width="1.5"/>
+                        <text x="555" y="362" text-anchor="middle" fill="#1e293b" font-family="system-ui" font-size="11" font-weight="600">S3 (Encrypted)</text>
+                        <text x="555" y="378" text-anchor="middle" fill="#64748b" font-family="system-ui" font-size="9">AES-256, 7-day lifecycle</text>
+
+                        <!-- IAM Shield for S3 -->
+                        <rect x="680" y="340" width="80" height="45" rx="8" fill="#22c55e" opacity="0.15" stroke="#22c55e" stroke-width="1.5"/>
+                        <text x="720" y="362" text-anchor="middle" fill="#166534" font-family="system-ui" font-size="10" font-weight="700">IAM</text>
+                        <text x="720" y="376" text-anchor="middle" fill="#166534" font-family="system-ui" font-size="8">Instance Profile</text>
+
+                        <!-- Arrows: Browser -> WAF -> ALB -->
+                        <path d="M180 85 L228 85" stroke="#64748b" stroke-width="1.5" fill="none" marker-end="url(#secArrow)"/>
+                        <path d="M110 110 L110 148" stroke="#64748b" stroke-width="1.5" fill="none" marker-end="url(#secArrow)"/>
+
+                        <!-- Arrow: ALB -> CORS -> Alloy -->
+                        <path d="M180 175 L228 175" stroke="#64748b" stroke-width="1.5" fill="none" marker-end="url(#secArrow)"/>
+                        <path d="M310 175 L370 130 L453 102" stroke="#64748b" stroke-width="1.5" fill="none" marker-end="url(#secArrow)"/>
+
+                        <!-- Arrow: SSM -> IAM -> Grafana -->
+                        <path d="M180 295 L228 295" stroke="#22c55e" stroke-width="1.5" fill="none" marker-end="url(#secArrow)"/>
+                        <path d="M310 295 L370 240 L453 172" stroke="#22c55e" stroke-width="1.5" fill="none" marker-end="url(#secArrow)"/>
+
+                        <!-- Arrow: Alloy -> backends -->
+                        <path d="M575 102 L598 102" stroke="#7c3aed" stroke-width="1.5" fill="none" marker-end="url(#secArrow)"/>
+                        <path d="M575 102 L718 102" stroke="#7c3aed" stroke-width="1" fill="none" marker-end="url(#secArrow)"/>
+                        <path d="M575 102 L838 102" stroke="#7c3aed" stroke-width="1" fill="none" marker-end="url(#secArrow)"/>
+
+                        <!-- Arrow: ECS -> Alloy -->
+                        <path d="M515 250 L515 127" stroke="#64748b" stroke-width="1.5" fill="none" marker-end="url(#secArrow)"/>
+
+                        <!-- Arrow: backends -> S3 -->
+                        <path d="M555 210 L555 338" stroke="#64748b" stroke-width="1" fill="none" marker-end="url(#secArrow)"/>
+
+                        <!-- Legend -->
+                        <rect x="790" y="250" width="140" height="130" rx="6" fill="white" stroke="#e2e8f0" stroke-width="1"/>
+                        <text x="860" y="272" text-anchor="middle" fill="#1e293b" font-family="system-ui" font-size="10" font-weight="600">Legend</text>
+                        <circle cx="808" cy="290" r="8" fill="#ef4444" opacity="0.9"/>
+                        <text x="808" y="294" text-anchor="middle" fill="white" font-family="system-ui" font-size="8" font-weight="700">!</text>
+                        <text x="825" y="294" fill="#64748b" font-family="system-ui" font-size="9">Threat point</text>
+                        <rect x="800" y="306" width="16" height="16" rx="4" fill="#22c55e" opacity="0.15" stroke="#22c55e" stroke-width="1"/>
+                        <text x="825" y="318" fill="#64748b" font-family="system-ui" font-size="9">Mitigation</text>
+                        <rect x="800" y="330" width="16" height="10" rx="2" fill="url(#secObsGrad)"/>
+                        <text x="825" y="339" fill="#64748b" font-family="system-ui" font-size="9">Observability</text>
+                        <line x1="800" y1="355" x2="816" y2="355" stroke="#ef4444" stroke-width="2" stroke-dasharray="6,3"/>
+                        <text x="825" y="359" fill="#64748b" font-family="system-ui" font-size="9">Public zone</text>
+                        <line x1="800" y1="372" x2="816" y2="372" stroke="#22c55e" stroke-width="2" stroke-dasharray="6,3"/>
+                        <text x="825" y="376" fill="#64748b" font-family="system-ui" font-size="9">Private zone</text>
+                    </svg>
+                </div>
+
+                <h3>Defense-in-Depth Layers</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Layer</th>
+                            <th>Component</th>
+                            <th>Protection</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1. Edge</td>
+                            <td>AWS WAF</td>
+                            <td>Rate limiting (2000 req/5min/IP), OWASP Core Rules, Known Bad Inputs blocking</td>
+                        </tr>
+                        <tr>
+                            <td>2. Transport</td>
+                            <td>ALB + HTTPS</td>
+                            <td>TLS encryption, path-based routing, no Grafana routes exposed</td>
+                        </tr>
+                        <tr>
+                            <td>3. Network</td>
+                            <td>Security Groups</td>
+                            <td>Source-restricted ingress (ALB SG for Faro, ECS SG for OTLP/Pyroscope)</td>
+                        </tr>
+                        <tr>
+                            <td>4. Application</td>
+                            <td>CORS + Alloy</td>
+                            <td>Origin restriction to app domain, payload size limits (4MiB max)</td>
+                        </tr>
+                        <tr>
+                            <td>5. Container</td>
+                            <td>Docker</td>
+                            <td>Non-root (UID 10001), no privileged mode, read-only config mounts, no-new-privileges</td>
+                        </tr>
+                        <tr>
+                            <td>6. Access</td>
+                            <td>SSM + IAM</td>
+                            <td>Grafana requires AWS IAM credentials for SSM tunnel; no SSH, no bastion</td>
+                        </tr>
+                        <tr>
+                            <td>7. Data</td>
+                            <td>S3 + KMS</td>
+                            <td>AES-256 encryption at rest, public access blocked, 7-day lifecycle deletion</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Section 9: Cost Analysis (previously Section 8) -->
             <section class="section">
                 <h2>Cost Analysis</h2>
                 <p>All observability resources are gated behind the <code>enable_observability</code> feature flag. When disabled, the additional cost is zero.</p>
@@ -1103,401 +1432,6 @@
                 <p>The EC2 instance follows the same ephemeral lifecycle as other runtime resources&mdash;destroyed during off-hours and recreated on demand. S3 data in the base workspace persists across these cycles.</p>
             </section>
 
-            <!-- Section 9: Dashboard Mockups -->
-            <section class="section">
-                <h2>Dashboard Mockups</h2>
-                <p>Six Grafana dashboards provide visibility across all 4 pillars, from high-level golden signals down to individual trace flamegraphs.</p>
-
-                <h3>Golden Signals Overview</h3>
-                <div class="diagram-container">
-                    <svg viewBox="0 0 900 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Golden Signals dashboard mockup">
-                        <!-- Dashboard chrome -->
-                        <rect x="10" y="10" width="880" height="200" rx="6" fill="#181b1f" stroke="#333" stroke-width="1"/>
-                        <rect x="10" y="10" width="880" height="28" rx="6" fill="#222529"/>
-                        <text x="24" y="29" fill="#ccc" font-family="system-ui" font-size="11" font-weight="600">Golden Signals Overview</text>
-                        <circle cx="870" cy="24" r="5" fill="#22c55e"/>
-
-                        <!-- 4 panels -->
-                        <rect x="20" y="48" width="205" height="150" rx="4" fill="#1a1d21" stroke="#333" stroke-width="0.5"/>
-                        <text x="30" y="66" fill="#8b949e" font-family="system-ui" font-size="9">LATENCY (p50 / p95 / p99)</text>
-                        <polyline points="30,170 60,155 90,160 120,140 150,145 180,120 210,130" fill="none" stroke="#22c55e" stroke-width="1.5"/>
-                        <polyline points="30,165 60,148 90,150 120,130 150,132 180,105 210,115" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4,2"/>
-                        <polyline points="30,160 60,140 90,142 120,118 150,120 180,90 210,100" fill="none" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="2,2"/>
-                        <text x="122" y="188" text-anchor="middle" fill="#555" font-family="system-ui" font-size="8">time &rarr;</text>
-
-                        <rect x="235" y="48" width="205" height="150" rx="4" fill="#1a1d21" stroke="#333" stroke-width="0.5"/>
-                        <text x="245" y="66" fill="#8b949e" font-family="system-ui" font-size="9">TRAFFIC (req/sec)</text>
-                        <rect x="255" y="140" width="16" height="45" rx="2" fill="#6366f1" opacity="0.7"/>
-                        <rect x="278" y="120" width="16" height="65" rx="2" fill="#6366f1" opacity="0.8"/>
-                        <rect x="301" y="105" width="16" height="80" rx="2" fill="#6366f1" opacity="0.85"/>
-                        <rect x="324" y="95" width="16" height="90" rx="2" fill="#6366f1" opacity="0.9"/>
-                        <rect x="347" y="110" width="16" height="75" rx="2" fill="#6366f1" opacity="0.85"/>
-                        <rect x="370" y="85" width="16" height="100" rx="2" fill="#6366f1"/>
-                        <rect x="393" y="90" width="16" height="95" rx="2" fill="#6366f1" opacity="0.95"/>
-                        <rect x="416" y="100" width="16" height="85" rx="2" fill="#6366f1" opacity="0.9"/>
-                        <text x="337" y="188" text-anchor="middle" fill="#555" font-family="system-ui" font-size="8">time &rarr;</text>
-
-                        <rect x="450" y="48" width="205" height="150" rx="4" fill="#1a1d21" stroke="#333" stroke-width="0.5"/>
-                        <text x="460" y="66" fill="#8b949e" font-family="system-ui" font-size="9">ERRORS (rate %)</text>
-                        <polyline points="460,180 490,178 520,179 550,175 580,170 610,178 640,176" fill="none" stroke="#22c55e" stroke-width="1.5"/>
-                        <line x1="460" y1="90" x2="640" y2="90" stroke="#ef4444" stroke-width="0.5" stroke-dasharray="4,2"/>
-                        <text x="642" y="93" fill="#ef4444" font-family="system-ui" font-size="7">5% SLO</text>
-                        <text x="552" y="188" text-anchor="middle" fill="#555" font-family="system-ui" font-size="8">time &rarr;</text>
-
-                        <rect x="665" y="48" width="215" height="150" rx="4" fill="#1a1d21" stroke="#333" stroke-width="0.5"/>
-                        <text x="675" y="66" fill="#8b949e" font-family="system-ui" font-size="9">SATURATION (CPU / Memory)</text>
-                        <rect x="685" y="95" width="80" height="12" rx="2" fill="#333"/>
-                        <rect x="685" y="95" width="30" height="12" rx="2" fill="#22c55e"/>
-                        <text x="775" y="105" fill="#8b949e" font-family="system-ui" font-size="8">38% CPU</text>
-                        <rect x="685" y="115" width="80" height="12" rx="2" fill="#333"/>
-                        <rect x="685" y="115" width="52" height="12" rx="2" fill="#f59e0b"/>
-                        <text x="775" y="125" fill="#8b949e" font-family="system-ui" font-size="8">65% Mem</text>
-                        <rect x="685" y="140" width="80" height="12" rx="2" fill="#333"/>
-                        <rect x="685" y="140" width="18" height="12" rx="2" fill="#22c55e"/>
-                        <text x="775" y="150" fill="#8b949e" font-family="system-ui" font-size="8">22% Disk</text>
-                    </svg>
-                </div>
-
-                <h3>Backend RED Method</h3>
-                <p>Per-endpoint Rate, Errors, and Duration. Histogram heatmaps show latency distribution with exemplar links that jump directly to individual traces in Tempo.</p>
-                <div class="diagram-container">
-                    <svg viewBox="0 0 900 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Backend RED Method dashboard mockup">
-                        <rect x="10" y="10" width="880" height="260" rx="6" fill="#181b1f" stroke="#333" stroke-width="1"/>
-                        <rect x="10" y="10" width="880" height="28" rx="6" fill="#222529"/>
-                        <text x="24" y="29" fill="#ccc" font-family="system-ui" font-size="11" font-weight="600">Backend RED Method</text>
-                        <circle cx="870" cy="24" r="5" fill="#22c55e"/>
-
-                        <!-- Request Rate (stacked area) -->
-                        <rect x="20" y="48" width="425" height="100" rx="4" fill="#1a1d21" stroke="#333" stroke-width="0.5"/>
-                        <text x="30" y="66" fill="#8b949e" font-family="system-ui" font-size="9">REQUEST RATE BY ENDPOINT (req/sec)</text>
-                        <polygon points="30,140 70,132 110,128 150,118 190,122 230,110 270,115 310,108 350,112 390,105 430,110 430,140" fill="#6366f1" opacity="0.3"/>
-                        <polyline points="30,140 70,132 110,128 150,118 190,122 230,110 270,115 310,108 350,112 390,105 430,110" fill="none" stroke="#6366f1" stroke-width="1.5"/>
-                        <polygon points="30,140 70,136 110,134 150,130 190,133 230,126 270,129 310,124 350,127 390,122 430,125 430,140" fill="#22c55e" opacity="0.3"/>
-                        <polyline points="30,140 70,136 110,134 150,130 190,133 230,126 270,129 310,124 350,127 390,122 430,125" fill="none" stroke="#22c55e" stroke-width="1.5"/>
-                        <text x="340" y="86" fill="#6366f1" font-family="system-ui" font-size="8">/api/puzzles</text>
-                        <text x="340" y="96" fill="#22c55e" font-family="system-ui" font-size="8">/api/health</text>
-
-                        <!-- Error Rate -->
-                        <rect x="455" y="48" width="425" height="100" rx="4" fill="#1a1d21" stroke="#333" stroke-width="0.5"/>
-                        <text x="465" y="66" fill="#8b949e" font-family="system-ui" font-size="9">ERROR RATE BY ENDPOINT (%)</text>
-                        <line x1="465" y1="85" x2="870" y2="85" stroke="#ef4444" stroke-width="0.5" stroke-dasharray="4,2"/>
-                        <text x="872" y="88" fill="#ef4444" font-family="system-ui" font-size="7">5%</text>
-                        <polyline points="465,138 505,136 545,140 585,139 625,137 665,140 705,138 745,141 785,139 825,137 865,140" fill="none" stroke="#22c55e" stroke-width="1.5"/>
-                        <text x="665" y="130" text-anchor="middle" fill="#555" font-family="system-ui" font-size="8">healthy &mdash; below SLO threshold</text>
-
-                        <!-- Latency Heatmap -->
-                        <rect x="20" y="158" width="425" height="100" rx="4" fill="#1a1d21" stroke="#333" stroke-width="0.5"/>
-                        <text x="30" y="176" fill="#8b949e" font-family="system-ui" font-size="9">LATENCY HEATMAP (duration distribution)</text>
-                        <!-- Heatmap cells - varying intensity -->
-                        <rect x="40" y="185" width="22" height="8" rx="1" fill="#1a1044"/>
-                        <rect x="65" y="185" width="22" height="8" rx="1" fill="#2d1b69"/>
-                        <rect x="90" y="185" width="22" height="8" rx="1" fill="#1a1044"/>
-                        <rect x="115" y="185" width="22" height="8" rx="1" fill="#3b2282"/>
-                        <rect x="140" y="185" width="22" height="8" rx="1" fill="#2d1b69"/>
-                        <rect x="165" y="185" width="22" height="8" rx="1" fill="#1a1044"/>
-                        <rect x="190" y="185" width="22" height="8" rx="1" fill="#2d1b69"/>
-                        <rect x="215" y="185" width="22" height="8" rx="1" fill="#3b2282"/>
-                        <rect x="240" y="185" width="22" height="8" rx="1" fill="#1a1044"/>
-                        <rect x="265" y="185" width="22" height="8" rx="1" fill="#2d1b69"/>
-                        <rect x="40" y="196" width="22" height="8" rx="1" fill="#4c2d9e"/>
-                        <rect x="65" y="196" width="22" height="8" rx="1" fill="#6d3fc7"/>
-                        <rect x="90" y="196" width="22" height="8" rx="1" fill="#4c2d9e"/>
-                        <rect x="115" y="196" width="22" height="8" rx="1" fill="#8b5cf6"/>
-                        <rect x="140" y="196" width="22" height="8" rx="1" fill="#6d3fc7"/>
-                        <rect x="165" y="196" width="22" height="8" rx="1" fill="#4c2d9e"/>
-                        <rect x="190" y="196" width="22" height="8" rx="1" fill="#6d3fc7"/>
-                        <rect x="215" y="196" width="22" height="8" rx="1" fill="#8b5cf6"/>
-                        <rect x="240" y="196" width="22" height="8" rx="1" fill="#4c2d9e"/>
-                        <rect x="265" y="196" width="22" height="8" rx="1" fill="#6d3fc7"/>
-                        <rect x="40" y="207" width="22" height="8" rx="1" fill="#8b5cf6"/>
-                        <rect x="65" y="207" width="22" height="8" rx="1" fill="#a78bfa"/>
-                        <rect x="90" y="207" width="22" height="8" rx="1" fill="#8b5cf6"/>
-                        <rect x="115" y="207" width="22" height="8" rx="1" fill="#c4b5fd"/>
-                        <rect x="140" y="207" width="22" height="8" rx="1" fill="#a78bfa"/>
-                        <rect x="165" y="207" width="22" height="8" rx="1" fill="#8b5cf6"/>
-                        <rect x="190" y="207" width="22" height="8" rx="1" fill="#a78bfa"/>
-                        <rect x="215" y="207" width="22" height="8" rx="1" fill="#c4b5fd"/>
-                        <rect x="240" y="207" width="22" height="8" rx="1" fill="#8b5cf6"/>
-                        <rect x="265" y="207" width="22" height="8" rx="1" fill="#a78bfa"/>
-                        <!-- Exemplar dots -->
-                        <circle cx="120" cy="190" r="3" fill="#f59e0b" stroke="#fff" stroke-width="0.5"/>
-                        <circle cx="220" cy="200" r="3" fill="#f59e0b" stroke="#fff" stroke-width="0.5"/>
-                        <text x="310" y="200" fill="#f59e0b" font-family="system-ui" font-size="8">&#9679; exemplar</text>
-                        <text x="310" y="212" fill="#555" font-family="system-ui" font-size="8">click &rarr; Tempo trace</text>
-                        <text x="30" y="248" fill="#555" font-family="system-ui" font-size="8">500ms</text>
-                        <text x="30" y="218" fill="#555" font-family="system-ui" font-size="8">100ms</text>
-                        <text x="30" y="190" fill="#555" font-family="system-ui" font-size="8">10ms</text>
-
-                        <!-- Top Slow Endpoints table -->
-                        <rect x="455" y="158" width="425" height="100" rx="4" fill="#1a1d21" stroke="#333" stroke-width="0.5"/>
-                        <text x="465" y="176" fill="#8b949e" font-family="system-ui" font-size="9">TOP SLOW ENDPOINTS (p99)</text>
-                        <line x1="465" y1="182" x2="870" y2="182" stroke="#333" stroke-width="0.5"/>
-                        <text x="470" y="194" fill="#8b949e" font-family="system-ui" font-size="8">Endpoint</text>
-                        <text x="720" y="194" fill="#8b949e" font-family="system-ui" font-size="8">p99</text>
-                        <text x="800" y="194" fill="#8b949e" font-family="system-ui" font-size="8">req/s</text>
-                        <line x1="465" y1="198" x2="870" y2="198" stroke="#333" stroke-width="0.5"/>
-                        <text x="470" y="212" fill="#ccc" font-family="system-ui" font-size="9">/api/puzzles/generate</text>
-                        <text x="720" y="212" fill="#f59e0b" font-family="system-ui" font-size="9">842ms</text>
-                        <text x="800" y="212" fill="#ccc" font-family="system-ui" font-size="9">12.4</text>
-                        <text x="470" y="228" fill="#ccc" font-family="system-ui" font-size="9">/api/puzzles/validate</text>
-                        <text x="720" y="228" fill="#22c55e" font-family="system-ui" font-size="9">234ms</text>
-                        <text x="800" y="228" fill="#ccc" font-family="system-ui" font-size="9">8.7</text>
-                        <text x="470" y="244" fill="#ccc" font-family="system-ui" font-size="9">/api/health</text>
-                        <text x="720" y="244" fill="#22c55e" font-family="system-ui" font-size="9">12ms</text>
-                        <text x="800" y="244" fill="#ccc" font-family="system-ui" font-size="9">30.1</text>
-                    </svg>
-                </div>
-
-                <h3>Frontend Web Vitals</h3>
-                <p>Core Web Vitals from Grafana Faro SDK: LCP, INP, and CLS with threshold indicators (good/needs-improvement/poor), JS error rate, and active session count.</p>
-                <div class="diagram-container">
-                    <svg viewBox="0 0 900 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Frontend Web Vitals dashboard mockup">
-                        <rect x="10" y="10" width="880" height="200" rx="6" fill="#181b1f" stroke="#333" stroke-width="1"/>
-                        <rect x="10" y="10" width="880" height="28" rx="6" fill="#222529"/>
-                        <text x="24" y="29" fill="#ccc" font-family="system-ui" font-size="11" font-weight="600">Frontend Web Vitals</text>
-                        <circle cx="870" cy="24" r="5" fill="#22c55e"/>
-
-                        <!-- LCP gauge -->
-                        <rect x="20" y="48" width="170" height="150" rx="4" fill="#1a1d21" stroke="#333" stroke-width="0.5"/>
-                        <text x="105" y="66" text-anchor="middle" fill="#8b949e" font-family="system-ui" font-size="9">LCP</text>
-                        <text x="105" y="110" text-anchor="middle" fill="#22c55e" font-family="system-ui" font-size="28" font-weight="700">1.8s</text>
-                        <text x="105" y="128" text-anchor="middle" fill="#22c55e" font-family="system-ui" font-size="10">Good</text>
-                        <!-- Gauge arc -->
-                        <path d="M 50 160 A 55 55 0 0 1 160 160" fill="none" stroke="#333" stroke-width="6" stroke-linecap="round"/>
-                        <path d="M 50 160 A 55 55 0 0 1 138 118" fill="none" stroke="#22c55e" stroke-width="6" stroke-linecap="round"/>
-                        <text x="48" y="178" fill="#555" font-family="system-ui" font-size="7">0</text>
-                        <text x="96" y="185" fill="#555" font-family="system-ui" font-size="7">2.5s</text>
-                        <text x="152" y="178" fill="#555" font-family="system-ui" font-size="7">4s+</text>
-
-                        <!-- INP gauge -->
-                        <rect x="200" y="48" width="170" height="150" rx="4" fill="#1a1d21" stroke="#333" stroke-width="0.5"/>
-                        <text x="285" y="66" text-anchor="middle" fill="#8b949e" font-family="system-ui" font-size="9">INP</text>
-                        <text x="285" y="110" text-anchor="middle" fill="#22c55e" font-family="system-ui" font-size="28" font-weight="700">85ms</text>
-                        <text x="285" y="128" text-anchor="middle" fill="#22c55e" font-family="system-ui" font-size="10">Good</text>
-                        <path d="M 230 160 A 55 55 0 0 1 340 160" fill="none" stroke="#333" stroke-width="6" stroke-linecap="round"/>
-                        <path d="M 230 160 A 55 55 0 0 1 300 112" fill="none" stroke="#22c55e" stroke-width="6" stroke-linecap="round"/>
-                        <text x="228" y="178" fill="#555" font-family="system-ui" font-size="7">0</text>
-                        <text x="276" y="185" fill="#555" font-family="system-ui" font-size="7">200ms</text>
-                        <text x="330" y="178" fill="#555" font-family="system-ui" font-size="7">500+</text>
-
-                        <!-- CLS gauge -->
-                        <rect x="380" y="48" width="170" height="150" rx="4" fill="#1a1d21" stroke="#333" stroke-width="0.5"/>
-                        <text x="465" y="66" text-anchor="middle" fill="#8b949e" font-family="system-ui" font-size="9">CLS</text>
-                        <text x="465" y="110" text-anchor="middle" fill="#f59e0b" font-family="system-ui" font-size="28" font-weight="700">0.18</text>
-                        <text x="465" y="128" text-anchor="middle" fill="#f59e0b" font-family="system-ui" font-size="10">Needs Improvement</text>
-                        <path d="M 410 160 A 55 55 0 0 1 520 160" fill="none" stroke="#333" stroke-width="6" stroke-linecap="round"/>
-                        <path d="M 410 160 A 55 55 0 0 1 490 122" fill="none" stroke="#f59e0b" stroke-width="6" stroke-linecap="round"/>
-                        <text x="408" y="178" fill="#555" font-family="system-ui" font-size="7">0</text>
-                        <text x="460" y="185" fill="#555" font-family="system-ui" font-size="7">0.1</text>
-                        <text x="512" y="178" fill="#555" font-family="system-ui" font-size="7">0.25+</text>
-
-                        <!-- JS Error Rate -->
-                        <rect x="560" y="48" width="155" height="150" rx="4" fill="#1a1d21" stroke="#333" stroke-width="0.5"/>
-                        <text x="570" y="66" fill="#8b949e" font-family="system-ui" font-size="9">JS ERROR RATE</text>
-                        <polyline points="570,180 590,178 610,180 630,175 650,180 670,140 690,170 700,178" fill="none" stroke="#ef4444" stroke-width="1.5"/>
-                        <circle cx="670" cy="140" r="3" fill="#ef4444"/>
-                        <text x="674" y="136" fill="#ef4444" font-family="system-ui" font-size="7">spike</text>
-                        <text x="637" y="192" text-anchor="middle" fill="#555" font-family="system-ui" font-size="8">errors/min</text>
-
-                        <!-- Active Sessions -->
-                        <rect x="725" y="48" width="155" height="150" rx="4" fill="#1a1d21" stroke="#333" stroke-width="0.5"/>
-                        <text x="735" y="66" fill="#8b949e" font-family="system-ui" font-size="9">ACTIVE SESSIONS</text>
-                        <text x="802" y="115" text-anchor="middle" fill="#6366f1" font-family="system-ui" font-size="32" font-weight="700">24</text>
-                        <text x="802" y="135" text-anchor="middle" fill="#555" font-family="system-ui" font-size="9">active</text>
-                        <polyline points="740,175 758,170 776,168 794,160 812,158 830,162 848,155 866,150" fill="none" stroke="#6366f1" stroke-width="1.5"/>
-                        <text x="802" y="192" text-anchor="middle" fill="#555" font-family="system-ui" font-size="8">last 1h</text>
-                    </svg>
-                </div>
-
-                <h3>Trace Analysis &amp; Profiling</h3>
-                <p>Deep-dive trace exploration with service graph visualization and flamegraph profiling linked to individual traces via span labels.</p>
-                <div class="diagram-container">
-                    <svg viewBox="0 0 900 290" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Trace Analysis and Profiling dashboard mockup">
-                        <rect x="10" y="10" width="880" height="270" rx="6" fill="#181b1f" stroke="#333" stroke-width="1"/>
-                        <rect x="10" y="10" width="880" height="28" rx="6" fill="#222529"/>
-                        <text x="24" y="29" fill="#ccc" font-family="system-ui" font-size="11" font-weight="600">Trace Analysis &amp; Profiling</text>
-                        <circle cx="870" cy="24" r="5" fill="#22c55e"/>
-
-                        <!-- Trace Waterfall -->
-                        <rect x="20" y="48" width="530" height="110" rx="4" fill="#1a1d21" stroke="#333" stroke-width="0.5"/>
-                        <text x="30" y="66" fill="#8b949e" font-family="system-ui" font-size="9">TRACE WATERFALL</text>
-                        <text x="30" y="82" fill="#555" font-family="system-ui" font-size="8">trace: a3f8c2e1b9d0</text>
-                        <!-- Span bars -->
-                        <text x="35" y="98" fill="#ccc" font-family="system-ui" font-size="8">frontend</text>
-                        <rect x="100" y="90" width="440" height="10" rx="2" fill="#6366f1" opacity="0.8"/>
-                        <text x="545" y="98" fill="#8b949e" font-family="system-ui" font-size="7">842ms</text>
-                        <text x="35" y="114" fill="#ccc" font-family="system-ui" font-size="8">ALB</text>
-                        <rect x="115" y="106" width="410" height="10" rx="2" fill="#f59e0b" opacity="0.8"/>
-                        <text x="530" y="114" fill="#8b949e" font-family="system-ui" font-size="7">810ms</text>
-                        <text x="35" y="130" fill="#ccc" font-family="system-ui" font-size="8">backend</text>
-                        <rect x="130" y="122" width="380" height="10" rx="2" fill="#22c55e" opacity="0.8"/>
-                        <text x="515" y="130" fill="#8b949e" font-family="system-ui" font-size="7">780ms</text>
-                        <text x="35" y="146" fill="#ccc" font-family="system-ui" font-size="8">  db query</text>
-                        <rect x="200" y="138" width="180" height="10" rx="2" fill="#ef4444" opacity="0.7"/>
-                        <text x="385" y="146" fill="#8b949e" font-family="system-ui" font-size="7">520ms</text>
-
-                        <!-- Service Graph -->
-                        <rect x="560" y="48" width="310" height="110" rx="4" fill="#1a1d21" stroke="#333" stroke-width="0.5"/>
-                        <text x="570" y="66" fill="#8b949e" font-family="system-ui" font-size="9">SERVICE GRAPH</text>
-                        <!-- Nodes -->
-                        <circle cx="620" cy="105" r="18" fill="none" stroke="#6366f1" stroke-width="2"/>
-                        <text x="620" y="109" text-anchor="middle" fill="#6366f1" font-family="system-ui" font-size="7">frontend</text>
-                        <circle cx="730" cy="85" r="18" fill="none" stroke="#22c55e" stroke-width="2"/>
-                        <text x="730" y="89" text-anchor="middle" fill="#22c55e" font-family="system-ui" font-size="7">backend</text>
-                        <circle cx="730" cy="135" r="18" fill="none" stroke="#f59e0b" stroke-width="2"/>
-                        <text x="730" y="139" text-anchor="middle" fill="#f59e0b" font-family="system-ui" font-size="7">ALB</text>
-                        <circle cx="830" cy="105" r="18" fill="none" stroke="#ef4444" stroke-width="2"/>
-                        <text x="830" y="109" text-anchor="middle" fill="#ef4444" font-family="system-ui" font-size="7">DB</text>
-                        <!-- Edges -->
-                        <line x1="638" y1="100" x2="712" y2="88" stroke="#555" stroke-width="1"/>
-                        <line x1="638" y1="112" x2="712" y2="130" stroke="#555" stroke-width="1"/>
-                        <line x1="748" y1="85" x2="812" y2="100" stroke="#555" stroke-width="1"/>
-                        <text x="675" y="92" fill="#555" font-family="system-ui" font-size="6">12 req/s</text>
-
-                        <!-- Flamegraph (CPU Profile) -->
-                        <rect x="20" y="168" width="860" height="100" rx="4" fill="#1a1d21" stroke="#333" stroke-width="0.5"/>
-                        <text x="30" y="186" fill="#8b949e" font-family="system-ui" font-size="9">CPU FLAMEGRAPH (linked to trace a3f8c2e1b9d0)</text>
-                        <!-- Flame layers -->
-                        <rect x="40" y="245" width="820" height="14" rx="1" fill="#ef4444" opacity="0.9"/>
-                        <text x="450" y="255" text-anchor="middle" fill="white" font-family="system-ui" font-size="8">main()</text>
-                        <rect x="40" y="229" width="520" height="14" rx="1" fill="#f59e0b" opacity="0.9"/>
-                        <text x="300" y="239" text-anchor="middle" fill="white" font-family="system-ui" font-size="8">handle_request()</text>
-                        <rect x="580" y="229" width="280" height="14" rx="1" fill="#f59e0b" opacity="0.7"/>
-                        <text x="720" y="239" text-anchor="middle" fill="white" font-family="system-ui" font-size="8">middleware()</text>
-                        <rect x="40" y="213" width="320" height="14" rx="1" fill="#22c55e" opacity="0.9"/>
-                        <text x="200" y="223" text-anchor="middle" fill="white" font-family="system-ui" font-size="8">generate_puzzle()</text>
-                        <rect x="380" y="213" width="180" height="14" rx="1" fill="#22c55e" opacity="0.7"/>
-                        <text x="470" y="223" text-anchor="middle" fill="white" font-family="system-ui" font-size="8">validate()</text>
-                        <rect x="40" y="197" width="200" height="14" rx="1" fill="#6366f1" opacity="0.9"/>
-                        <text x="140" y="207" text-anchor="middle" fill="white" font-family="system-ui" font-size="8">solve_backtrack()</text>
-                        <rect x="260" y="197" width="100" height="14" rx="1" fill="#6366f1" opacity="0.7"/>
-                        <text x="310" y="207" text-anchor="middle" fill="white" font-family="system-ui" font-size="8">check_grid()</text>
-                    </svg>
-                </div>
-
-                <h3>Infrastructure USE Method</h3>
-                <p>Utilization, Saturation, and Errors for ECS tasks and the observability EC2 instance. Covers CPU, memory, network, and disk I/O.</p>
-                <div class="diagram-container">
-                    <svg viewBox="0 0 900 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Infrastructure USE Method dashboard mockup">
-                        <rect x="10" y="10" width="880" height="200" rx="6" fill="#181b1f" stroke="#333" stroke-width="1"/>
-                        <rect x="10" y="10" width="880" height="28" rx="6" fill="#222529"/>
-                        <text x="24" y="29" fill="#ccc" font-family="system-ui" font-size="11" font-weight="600">Infrastructure USE Method</text>
-                        <circle cx="870" cy="24" r="5" fill="#22c55e"/>
-
-                        <!-- ECS CPU -->
-                        <rect x="20" y="48" width="205" height="150" rx="4" fill="#1a1d21" stroke="#333" stroke-width="0.5"/>
-                        <text x="30" y="66" fill="#8b949e" font-family="system-ui" font-size="9">ECS CPU UTILIZATION</text>
-                        <polygon points="30,185 55,180 80,175 105,170 130,160 155,165 180,155 205,150 205,185" fill="#22c55e" opacity="0.15"/>
-                        <polyline points="30,185 55,180 80,175 105,170 130,160 155,165 180,155 205,150" fill="none" stroke="#22c55e" stroke-width="1.5"/>
-                        <line x1="30" y1="100" x2="210" y2="100" stroke="#f59e0b" stroke-width="0.5" stroke-dasharray="4,2"/>
-                        <text x="212" y="103" fill="#f59e0b" font-family="system-ui" font-size="7">85%</text>
-                        <text x="170" y="146" fill="#22c55e" font-family="system-ui" font-size="12" font-weight="600">42%</text>
-
-                        <!-- ECS Memory -->
-                        <rect x="235" y="48" width="205" height="150" rx="4" fill="#1a1d21" stroke="#333" stroke-width="0.5"/>
-                        <text x="245" y="66" fill="#8b949e" font-family="system-ui" font-size="9">ECS MEMORY UTILIZATION</text>
-                        <polygon points="245,185 270,178 295,175 320,172 345,168 370,170 395,165 420,160 420,185" fill="#f59e0b" opacity="0.15"/>
-                        <polyline points="245,185 270,178 295,175 320,172 345,168 370,170 395,165 420,160" fill="none" stroke="#f59e0b" stroke-width="1.5"/>
-                        <line x1="245" y1="100" x2="425" y2="100" stroke="#f59e0b" stroke-width="0.5" stroke-dasharray="4,2"/>
-                        <text x="427" y="103" fill="#f59e0b" font-family="system-ui" font-size="7">85%</text>
-                        <text x="385" y="156" fill="#f59e0b" font-family="system-ui" font-size="12" font-weight="600">68%</text>
-
-                        <!-- EC2 Observability -->
-                        <rect x="450" y="48" width="205" height="150" rx="4" fill="#1a1d21" stroke="#333" stroke-width="0.5"/>
-                        <text x="460" y="66" fill="#8b949e" font-family="system-ui" font-size="9">EC2 OBSERVABILITY (t3.medium)</text>
-                        <text x="465" y="90" fill="#8b949e" font-family="system-ui" font-size="8">CPU</text>
-                        <rect x="495" y="82" width="140" height="10" rx="2" fill="#333"/>
-                        <rect x="495" y="82" width="48" height="10" rx="2" fill="#22c55e"/>
-                        <text x="640" y="91" fill="#8b949e" font-family="system-ui" font-size="8">34%</text>
-                        <text x="465" y="112" fill="#8b949e" font-family="system-ui" font-size="8">Mem</text>
-                        <rect x="495" y="104" width="140" height="10" rx="2" fill="#333"/>
-                        <rect x="495" y="104" width="95" height="10" rx="2" fill="#f59e0b"/>
-                        <text x="640" y="113" fill="#8b949e" font-family="system-ui" font-size="8">68%</text>
-                        <text x="465" y="134" fill="#8b949e" font-family="system-ui" font-size="8">Disk</text>
-                        <rect x="495" y="126" width="140" height="10" rx="2" fill="#333"/>
-                        <rect x="495" y="126" width="28" height="10" rx="2" fill="#22c55e"/>
-                        <text x="640" y="135" fill="#8b949e" font-family="system-ui" font-size="8">20%</text>
-                        <text x="465" y="156" fill="#8b949e" font-family="system-ui" font-size="8">Net</text>
-                        <rect x="495" y="148" width="140" height="10" rx="2" fill="#333"/>
-                        <rect x="495" y="148" width="16" height="10" rx="2" fill="#22c55e"/>
-                        <text x="640" y="157" fill="#8b949e" font-family="system-ui" font-size="8">12%</text>
-
-                        <!-- Docker container status -->
-                        <rect x="665" y="48" width="215" height="150" rx="4" fill="#1a1d21" stroke="#333" stroke-width="0.5"/>
-                        <text x="675" y="66" fill="#8b949e" font-family="system-ui" font-size="9">CONTAINER STATUS</text>
-                        <circle cx="688" cy="85" r="4" fill="#22c55e"/>
-                        <text x="698" y="89" fill="#ccc" font-family="system-ui" font-size="9">grafana</text>
-                        <text x="800" y="89" fill="#8b949e" font-family="system-ui" font-size="8">384 MB</text>
-                        <circle cx="688" cy="103" r="4" fill="#22c55e"/>
-                        <text x="698" y="107" fill="#ccc" font-family="system-ui" font-size="9">mimir</text>
-                        <text x="800" y="107" fill="#8b949e" font-family="system-ui" font-size="8">768 MB</text>
-                        <circle cx="688" cy="121" r="4" fill="#22c55e"/>
-                        <text x="698" y="125" fill="#ccc" font-family="system-ui" font-size="9">loki</text>
-                        <text x="800" y="125" fill="#8b949e" font-family="system-ui" font-size="8">384 MB</text>
-                        <circle cx="688" cy="139" r="4" fill="#22c55e"/>
-                        <text x="698" y="143" fill="#ccc" font-family="system-ui" font-size="9">tempo</text>
-                        <text x="800" y="143" fill="#8b949e" font-family="system-ui" font-size="8">384 MB</text>
-                        <circle cx="688" cy="157" r="4" fill="#22c55e"/>
-                        <text x="698" y="161" fill="#ccc" font-family="system-ui" font-size="9">pyroscope</text>
-                        <text x="800" y="161" fill="#8b949e" font-family="system-ui" font-size="8">384 MB</text>
-                        <circle cx="688" cy="175" r="4" fill="#22c55e"/>
-                        <text x="698" y="179" fill="#ccc" font-family="system-ui" font-size="9">alloy</text>
-                        <text x="800" y="179" fill="#8b949e" font-family="system-ui" font-size="8">384 MB</text>
-                    </svg>
-                </div>
-
-                <h3>Correlation Demo</h3>
-                <p>End-to-end dashboard demonstrating the full cross-pillar investigation path across all 4 pillars working together.</p>
-                <div class="diagram-container">
-                    <svg viewBox="0 0 900 180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Correlation Demo dashboard mockup">
-                        <rect x="10" y="10" width="880" height="160" rx="6" fill="#181b1f" stroke="#333" stroke-width="1"/>
-                        <rect x="10" y="10" width="880" height="28" rx="6" fill="#222529"/>
-                        <text x="24" y="29" fill="#ccc" font-family="system-ui" font-size="11" font-weight="600">Correlation Demo &mdash; Cross-Pillar Investigation</text>
-                        <circle cx="870" cy="24" r="5" fill="#22c55e"/>
-
-                        <!-- Step flow -->
-                        <rect x="30" y="55" width="130" height="50" rx="6" fill="#1a1d21" stroke="#6366f1" stroke-width="1.5"/>
-                        <text x="95" y="76" text-anchor="middle" fill="#6366f1" font-family="system-ui" font-size="9" font-weight="600">Latency Spike</text>
-                        <text x="95" y="92" text-anchor="middle" fill="#8b949e" font-family="system-ui" font-size="8">Mimir metric</text>
-
-                        <text x="175" y="82" text-anchor="middle" fill="#555" font-family="system-ui" font-size="14">&rarr;</text>
-
-                        <rect x="195" y="55" width="130" height="50" rx="6" fill="#1a1d21" stroke="#f59e0b" stroke-width="1.5"/>
-                        <text x="260" y="76" text-anchor="middle" fill="#f59e0b" font-family="system-ui" font-size="9" font-weight="600">Exemplar Click</text>
-                        <text x="260" y="92" text-anchor="middle" fill="#8b949e" font-family="system-ui" font-size="8">jump to trace ID</text>
-
-                        <text x="340" y="82" text-anchor="middle" fill="#555" font-family="system-ui" font-size="14">&rarr;</text>
-
-                        <rect x="360" y="55" width="130" height="50" rx="6" fill="#1a1d21" stroke="#22c55e" stroke-width="1.5"/>
-                        <text x="425" y="76" text-anchor="middle" fill="#22c55e" font-family="system-ui" font-size="9" font-weight="600">Trace Waterfall</text>
-                        <text x="425" y="92" text-anchor="middle" fill="#8b949e" font-family="system-ui" font-size="8">Tempo spans</text>
-
-                        <text x="505" y="82" text-anchor="middle" fill="#555" font-family="system-ui" font-size="14">&rarr;</text>
-
-                        <rect x="525" y="55" width="130" height="50" rx="6" fill="#1a1d21" stroke="#3b82f6" stroke-width="1.5"/>
-                        <text x="590" y="76" text-anchor="middle" fill="#3b82f6" font-family="system-ui" font-size="9" font-weight="600">Correlated Logs</text>
-                        <text x="590" y="92" text-anchor="middle" fill="#8b949e" font-family="system-ui" font-size="8">Loki trace_id filter</text>
-
-                        <text x="670" y="82" text-anchor="middle" fill="#555" font-family="system-ui" font-size="14">&rarr;</text>
-
-                        <rect x="690" y="55" width="130" height="50" rx="6" fill="#1a1d21" stroke="#ef4444" stroke-width="1.5"/>
-                        <text x="755" y="76" text-anchor="middle" fill="#ef4444" font-family="system-ui" font-size="9" font-weight="600">Flamegraph</text>
-                        <text x="755" y="92" text-anchor="middle" fill="#8b949e" font-family="system-ui" font-size="8">Pyroscope profile</text>
-
-                        <!-- Pillar labels -->
-                        <rect x="30" y="120" width="130" height="24" rx="4" fill="#6366f1" opacity="0.15"/>
-                        <text x="95" y="136" text-anchor="middle" fill="#6366f1" font-family="system-ui" font-size="9">Metrics</text>
-                        <rect x="278" y="120" width="130" height="24" rx="4" fill="#22c55e" opacity="0.15"/>
-                        <text x="343" y="136" text-anchor="middle" fill="#22c55e" font-family="system-ui" font-size="9">Traces</text>
-                        <rect x="525" y="120" width="130" height="24" rx="4" fill="#3b82f6" opacity="0.15"/>
-                        <text x="590" y="136" text-anchor="middle" fill="#3b82f6" font-family="system-ui" font-size="9">Logs</text>
-                        <rect x="690" y="120" width="130" height="24" rx="4" fill="#ef4444" opacity="0.15"/>
-                        <text x="755" y="136" text-anchor="middle" fill="#ef4444" font-family="system-ui" font-size="9">Profiling</text>
-
-                        <text x="450" y="160" text-anchor="middle" fill="#555" font-family="system-ui" font-size="9">Full investigation path: latency spike &rarr; root cause in &lt; 60 seconds</text>
-                    </svg>
-                </div>
-            </section>
         </div>
     </div>
 
