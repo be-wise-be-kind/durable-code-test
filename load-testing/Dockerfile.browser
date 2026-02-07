@@ -16,7 +16,7 @@
 # Implementation: Single-stage build on MS Playwright base, pip install with browser extras,
 #     non-root user execution
 
-FROM mcr.microsoft.com/playwright/python:v1.48.0-jammy
+FROM mcr.microsoft.com/playwright/python:v1.58.0-noble
 
 WORKDIR /load-testing
 
@@ -29,6 +29,8 @@ COPY lib/ lib/
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
 RUN useradd --create-home locust || true
+RUN chmod -R o+rx /ms-playwright
+RUN chown -R locust:locust /load-testing
 USER locust
 
 EXPOSE 8089

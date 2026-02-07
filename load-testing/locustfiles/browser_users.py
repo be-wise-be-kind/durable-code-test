@@ -6,7 +6,7 @@ Scope: Locust PlaywrightUser definitions exercising frontend UI journeys through
 
 Overview: Defines three PlaywrightUser subclasses that exercise distinct frontend user journeys
     through real Chromium browser instances. OscilloscopePlaywrightUser validates the full
-    oscilloscope WebSocket demo flow (navigate, connect, change waveform, disconnect).
+    oscilloscope WebSocket demo flow (navigate, auto-connect, start, change waveform, stop).
     RacingPlaywrightUser exercises the racing game with canvas interaction and REST API track
     generation. TabNavigationPlaywrightUser measures SPA navigation performance across all
     application tabs. Each step within a task reports timing metrics to the Locust event system
@@ -31,7 +31,7 @@ Implementation: Each PlaywrightUser subclass uses the @pw decorator for browser 
 
 import os
 
-from locust import task
+from locust import constant, task
 from locust_plugins.users.playwright import PageWithRetry, PlaywrightUser, event, pw
 
 FRONTEND_HOST = os.environ.get(
@@ -52,12 +52,12 @@ TAB_NAMES = [
 class OscilloscopePlaywrightUser(PlaywrightUser):
     """Exercises the full oscilloscope WebSocket demo journey through a browser.
 
-    Flow: navigate to frontend, click Demo tab, open oscilloscope, connect,
-    change waveform type, wait for streaming data, disconnect.
+    Flow: navigate to frontend, click Demo tab, open oscilloscope, wait for
+    auto-connect, start streaming, change waveform type, wait for data, stop.
     """
 
     host = FRONTEND_HOST
-    wait_time = None
+    wait_time = constant(0)
 
     @task
     @pw
@@ -72,26 +72,33 @@ class OscilloscopePlaywrightUser(PlaywrightUser):
             await page.wait_for_timeout(500)
 
         async with event(self, "open_oscilloscope"):
-            oscilloscope_link = page.get_by_text("Oscilloscope")
+            oscilloscope_link = page.get_by_role(
+                "heading", name="Oscilloscope"
+            )
             await oscilloscope_link.click()
-            await page.wait_for_timeout(500)
-
-        async with event(self, "click_connect"):
-            connect_btn = page.get_by_role("button", name="Connect")
-            await connect_btn.click()
             await page.wait_for_timeout(1000)
 
+        async with event(self, "wait_for_connection"):
+            await page.wait_for_selector(
+                'text=Connected', timeout=10000
+            )
+
+        async with event(self, "click_start"):
+            start_btn = page.get_by_role("button", name="Start")
+            await start_btn.click()
+            await page.wait_for_timeout(500)
+
         async with event(self, "change_waveform"):
-            waveform_select = page.locator("select").first
-            await waveform_select.select_option("square")
+            square_btn = page.get_by_text("Square Wave")
+            await square_btn.click()
             await page.wait_for_timeout(500)
 
         async with event(self, "wait_for_streaming"):
             await page.wait_for_timeout(2000)
 
-        async with event(self, "click_disconnect"):
-            disconnect_btn = page.get_by_role("button", name="Disconnect")
-            await disconnect_btn.click()
+        async with event(self, "click_stop"):
+            stop_btn = page.get_by_role("button", name="Stop")
+            await stop_btn.click()
 
 
 class RacingPlaywrightUser(PlaywrightUser):
@@ -102,7 +109,7 @@ class RacingPlaywrightUser(PlaywrightUser):
     """
 
     host = FRONTEND_HOST
-    wait_time = None
+    wait_time = constant(0)
 
     @task
     @pw
@@ -117,7 +124,9 @@ class RacingPlaywrightUser(PlaywrightUser):
             await page.wait_for_timeout(500)
 
         async with event(self, "open_racing_game"):
-            racing_link = page.get_by_text("Racing Game")
+            racing_link = page.get_by_role(
+                "heading", name="Racing Game"
+            )
             await racing_link.click()
             await page.wait_for_timeout(500)
 
@@ -125,8 +134,10 @@ class RacingPlaywrightUser(PlaywrightUser):
             await page.wait_for_selector("canvas", timeout=10000)
             await page.wait_for_timeout(1000)
 
-        async with event(self, "click_start"):
-            start_btn = page.get_by_role("button", name="Start")
+        async with event(self, "click_start_racing"):
+            start_btn = page.get_by_role(
+                "button", name="Start Racing"
+            )
             await start_btn.click()
             await page.wait_for_timeout(500)
 
@@ -150,7 +161,7 @@ class TabNavigationPlaywrightUser(PlaywrightUser):
     """
 
     host = FRONTEND_HOST
-    wait_time = None
+    wait_time = constant(0)
 
     @task
     @pw
