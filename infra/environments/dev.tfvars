@@ -41,14 +41,15 @@ min_capacity   = 0    # Allow scale to zero
 max_capacity   = 2    # Limited scaling for cost control
 
 # Monitoring (minimal for cost savings)
-enable_container_insights = false
+enable_container_insights = true
 budget_amount            = 10.0  # Lower budget for dev
 
 # Observability
 enable_observability = true
 
 # Security (optional features disabled for cost savings)
-enable_waf          = false
+enable_waf                 = false
+load_test_allowlist_ips    = ["104.28.205.117/32"]
 enable_guardduty    = false
 enable_security_hub = false
 

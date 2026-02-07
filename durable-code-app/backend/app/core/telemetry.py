@@ -3,20 +3,25 @@ Purpose: OpenTelemetry TracerProvider and MeterProvider configuration with OTLP 
 
 Scope: Backend application distributed tracing and metrics collection infrastructure
 
-Overview: Configures OpenTelemetry TracerProvider and MeterProvider with OTLP gRPC exporters
-    for sending traces and metrics to the Grafana Alloy collector. Instruments the FastAPI
-    application with automatic span creation for HTTP requests. All instrumentation is gated
-    behind the OTEL_ENABLED environment variable, ensuring zero overhead when disabled.
-    Functions are decomposed to maintain low cyclomatic complexity. OTel imports are placed
-    inside helper functions to avoid import errors in environments without the full dependency
-    chain installed.
+Overview: Configures OpenTelemetry TracerProvider, MeterProvider, and LoggerProvider with OTLP
+    gRPC exporters for sending traces, metrics, and logs to the Grafana Alloy collector.
+    Instruments the FastAPI application with automatic span creation for HTTP requests. The
+    LoggerProvider attaches a LoggingHandler to the standard logging root logger, enabling
+    Loguru messages bridged via logging_config.py to flow through OTLP to Alloy and then Loki.
+    All instrumentation is gated behind the OTEL_ENABLED environment variable, ensuring zero
+    overhead when disabled. Functions are decomposed to maintain low cyclomatic complexity.
+    OTel imports are placed inside helper functions to avoid import errors in environments
+    without the full dependency chain installed.
 
 Dependencies: opentelemetry-api, opentelemetry-sdk, opentelemetry-exporter-otlp-proto-grpc,
     opentelemetry-instrumentation-fastapi, FastAPI
 
-Exports: configure_telemetry, shutdown_telemetry, get_tracer
+Exports: configure_telemetry, instrument_fastapi, shutdown_telemetry, get_tracer
 
-Interfaces: configure_telemetry(app: FastAPI) initializes tracing and metrics;
+Interfaces: configure_telemetry(app: FastAPI) initializes providers (TracerProvider,
+    MeterProvider, LoggerProvider) without adding request middleware;
+    instrument_fastapi(app: FastAPI) adds the tracing middleware (call after metrics
+    middleware to ensure trace context is active during metric recording for exemplars);
     shutdown_telemetry() flushes and shuts down providers;
     get_tracer(name) returns a Tracer instance (no-op when OTel disabled)
 
@@ -35,6 +40,7 @@ from loguru import logger
 
 if TYPE_CHECKING:
     from fastapi import FastAPI
+    from opentelemetry.sdk._logs import LoggerProvider
     from opentelemetry.sdk.metrics import MeterProvider
     from opentelemetry.sdk.resources import Resource
     from opentelemetry.sdk.trace import TracerProvider
@@ -48,6 +54,7 @@ class _TelemetryState:
         """Initialize provider references as None until configured."""
         self.tracer_provider: TracerProvider | None = None
         self.meter_provider: MeterProvider | None = None
+        self.logger_provider: LoggerProvider | None = None
 
 
 _state = _TelemetryState()
@@ -101,17 +108,67 @@ def _configure_meter_provider(resource: Resource) -> None:
     from opentelemetry.exporter.otlp.proto.grpc.metric_exporter import OTLPMetricExporter
     from opentelemetry.sdk.metrics import MeterProvider
     from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
+    from opentelemetry.sdk.metrics.view import ExplicitBucketHistogramAggregation, View
 
     endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317")
     exporter = OTLPMetricExporter(endpoint=endpoint, insecure=True)
     reader = PeriodicExportingMetricReader(exporter, export_interval_millis=60000)
 
-    provider = MeterProvider(resource=resource, metric_readers=[reader])
+    duration_view = View(
+        instrument_name="http_request_duration_seconds",
+        aggregation=ExplicitBucketHistogramAggregation(
+            boundaries=[
+                0.005,
+                0.01,
+                0.025,
+                0.05,
+                0.075,
+                0.1,
+                0.25,
+                0.5,
+                0.75,
+                1.0,
+                2.5,
+                5.0,
+                7.5,
+                10.0,
+            ]
+        ),
+    )
+
+    provider = MeterProvider(resource=resource, metric_readers=[reader], views=[duration_view])
 
     from opentelemetry.metrics import set_meter_provider
 
     set_meter_provider(provider)
     _state.meter_provider = provider
+
+
+def _configure_logger_provider(resource: Resource) -> None:
+    """Configure LoggerProvider with BatchLogRecordProcessor and OTLP gRPC exporter.
+
+    Sets up the OTel logging pipeline and attaches a LoggingHandler to the
+    standard logging root logger. Loguru messages bridged to standard logging
+    (via logging_config.py) flow through this handler to Alloy and then Loki.
+    """
+    import logging
+
+    from opentelemetry._logs import set_logger_provider
+    from opentelemetry.exporter.otlp.proto.grpc._log_exporter import OTLPLogExporter
+    from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
+    from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
+
+    endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317")
+    exporter = OTLPLogExporter(endpoint=endpoint, insecure=True)
+
+    provider = LoggerProvider(resource=resource)
+    provider.add_log_record_processor(BatchLogRecordProcessor(exporter))
+    set_logger_provider(provider)
+
+    handler = LoggingHandler(level=logging.INFO, logger_provider=provider)
+    logging.getLogger().addHandler(handler)
+
+    _state.logger_provider = provider
 
 
 def _server_request_hook(span: object, scope: dict[str, object]) -> None:
@@ -131,13 +188,6 @@ def _server_request_hook(span: object, scope: dict[str, object]) -> None:
         span.set_attribute("deployment.environment", environment)
 
 
-def _instrument_fastapi(app: FastAPI) -> None:
-    """Instrument the FastAPI application for automatic HTTP span creation."""
-    from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-
-    FastAPIInstrumentor.instrument_app(app, server_request_hook=_server_request_hook)
-
-
 def _instrument_httpx() -> None:
     """Instrument httpx for automatic trace context propagation."""
     from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
@@ -146,14 +196,19 @@ def _instrument_httpx() -> None:
 
 
 def configure_telemetry(app: FastAPI) -> None:
-    """Configure OpenTelemetry tracing and metrics for the application.
+    """Configure OpenTelemetry providers without adding request middleware.
+
+    Initializes TracerProvider, MeterProvider, and LoggerProvider with OTLP
+    exporters. Also instruments httpx for automatic trace context propagation.
+    Does NOT add the FastAPI tracing middleware; call instrument_fastapi()
+    separately after adding the metrics middleware so the tracing middleware
+    is outermost and the span is active during metric recording (required
+    for exemplars).
 
     No-ops when OTEL_ENABLED environment variable is not set to 'true'.
-    Initializes TracerProvider, MeterProvider, instruments FastAPI, and
-    instruments httpx for automatic trace context propagation.
 
     Args:
-        app: The FastAPI application instance to instrument.
+        app: The FastAPI application instance (unused but kept for API consistency).
     """
     if not _is_telemetry_enabled():
         logger.info("OpenTelemetry disabled (OTEL_ENABLED != 'true')")
@@ -162,9 +217,31 @@ def configure_telemetry(app: FastAPI) -> None:
     resource = _build_resource()
     _configure_tracer_provider(resource)
     _configure_meter_provider(resource)
-    _instrument_fastapi(app)
+    _configure_logger_provider(resource)
     _instrument_httpx()
-    logger.info("OpenTelemetry configured with OTLP gRPC export")
+    logger.info("OpenTelemetry providers configured with OTLP gRPC export (traces, metrics, logs)")
+
+
+def instrument_fastapi(app: FastAPI) -> None:
+    """Add the OpenTelemetry tracing middleware to the FastAPI application.
+
+    Must be called AFTER configure_metrics() so the tracing middleware is the
+    outermost ASGI middleware. This ensures the request span is still active
+    when the metrics middleware records histogram measurements, allowing the
+    SDK to attach trace-context exemplars.
+
+    No-ops when OTEL_ENABLED environment variable is not set to 'true'.
+
+    Args:
+        app: The FastAPI application instance to instrument.
+    """
+    if not _is_telemetry_enabled():
+        return
+
+    from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+
+    FastAPIInstrumentor.instrument_app(app, server_request_hook=_server_request_hook)
+    logger.info("FastAPI tracing middleware added (outermost for exemplar support)")
 
 
 def shutdown_telemetry() -> None:
@@ -173,6 +250,8 @@ def shutdown_telemetry() -> None:
         _state.tracer_provider.shutdown()
     if _state.meter_provider is not None:
         _state.meter_provider.shutdown()
+    if _state.logger_provider is not None:
+        _state.logger_provider.shutdown()
 
 
 def get_tracer(name: str) -> Tracer:

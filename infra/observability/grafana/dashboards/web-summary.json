@@ -1,0 +1,215 @@
+{
+  "_header": {
+    "purpose": "Web application summary dashboard displaying essential golden signals for quick health assessment",
+    "scope": "High-level HTTP request metrics aggregated across all backend endpoints with links to detail dashboards",
+    "overview": "Provides a top-level summary of web application health using four key stat panels (Request Rate, Error Rate, P99 Latency, ECS CPU Utilization) and a compact request rate time series. Serves as the entry point for the Web folder, linking to all detail dashboards (Latency, Errors, Traffic, Saturation, Traces, RED, Frontend) for drill-down investigation.",
+    "dependencies": "Mimir datasource (uid: mimir), CloudWatch datasource (uid: cloudwatch), backend metrics instruments (http_request_duration_seconds, http_requests_total, http_errors_total)",
+    "exports": "Provisioned Grafana dashboard accessible at /grafana/d/web-summary",
+    "interfaces": "PromQL queries against Mimir, CloudWatch queries for ECS metrics",
+    "environment": "Identical across dev/staging/prod",
+    "related": "home.json for top-level navigation, web-latency.json, web-errors.json, web-traffic.json, web-saturation.json, web-traces.json, web-red.json, web-frontend.json",
+    "implementation": "Grafana dashboard JSON schema version 39 with stat and time series panels"
+  },
+  "uid": "web-summary",
+  "title": "Summary",
+  "description": "Essential golden signals for the web application",
+  "tags": ["web"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": false,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [
+    {
+      "title": "Home",
+      "url": "/grafana/d/home",
+      "type": "link",
+      "icon": "home",
+      "keepTime": true,
+      "includeVars": false
+    },
+    {
+      "title": "Web Dashboards",
+      "type": "dashboards",
+      "tags": ["web"],
+      "asDropdown": true,
+      "keepTime": true,
+      "includeVars": true
+    }
+  ],
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Request Rate",
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 0 },
+      "id": 1,
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total[$__rate_interval]))",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "area"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Error Rate %",
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 0 },
+      "id": 2,
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [
+        {
+          "expr": "(sum(rate(http_errors_total[$__rate_interval])) or vector(0)) / sum(rate(http_requests_total[$__rate_interval])) * 100",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 5 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "area"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "P99 Latency",
+      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 0 },
+      "id": 3,
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[$__rate_interval])) by (le))",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.5 },
+              { "color": "red", "value": 2 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "area"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "ECS CPU Utilization",
+      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 0 },
+      "id": 4,
+      "datasource": { "type": "cloudwatch", "uid": "cloudwatch" },
+      "targets": [
+        {
+          "namespace": "AWS/ECS",
+          "metricName": "CPUUtilization",
+          "statistics": ["Average"],
+          "dimensions": {
+            "ClusterName": ["durable-code-dev-cluster"],
+            "ServiceName": ["durable-code-dev-backend"]
+          },
+          "period": "60",
+          "refId": "A",
+          "id": "",
+          "region": "default"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 90 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "area"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Request Rate",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 5 },
+      "id": 5,
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total[$__rate_interval]))",
+          "legendFormat": "Total req/s",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(http_requests_total[$__rate_interval])) by (method)",
+          "legendFormat": "{{method}}",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "max"] }
+      }
+    }
+  ],
+  "time": { "from": "now-1h", "to": "now" },
+  "refresh": "30s",
+  "templating": { "list": [] }
+}

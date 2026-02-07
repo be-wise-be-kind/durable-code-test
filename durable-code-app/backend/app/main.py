@@ -182,11 +182,12 @@ def _configure_observability(application: FastAPI) -> None:
     from .core.logging_config import configure_logging
     from .core.metrics import configure_metrics
     from .core.profiling import configure_profiling
-    from .core.telemetry import configure_telemetry
+    from .core.telemetry import configure_telemetry, instrument_fastapi
 
     configure_logging()
     configure_telemetry(application)
     configure_metrics(application)
+    instrument_fastapi(application)
     configure_profiling()
 
 

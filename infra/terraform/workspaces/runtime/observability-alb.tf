@@ -71,7 +71,7 @@ resource "aws_lb_listener_rule" "faro_http" {
 
   condition {
     path_pattern {
-      values = ["/collect/*"]
+      values = ["/collect", "/collect/*"]
     }
   }
 
@@ -101,7 +101,7 @@ resource "aws_lb_listener_rule" "faro_https" {
 
   condition {
     path_pattern {
-      values = ["/collect/*"]
+      values = ["/collect", "/collect/*"]
     }
   }
 

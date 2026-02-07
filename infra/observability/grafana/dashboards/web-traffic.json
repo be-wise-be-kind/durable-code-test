@@ -1,0 +1,212 @@
+{
+  "_header": {
+    "purpose": "Web application traffic dashboard showing request rates and active connection metrics",
+    "scope": "HTTP traffic metrics including request rate by method, active connections, total request counts",
+    "overview": "Extracts the Traffic row from the golden signals overview into a dedicated detail dashboard. Displays request rate as time series broken down by HTTP method, active connections over time, and stat panels for instant request rate, total request count, and connection count. Enables focused investigation of traffic patterns with drill-down from the Web Summary dashboard.",
+    "dependencies": "Mimir datasource (uid: mimir), backend http_requests_total counter and http_active_connections gauge",
+    "exports": "Provisioned Grafana dashboard accessible at /grafana/d/web-traffic",
+    "interfaces": "PromQL rate and sum queries against http_requests_total and http_active_connections",
+    "environment": "Identical across dev/staging/prod",
+    "related": "web-summary.json for overview, web-red.json for per-endpoint traffic breakdown",
+    "implementation": "Grafana dashboard JSON schema version 39 with time series and stat panels for traffic metrics"
+  },
+  "uid": "web-traffic",
+  "title": "Traffic",
+  "description": "Request rate, connections, and traffic analysis",
+  "tags": ["web"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": false,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [
+    {
+      "title": "Home",
+      "url": "/grafana/d/home",
+      "type": "link",
+      "icon": "home",
+      "keepTime": true,
+      "includeVars": false
+    },
+    {
+      "title": "Summary",
+      "url": "/grafana/d/web-summary",
+      "type": "link",
+      "icon": "dashboard",
+      "keepTime": true,
+      "includeVars": true
+    },
+    {
+      "title": "Web Dashboards",
+      "type": "dashboards",
+      "tags": ["web"],
+      "asDropdown": true,
+      "keepTime": true,
+      "includeVars": true
+    }
+  ],
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Request Rate",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "id": 1,
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total[$__rate_interval]))",
+          "legendFormat": "Total req/s",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(http_requests_total[$__rate_interval])) by (method)",
+          "legendFormat": "{{method}}",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "max"] }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Active Connections",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "id": 2,
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [
+        {
+          "expr": "sum(http_active_connections)",
+          "legendFormat": "Active connections",
+          "refId": "A"
+        },
+        {
+          "expr": "avg_over_time(sum(http_active_connections)[$__rate_interval])",
+          "legendFormat": "Avg connections",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "max"] }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Requests / sec",
+      "gridPos": { "h": 4, "w": 8, "x": 0, "y": 8 },
+      "id": 3,
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total[$__rate_interval]))",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "area"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Total Requests (range)",
+      "gridPos": { "h": 4, "w": 8, "x": 8, "y": 8 },
+      "id": 4,
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [
+        {
+          "expr": "sum(increase(http_requests_total[$__range]))",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "none"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Active Connections",
+      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 8 },
+      "id": 5,
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [
+        {
+          "expr": "sum(http_active_connections)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "blue", "value": null }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "area"
+      }
+    }
+  ],
+  "time": { "from": "now-1h", "to": "now" },
+  "refresh": "30s",
+  "templating": { "list": [] }
+}

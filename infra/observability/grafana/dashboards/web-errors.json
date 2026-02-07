@@ -1,0 +1,152 @@
+{
+  "_header": {
+    "purpose": "Web application error analysis dashboard with error rate trends and status code breakdowns",
+    "scope": "HTTP error metrics including error rate percentage, error count trends, and per-status-code analysis",
+    "overview": "Extracts the Errors row from the golden signals overview into a dedicated detail dashboard. Displays error rate as a percentage over time, a stat panel for instant error rate, and a stacked bar chart of errors by HTTP status code. Enables focused investigation of error patterns with drill-down from the Web Summary dashboard.",
+    "dependencies": "Mimir datasource (uid: mimir), backend http_errors_total and http_requests_total counter metrics",
+    "exports": "Provisioned Grafana dashboard accessible at /grafana/d/web-errors",
+    "interfaces": "PromQL rate queries against http_errors_total and http_requests_total counters",
+    "environment": "Identical across dev/staging/prod",
+    "related": "web-summary.json for overview, web-red.json for per-endpoint error breakdown",
+    "implementation": "Grafana dashboard JSON schema version 39 with time series, stat, and bar chart panels"
+  },
+  "uid": "web-errors",
+  "title": "Errors",
+  "description": "Error rate analysis with status code breakdowns",
+  "tags": ["web"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": false,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [
+    {
+      "title": "Home",
+      "url": "/grafana/d/home",
+      "type": "link",
+      "icon": "home",
+      "keepTime": true,
+      "includeVars": false
+    },
+    {
+      "title": "Summary",
+      "url": "/grafana/d/web-summary",
+      "type": "link",
+      "icon": "dashboard",
+      "keepTime": true,
+      "includeVars": true
+    },
+    {
+      "title": "Web Dashboards",
+      "type": "dashboards",
+      "tags": ["web"],
+      "asDropdown": true,
+      "keepTime": true,
+      "includeVars": true
+    }
+  ],
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Error Rate %",
+      "gridPos": { "h": 8, "w": 16, "x": 0, "y": 0 },
+      "id": 1,
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [
+        {
+          "expr": "(sum(rate(http_errors_total[$__rate_interval])) or vector(0)) / sum(rate(http_requests_total[$__rate_interval])) * 100",
+          "legendFormat": "Error %",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 10
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 5 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "max"] }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Error Rate",
+      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 0 },
+      "id": 2,
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [
+        {
+          "expr": "(sum(rate(http_errors_total[$__rate_interval])) or vector(0)) / sum(rate(http_requests_total[$__rate_interval])) * 100",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 5 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "none"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Errors by Status Code",
+      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 4 },
+      "id": 3,
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [
+        {
+          "expr": "sum(rate(http_errors_total[$__rate_interval])) by (status_code)",
+          "legendFormat": "{{status_code}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 50,
+            "stacking": { "mode": "normal" }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi" },
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      }
+    }
+  ],
+  "time": { "from": "now-1h", "to": "now" },
+  "refresh": "30s",
+  "templating": { "list": [] }
+}

@@ -272,7 +272,7 @@ resource "aws_ecs_task_definition" "backend" {
       }
 
       healthCheck = {
-        command     = ["CMD-SHELL", "curl -f http://localhost:${var.backend_port}${lookup(var.health_check_path, "backend", "/health")} || exit 1"]
+        command     = ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:${var.backend_port}${lookup(var.health_check_path, "backend", "/health")}')\" || exit 1"]
         interval    = 30
         timeout     = 5
         retries     = 3

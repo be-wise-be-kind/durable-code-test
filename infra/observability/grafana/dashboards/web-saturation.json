@@ -1,0 +1,387 @@
+{
+  "_header": {
+    "purpose": "Web application saturation dashboard showing ECS Fargate CPU, memory, and request concurrency metrics",
+    "scope": "Production ECS Fargate task resource utilization including CPU, memory, and HTTP concurrency",
+    "overview": "Extracts the Saturation - Production (ECS Fargate) row from the golden signals overview into a dedicated detail dashboard. Displays ECS CPU and memory utilization from CloudWatch, request concurrency from Mimir, and stat panels for per-service CPU and memory percentages. Enables focused investigation of resource saturation patterns for the production web application.",
+    "dependencies": "CloudWatch datasource (uid: cloudwatch) for ECS metrics, Mimir datasource (uid: mimir) for http_active_connections",
+    "exports": "Provisioned Grafana dashboard accessible at /grafana/d/web-saturation",
+    "interfaces": "CloudWatch queries for AWS/ECS namespace, PromQL for http_active_connections gauge",
+    "environment": "Identical across dev/staging/prod; ECS cluster and service names are environment-specific",
+    "related": "web-summary.json for overview, obs-saturation.json for observability stack saturation",
+    "implementation": "Grafana dashboard JSON schema version 39 with CloudWatch and Mimir datasource queries"
+  },
+  "uid": "web-saturation",
+  "title": "Saturation",
+  "description": "ECS CPU, memory utilization, and request concurrency",
+  "tags": ["web"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": false,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [
+    {
+      "title": "Home",
+      "url": "/grafana/d/home",
+      "type": "link",
+      "icon": "home",
+      "keepTime": true,
+      "includeVars": false
+    },
+    {
+      "title": "Summary",
+      "url": "/grafana/d/web-summary",
+      "type": "link",
+      "icon": "dashboard",
+      "keepTime": true,
+      "includeVars": true
+    },
+    {
+      "title": "Web Dashboards",
+      "type": "dashboards",
+      "tags": ["web"],
+      "asDropdown": true,
+      "keepTime": true,
+      "includeVars": true
+    }
+  ],
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "ECS CPU Utilization",
+      "description": "CPU utilization of ECS Fargate tasks as a percentage of the allocated CPU limit.",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 0 },
+      "id": 1,
+      "datasource": { "type": "cloudwatch", "uid": "cloudwatch" },
+      "targets": [
+        {
+          "namespace": "AWS/ECS",
+          "metricName": "CPUUtilization",
+          "statistics": ["Average"],
+          "dimensions": {
+            "ClusterName": ["durable-code-dev-cluster"],
+            "ServiceName": ["durable-code-dev-backend"]
+          },
+          "period": "60",
+          "refId": "A",
+          "id": "",
+          "region": "default",
+          "label": "Backend CPU"
+        },
+        {
+          "namespace": "AWS/ECS",
+          "metricName": "CPUUtilization",
+          "statistics": ["Average"],
+          "dimensions": {
+            "ClusterName": ["durable-code-dev-cluster"],
+            "ServiceName": ["durable-code-dev-frontend"]
+          },
+          "period": "60",
+          "refId": "B",
+          "id": "",
+          "region": "default",
+          "label": "Frontend CPU"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 20
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 90 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "max"] }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "ECS Memory Utilization",
+      "description": "Memory utilization of ECS Fargate tasks as a percentage of the allocated memory limit.",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 0 },
+      "id": 2,
+      "datasource": { "type": "cloudwatch", "uid": "cloudwatch" },
+      "targets": [
+        {
+          "namespace": "AWS/ECS",
+          "metricName": "MemoryUtilization",
+          "statistics": ["Average"],
+          "dimensions": {
+            "ClusterName": ["durable-code-dev-cluster"],
+            "ServiceName": ["durable-code-dev-backend"]
+          },
+          "period": "60",
+          "refId": "A",
+          "id": "",
+          "region": "default",
+          "label": "Backend Memory"
+        },
+        {
+          "namespace": "AWS/ECS",
+          "metricName": "MemoryUtilization",
+          "statistics": ["Average"],
+          "dimensions": {
+            "ClusterName": ["durable-code-dev-cluster"],
+            "ServiceName": ["durable-code-dev-frontend"]
+          },
+          "period": "60",
+          "refId": "B",
+          "id": "",
+          "region": "default",
+          "label": "Frontend Memory"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 20
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 90 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "max"] }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Request Concurrency",
+      "description": "Active concurrent requests. Rising concurrency alongside high CPU/memory confirms the system is approaching capacity.",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 0 },
+      "id": 3,
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [
+        {
+          "expr": "sum(http_active_connections)",
+          "legendFormat": "Peak concurrent",
+          "refId": "A"
+        },
+        {
+          "expr": "avg_over_time(sum(http_active_connections)[$__rate_interval])",
+          "legendFormat": "Avg concurrent",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 20
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 50 },
+              { "color": "red", "value": 100 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "max"] }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Backend CPU %",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 8 },
+      "id": 4,
+      "datasource": { "type": "cloudwatch", "uid": "cloudwatch" },
+      "targets": [
+        {
+          "namespace": "AWS/ECS",
+          "metricName": "CPUUtilization",
+          "statistics": ["Average"],
+          "dimensions": {
+            "ClusterName": ["durable-code-dev-cluster"],
+            "ServiceName": ["durable-code-dev-backend"]
+          },
+          "period": "60",
+          "refId": "A",
+          "id": "",
+          "region": "default"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 90 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "area"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Backend Memory %",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 8 },
+      "id": 5,
+      "datasource": { "type": "cloudwatch", "uid": "cloudwatch" },
+      "targets": [
+        {
+          "namespace": "AWS/ECS",
+          "metricName": "MemoryUtilization",
+          "statistics": ["Average"],
+          "dimensions": {
+            "ClusterName": ["durable-code-dev-cluster"],
+            "ServiceName": ["durable-code-dev-backend"]
+          },
+          "period": "60",
+          "refId": "A",
+          "id": "",
+          "region": "default"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 90 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "area"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Frontend CPU %",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 8 },
+      "id": 6,
+      "datasource": { "type": "cloudwatch", "uid": "cloudwatch" },
+      "targets": [
+        {
+          "namespace": "AWS/ECS",
+          "metricName": "CPUUtilization",
+          "statistics": ["Average"],
+          "dimensions": {
+            "ClusterName": ["durable-code-dev-cluster"],
+            "ServiceName": ["durable-code-dev-frontend"]
+          },
+          "period": "60",
+          "refId": "A",
+          "id": "",
+          "region": "default"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 90 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "area"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Frontend Memory %",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 8 },
+      "id": 7,
+      "datasource": { "type": "cloudwatch", "uid": "cloudwatch" },
+      "targets": [
+        {
+          "namespace": "AWS/ECS",
+          "metricName": "MemoryUtilization",
+          "statistics": ["Average"],
+          "dimensions": {
+            "ClusterName": ["durable-code-dev-cluster"],
+            "ServiceName": ["durable-code-dev-frontend"]
+          },
+          "period": "60",
+          "refId": "A",
+          "id": "",
+          "region": "default"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 90 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "area"
+      }
+    }
+  ],
+  "time": { "from": "now-1h", "to": "now" },
+  "refresh": "30s",
+  "templating": { "list": [] }
+}

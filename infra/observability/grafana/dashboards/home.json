@@ -1,13 +1,13 @@
 {
   "_header": {
     "purpose": "Grafana home dashboard serving as the navigation hub for the observability stack",
-    "scope": "Default landing page linking to all observability dashboards (Golden Signals, RED, Web Vitals, USE, Traces, Profiling)",
-    "overview": "Provides a centralized navigation hub for the Grafana observability stack. Displays system health status panels and links to all specialized dashboards. Configured as the default home dashboard in grafana.ini. Uses stat panels for quick health indicators and text panels with markdown links for dashboard navigation.",
-    "dependencies": "Grafana 11.4+, Mimir datasource for health metrics, all other dashboards for navigation links",
+    "scope": "Default landing page with folder-organized navigation linking to Web and Observability dashboard folders",
+    "overview": "Provides a centralized navigation hub for the Grafana observability stack. Displays system health status panels and links to folder summary dashboards. Organized into two sections: Web Application (linking to web-summary) and Observability Stack (linking to obs-summary). Configured as the default home dashboard via organization preferences. Uses stat panels for quick health indicators and text panels with markdown links for dashboard navigation.",
+    "dependencies": "Grafana 11.4+, Mimir datasource for health metrics, Web and Observability folder dashboards for navigation links",
     "exports": "Default home dashboard loaded on Grafana startup",
-    "interfaces": "Referenced by grafana.ini default_home_dashboard_path as /var/lib/grafana/dashboards/home.json",
+    "interfaces": "Referenced by grafana_organization_preferences home_dashboard_uid as home",
     "environment": "Identical across dev/staging/prod deployments",
-    "related": "grafana.ini, dashboard-provisioning.yml, golden-signals-overview.json, backend-red-method.json, frontend-web-vitals.json, infrastructure-use-method.json, trace-analysis.json, profiling.json",
+    "related": "web-summary.json, obs-summary.json, all dashboard files in Web and Observability folders",
     "implementation": "Grafana dashboard JSON schema version 39 with stat and text panels for navigation"
   },
   "uid": "home",
@@ -72,7 +72,7 @@
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
         {
-          "expr": "sum(rate(http_errors_total[$__rate_interval])) / sum(rate(http_requests_total[$__rate_interval])) * 100",
+          "expr": "(sum(rate(http_errors_total[$__rate_interval])) or vector(0)) / sum(rate(http_requests_total[$__rate_interval])) * 100",
           "refId": "A"
         }
       ],
@@ -162,22 +162,22 @@
     },
     {
       "type": "text",
-      "title": "Dashboards",
+      "title": "Web Application",
       "gridPos": { "h": 10, "w": 12, "x": 0, "y": 7 },
       "id": 6,
       "options": {
         "mode": "markdown",
-        "content": "### Metrics Dashboards\n- [Golden Signals Overview](/grafana/d/golden-signals-overview) - Latency, Traffic, Errors, Saturation\n- [Backend RED Method](/grafana/d/backend-red-method) - Rate, Errors, Duration per endpoint\n- [Frontend Web Vitals](/grafana/d/frontend-web-vitals) - LCP, INP, CLS, JS errors\n- [Infrastructure USE Method](/grafana/d/infrastructure-use-method) - Utilization, Saturation, Errors\n\n### Tracing & Profiling\n- [Trace Analysis](/grafana/d/trace-analysis) - Trace search, service graph, span analysis\n- [Profiling](/grafana/d/profiling) - CPU and memory flame graphs"
+        "content": "### Web Application Dashboards\nProduction app signals — golden signals, per-endpoint RED, frontend vitals, and traces.\n\n- [Summary](/grafana/d/web-summary) - Essential golden signals overview\n- [Latency](/grafana/d/web-latency) - Request latency breakdowns (p50/p95/p99)\n- [Errors](/grafana/d/web-errors) - Error rate analysis with status codes\n- [Traffic](/grafana/d/web-traffic) - Request rate and connections\n- [Saturation](/grafana/d/web-saturation) - ECS CPU/Memory utilization\n- [Traces](/grafana/d/web-traces) - Trace search, service graph, span analysis\n- [RED](/grafana/d/web-red) - Per-endpoint Rate, Errors, Duration\n- [Frontend](/grafana/d/web-frontend) - Core Web Vitals (LCP, INP, CLS)"
       }
     },
     {
       "type": "text",
-      "title": "Quick Links",
+      "title": "Observability Stack",
       "gridPos": { "h": 10, "w": 12, "x": 12, "y": 7 },
       "id": 7,
       "options": {
         "mode": "markdown",
-        "content": "### Explore\n- [Explore Metrics](/grafana/explore?orgId=1&left=%7B%22datasource%22:%22mimir%22%7D) - Ad-hoc metric queries\n- [Explore Logs](/grafana/explore?orgId=1&left=%7B%22datasource%22:%22loki%22%7D) - Log search and analysis\n- [Explore Traces](/grafana/explore?orgId=1&left=%7B%22datasource%22:%22tempo%22%7D) - Trace search by ID\n- [Explore Profiles](/grafana/explore?orgId=1&left=%7B%22datasource%22:%22pyroscope%22%7D) - Profile analysis\n\n### Architecture\n- **Metrics**: Mimir (Prometheus-compatible)\n- **Logs**: Loki (LogQL)\n- **Traces**: Tempo (TraceQL)\n- **Profiles**: Pyroscope (flame graphs)\n- **Collector**: Alloy (OTLP + Faro)"
+        "content": "### Observability Stack Dashboards\nMonitoring infrastructure signals — EC2 resources, container metrics, and profiling.\n\n- [Summary](/grafana/d/obs-summary) - Essential infrastructure signals\n- [Saturation](/grafana/d/obs-saturation) - EC2 CPU/Memory/Load\n- [USE](/grafana/d/obs-use) - Full USE method (Utilization, Saturation, Errors)\n- [Profiling](/grafana/d/obs-profiling) - CPU/Memory flame graphs\n\n### Explore\n- [Metrics](/grafana/explore?orgId=1&left=%7B%22datasource%22:%22mimir%22%7D) - Ad-hoc metric queries\n- [Logs](/grafana/explore?orgId=1&left=%7B%22datasource%22:%22loki%22%7D) - Log search and analysis\n- [Traces](/grafana/explore?orgId=1&left=%7B%22datasource%22:%22tempo%22%7D) - Trace search by ID\n- [Profiles](/grafana/explore?orgId=1&left=%7B%22datasource%22:%22pyroscope%22%7D) - Profile analysis"
       }
     }
   ],

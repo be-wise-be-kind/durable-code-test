@@ -89,6 +89,8 @@ docker build -t "${ECR_PREFIX}-${ENV}-frontend:${TAG}" \
   --target prod \
   --build-arg BUILD_TIMESTAMP="${BUILD_TIMESTAMP}" \
   --build-arg API_URL="${API_URL}" \
+  --build-arg FARO_ENABLED="${FARO_ENABLED:-true}" \
+  --build-arg FARO_COLLECTOR_URL="${FARO_COLLECTOR_URL:-/collect}" \
   .
 docker tag "${ECR_PREFIX}-${ENV}-frontend:${TAG}" "${ECR_REGISTRY}/${ECR_PREFIX}-${ENV}-frontend:${TAG}"
 

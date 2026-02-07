@@ -91,6 +91,39 @@ resource "aws_iam_role_policy" "observability_s3" {
   })
 }
 
+# CloudWatch Read Policy for Grafana ECS Metrics
+resource "aws_iam_role_policy" "observability_cloudwatch" {
+  count = var.enable_observability ? 1 : 0
+
+  name = "${var.project_name}-${local.environment}-observability-cloudwatch"
+  role = aws_iam_role.observability[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "cloudwatch:DescribeAlarmsForMetric",
+          "cloudwatch:GetMetricData",
+          "cloudwatch:GetMetricStatistics",
+          "cloudwatch:ListMetrics"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "ecs:ListClusters",
+          "ecs:ListServices",
+          "ecs:DescribeServices"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
 # SSM Managed Policy for Session Manager Access
 resource "aws_iam_role_policy_attachment" "observability_ssm" {
   count = var.enable_observability ? 1 : 0

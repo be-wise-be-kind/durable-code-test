@@ -29,8 +29,8 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Grafana St
 4. **Update this document** after completing each PR
 
 ## Current Status
-**Current PR**: PR 9 - Dashboard Audit & Security Fixes (in progress on branch `fix/dashboard-audit`)
-**Infrastructure State**: Base workspace has S3, IAM, security group; Runtime workspace has EC2 instance, ALB target groups (Faro only - Grafana removed from ALB for security), listener rules; Docker Compose stack with 8 observability services (added node-exporter and cAdvisor); Backend OTel instrumentation with tracing, metrics, logging, profiling; Frontend Faro SDK with error boundary, W3C trace propagation; 7 Grafana dashboards (home, golden signals, RED, web vitals, USE, trace analysis, profiling) with corrected queries; Custom spans for WebSocket and racing operations; Trace-to-profile correlation via Pyroscope tag_wrapper (all behind feature flags); Grafana accessible only via SSM port forwarding
+**Current PR**: PR 9 - Dashboard Audit & Security Fixes (merged as PR #77, commit 3ee52a4; QA fixes on branch `fix/dashboard-qa`)
+**Infrastructure State**: Base workspace has S3, IAM, security group; Runtime workspace has EC2 instance, ALB target groups (Faro only - Grafana removed from ALB for security), listener rules; Docker Compose stack with 8 observability services (added node-exporter and cAdvisor); Backend OTel instrumentation with tracing, metrics, logging, profiling, OTLP log export to Loki; Frontend Faro SDK with error boundary, W3C trace propagation; 7 Grafana dashboards (home, golden signals, RED, web vitals, USE, trace analysis, profiling) with corrected queries and verified with load testing; Custom spans for WebSocket and racing operations; Trace-to-profile correlation via Pyroscope tag_wrapper (all behind feature flags); Grafana accessible only via SSM port forwarding
 **Feature Target**: Complete 4-pillar observability (metrics, logs, traces, profiling) with cross-pillar correlation
 
 ## Required Documents Location
@@ -43,47 +43,33 @@ This is the **PRIMARY HANDOFF DOCUMENT** for AI agents working on the Grafana St
 
 ## Next PR to Implement
 
-### IN PROGRESS: PR 9 - Dashboard Audit & Security Fixes
+### COMPLETE: PR 9 - Dashboard Audit & Security Fixes
 
 **Quick Summary**:
 Audit all 7 Grafana dashboards for query correctness and data availability. Fix dashboard queries (service label mismatch, active_connections grouping, Web Vitals LogQL format). Add node-exporter and cAdvisor for Infrastructure USE dashboard. Fix critical security issue: remove Grafana from public ALB, enforce SSM-only access. Update justfile `grafana login` to use SSM tunnel. Verify each dashboard shows meaningful data after load testing.
 
-**Pre-flight Checklist**:
-- [x] Read AI_CONTEXT.md for dashboard architecture
-- [x] Review all 7 dashboard JSON files for query correctness
-- [x] Cross-reference queries against actual metric/log sources (metrics.py, config.alloy, tempo.yml)
-- [x] Identify and fix security exposure (Grafana on public ALB)
+**Merged**: PR #77, commit 3ee52a4
 
-**Prerequisites Complete**:
-- [x] PR 1-8 merged (all infrastructure, instrumentation, and dashboards deployed)
-
-**Work Completed (pending commit/PR)**:
-- [x] Fixed Golden Signals panel 17: removed invalid `by (path)` grouping on active_connections
-- [x] Fixed Trace Analysis: `service` → `service_name` in template variable and all 7 queries
-- [x] Fixed Trace Analysis: replaced PromQL nodeGraph with Tempo serviceMap query
-- [x] Fixed Terraform tracesToMetrics tag: `service` → `service_name`
-- [x] Added node-exporter and cAdvisor to docker-compose.yml for Infrastructure USE dashboard
-- [x] Added prometheus.scrape blocks to config.alloy for both exporters
-- [x] Fixed Frontend Web Vitals: added Alloy faro.receiver extra_log_labels and loki.process pipeline
-- [x] Rewrote all Web Vitals LogQL queries from JSON to logfmt format
-- [x] **SECURITY**: Removed Grafana target group, attachment, and ALB listener rules (HTTP + HTTPS)
-- [x] **SECURITY**: Changed Grafana Terraform provider to use SSM tunnel (localhost:3001)
-- [x] **SECURITY**: Removed WAF body size exception (only needed for Grafana ALB traffic)
-- [x] Updated justfile `grafana login` to start SSM port-forward tunnel
-- [x] All changes deployed and verified
-
-**Remaining (next session)**:
-- [ ] Run load tests and verify each dashboard shows meaningful data with user
-- [ ] Verify profiling dashboard profile type IDs empirically
-- [ ] Commit changes and create PR
+**QA Follow-up Fixes** (branch `fix/dashboard-qa`):
+- [x] Fixed active connections: UpDownCounter → ObservableGauge with peak tracking + pure ASGI middleware (metrics.py)
+- [x] Fixed ObservableGauge metric name: removed `unit="1"` to prevent `_ratio` suffix in Prometheus naming
+- [x] Fixed error rate "No data": added `or vector(0)` fallback (home.json, golden-signals-overview.json)
+- [x] Fixed OTLP log export: added LoggerProvider to telemetry.py, Loguru→stdlib bridge in logging_config.py
+- [x] All 7 dashboards QA'd with load testing (Locust, 10 users, 3hr)
+- [x] All Four Golden Signals verified: traffic (4.7 req/s), errors (10.6%), latency (P99 4.95s), saturation (2-3 peak connections)
+- [x] Profiling profile type IDs verified empirically: `process_cpu:cpu:nanoseconds:cpu:nanoseconds` (CPU only; memory not available with Python SDK)
+- [x] Backend logs flowing to Loki via OTLP (133 log lines/5min verified)
+- [x] Trace correlation working (traceid/spanid in logs)
+- [x] Tempo traces flowing (multiple endpoints)
+- [x] Pyroscope CPU flame graphs rendering with data
 
 ---
 
 ## Overall Progress
-**Total Completion**: 67% (8/12 PRs completed)
+**Total Completion**: 75% (9/12 PRs completed)
 
 ```
-[█████████████░░░░░░░] 67% Complete
+[███████████████░░░░░] 75% Complete
 ```
 
 ---
@@ -100,7 +86,7 @@ Audit all 7 Grafana dashboards for query correctness and data availability. Fix 
 | 6 | Frontend Grafana Faro SDK | Complete | Medium | Commit 8395b4e, PR #63 |
 | 7 | Golden Signals & Method Dashboards | Complete | Medium | Commit 557d792, PR #64 |
 | 8 | Tracing Deep Dive & Profiling Correlation | Complete | High | Commit 874f5ee, PR #65 |
-| 9 | Dashboard Audit & Security Fixes | In Progress | High | Branch fix/dashboard-audit; critical Grafana ALB security fix |
+| 9 | Dashboard Audit & Security Fixes | Complete | High | PR #77 (3ee52a4); QA fixes on branch fix/dashboard-qa |
 | 10 | Comprehensive Security Review | Not Started | High | Full security audit of observability stack |
 | 11 | Alerting & SLO Monitoring | Not Started | Medium | Depends on PR 9 |
 | 12 | Integration, Verification & CI/CD | Not Started | Medium | Depends on all previous |
@@ -215,9 +201,9 @@ Audit all 7 Grafana dashboards for query correctness and data availability. Fix 
 - [x] **SECURITY**: Remove WAF body size exception (only needed for Grafana via ALB)
 - [x] Update justfile `grafana login` to use SSM port-forward tunnel
 - [x] Deploy and verify all changes
-- [ ] Run load tests and verify each dashboard with user
-- [ ] Verify profiling dashboard profile type IDs empirically
-- [ ] Commit and create PR
+- [x] Run load tests and verify each dashboard with user
+- [x] Verify profiling dashboard profile type IDs empirically
+- [x] Committed as PR #77 (3ee52a4); QA follow-up fixes on branch `fix/dashboard-qa`
 
 ## PR 10: Comprehensive Security Review
 **Branch**: `security/observability-audit`
