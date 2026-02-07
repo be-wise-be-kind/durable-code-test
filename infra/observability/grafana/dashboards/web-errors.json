@@ -12,7 +12,7 @@
   },
   "uid": "web-errors",
   "title": "Errors",
-  "description": "Error rate analysis with status code breakdowns",
+  "description": "Are users getting errors? The trend line shows error rate over time — look for the moment errors started climbing. The status code breakdown on the right tells you what kind of errors: 4xx means bad requests (client-side or missing resources), 5xx means the backend is failing. During an incident, use this dashboard to confirm the error is real and identify the failure mode, then go to RED for per-endpoint detail or Traces to find the failing request.",
   "tags": ["web"],
   "timezone": "browser",
   "schemaVersion": 39,
@@ -50,6 +50,7 @@
     {
       "type": "timeseries",
       "title": "Error Rate %",
+      "description": "Percentage of all HTTP requests returning 400+ status codes over time. A flat line near zero is normal. A step change upward usually means a deployment introduced a bug. A gradual climb may mean a dependency is degrading. Correlate the inflection point with deployments or upstream changes.",
       "gridPos": { "h": 8, "w": 16, "x": 0, "y": 0 },
       "id": 1,
       "datasource": { "type": "prometheus", "uid": "mimir" },
@@ -87,6 +88,7 @@
     {
       "type": "stat",
       "title": "Error Rate",
+      "description": "Current error rate as a single number. Green (<1%) is normal — some 404s and bad requests are expected. Yellow (1-5%) needs investigation. Red (>5%) means a significant fraction of users are getting failures.",
       "gridPos": { "h": 4, "w": 8, "x": 16, "y": 0 },
       "id": 2,
       "datasource": { "type": "prometheus", "uid": "mimir" },
@@ -119,6 +121,7 @@
     {
       "type": "timeseries",
       "title": "Errors by Status Code",
+      "description": "Error requests per second broken down by HTTP status code. This tells you the failure mode. 500 = internal server error (check logs). 502/503 = backend or load balancer issue. 404 = missing resources (usually harmless). 429 = rate limiting. A dominant status code points you to the root cause.",
       "gridPos": { "h": 4, "w": 8, "x": 16, "y": 4 },
       "id": 3,
       "datasource": { "type": "prometheus", "uid": "mimir" },

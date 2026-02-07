@@ -12,7 +12,7 @@
   },
   "uid": "obs-profiling",
   "title": "Profiling",
-  "description": "CPU and memory flame graphs with trace correlation",
+  "description": "Where is the backend spending CPU time and allocating memory? Flame graphs show the full call stack — the wider a bar, the more time or memory that function consumes. Use the Service dropdown to select which service to profile. During a performance incident, start with the CPU flame graph to find the hot code path. For memory leaks, check the Memory Allocation flame graph for functions that allocate disproportionately. Profiles are automatically correlated with traces: from the Traces dashboard, click a slow span to jump directly to its flame graph.",
   "tags": ["observability"],
   "timezone": "browser",
   "schemaVersion": 39,
@@ -76,6 +76,7 @@
     {
       "type": "flamegraph",
       "title": "CPU Flame Graph",
+      "description": "Interactive CPU flame graph showing where the backend spends CPU time. Each bar is a function in the call stack — wider bars consume more CPU. Click any bar to zoom into that subtree. Look for wide bars that are not framework code — those are your optimization targets. During a CPU saturation incident, this panel directly shows the hot code path causing the problem.",
       "gridPos": { "h": 14, "w": 24, "x": 0, "y": 1 },
       "id": 2,
       "datasource": { "type": "grafana-pyroscope-datasource", "uid": "pyroscope" },
@@ -92,6 +93,7 @@
     {
       "type": "timeseries",
       "title": "CPU Profile Over Time",
+      "description": "CPU profile intensity over time. Spikes correspond to periods of high CPU usage. Click on a time range in this panel and the flame graph above will update to show the profile for that period. Use this to find exactly when a CPU spike occurred and what code path caused it.",
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 15 },
       "id": 3,
       "datasource": { "type": "grafana-pyroscope-datasource", "uid": "pyroscope" },
@@ -129,6 +131,7 @@
     {
       "type": "flamegraph",
       "title": "Memory Allocation Flame Graph",
+      "description": "Interactive memory allocation flame graph showing which functions allocate the most objects. Wide bars at the top indicate high-allocation code paths. For memory leak investigations, compare this flame graph across two time periods using the Differential Flame Graph technique described in the guide below. Functions that grow wider over time are likely leaking.",
       "gridPos": { "h": 14, "w": 24, "x": 0, "y": 24 },
       "id": 5,
       "datasource": { "type": "grafana-pyroscope-datasource", "uid": "pyroscope" },
@@ -145,6 +148,7 @@
     {
       "type": "timeseries",
       "title": "Memory Allocation Over Time",
+      "description": "Memory allocation volume over time. A steady baseline is normal. A rising trend may indicate a memory leak. Spikes correspond to bursts of object creation. Click a time range to update the Memory Allocation Flame Graph above to show which functions were allocating during that period.",
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 38 },
       "id": 6,
       "datasource": { "type": "grafana-pyroscope-datasource", "uid": "pyroscope" },
