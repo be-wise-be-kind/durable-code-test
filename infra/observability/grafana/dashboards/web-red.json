@@ -76,9 +76,19 @@
   },
   "panels": [
     {
+      "type": "text",
+      "title": "",
+      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 0 },
+      "id": 12,
+      "options": {
+        "mode": "markdown",
+        "content": "# RED (Rate, Errors, Duration)\nThe RED method applied per-endpoint. Use the Method and Path dropdowns to filter. Rate shows which endpoints are busiest. Errors shows which are failing. Duration shows which are slowest. The exemplar panel at the bottom lets you click a data point to jump directly to the trace that caused it."
+      }
+    },
+    {
       "type": "row",
       "title": "Rate",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 3 },
       "id": 1,
       "collapsed": false
     },
@@ -86,7 +96,7 @@
       "type": "timeseries",
       "title": "Request Rate by Path",
       "description": "Requests per second broken down by URL path. Identifies which endpoints carry the most traffic. A path that suddenly appears or spikes may indicate a new caller or retry loop. Compare with the error and duration panels to find the problematic path.",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 1 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
       "id": 2,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
@@ -116,7 +126,7 @@
       "type": "timeseries",
       "title": "Request Rate by Method",
       "description": "Traffic volume by HTTP method (GET, POST, etc.). Stacked bars show the method mix over time. An unusual method ratio (e.g., spike in POSTs during normally GET-heavy traffic) may indicate automated traffic or an attack.",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 1 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
       "id": 3,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
@@ -145,7 +155,7 @@
     {
       "type": "row",
       "title": "Errors",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 12 },
       "id": 4,
       "collapsed": false
     },
@@ -153,7 +163,7 @@
       "type": "timeseries",
       "title": "Error Rate % by Path",
       "description": "Error percentage per endpoint. Quickly identifies which specific endpoint is failing. A single path at 100% while others are green means a localized bug or missing resource. All paths rising together means a systemic issue (database down, shared dependency failing).",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 10 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 13 },
       "id": 5,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
@@ -191,7 +201,7 @@
       "type": "timeseries",
       "title": "Error Count by Status Code",
       "description": "Errors per second grouped by HTTP status code for the selected endpoints. Tells you the failure mode: 500 = server crash, 502/503 = infrastructure issue, 404 = missing resource, 422 = validation failure, 429 = rate limiting. The dominant status code guides your investigation.",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 10 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 13 },
       "id": 6,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
@@ -220,7 +230,7 @@
     {
       "type": "row",
       "title": "Duration",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 18 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 21 },
       "id": 7,
       "collapsed": false
     },
@@ -228,7 +238,7 @@
       "type": "timeseries",
       "title": "Duration p50/p95/p99 by Path",
       "description": "Latency percentiles per endpoint. Find the slow endpoint: which path has the highest p99? Use the Path filter to isolate it. If one path is slow while others are fast, the problem is in that endpoint's code or downstream call. If all paths are slow, the system is uniformly degraded.",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 19 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 22 },
       "id": 8,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
@@ -268,7 +278,7 @@
       "type": "heatmap",
       "title": "Request Duration Heatmap",
       "description": "Distribution of request durations over time. Each cell's color intensity shows how many requests fell in that latency bucket. A healthy system shows a dense band at the bottom (fast requests). A band appearing higher up means a new population of slow requests. Bimodal bands (two distinct layers) suggest two different code paths with different performance characteristics.",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 19 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 22 },
       "id": 9,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
@@ -291,7 +301,7 @@
       "type": "timeseries",
       "title": "Request Duration with Exemplars",
       "description": "P95 and P99 latency with clickable exemplar dots. Each dot is a real request — click it to open the full distributed trace in Tempo. This is the fastest way to go from 'latency is high' to 'here is the exact trace showing why'. Look for dots that are far above the line — those are the outlier requests to investigate first.",
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 27 },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 30 },
       "id": 10,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
@@ -329,7 +339,7 @@
       "type": "table",
       "title": "Top Endpoints by Request Count",
       "description": "The 10 most-called endpoints in the selected time range, sorted by total request count. Use this to understand traffic distribution — which endpoints get the most load. An endpoint that suddenly appears in the top 10 may indicate a new traffic source or retry loop.",
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 35 },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 38 },
       "id": 11,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [

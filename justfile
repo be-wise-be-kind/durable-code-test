@@ -461,7 +461,8 @@ _infra-help:
     @echo -e "{{GREEN}}Scopes:{{NC}}"
     @echo -e "  {{YELLOW}}base{{NC}}                     Base infrastructure (VPC, networking, security groups)"
     @echo -e "  {{YELLOW}}runtime{{NC}}                  Runtime infrastructure (ECS, ALB, services) [default]"
-    @echo -e "  {{YELLOW}}all{{NC}}                      Both base and runtime (excludes bootstrap)"
+    @echo -e "  {{YELLOW}}grafana{{NC}}                  Grafana dashboards and datasources (independent deploy)"
+    @echo -e "  {{YELLOW}}all{{NC}}                      Base + runtime + grafana (excludes bootstrap)"
     @echo -e "  {{YELLOW}}bootstrap{{NC}}                Bootstrap infrastructure (S3 state bucket)"
     @echo ""
     @echo -e "{{GREEN}}Common Examples:{{NC}}"
@@ -602,6 +603,9 @@ _infra-status:
     @echo ""
     @echo -e "{{CYAN}}=== Runtime Infrastructure ==={{NC}}"
     @just _check-workspace-status runtime
+    @echo ""
+    @echo -e "{{CYAN}}=== Grafana Infrastructure ==={{NC}}"
+    @just _check-workspace-status grafana
 
 # Internal: Initialize for specific scope
 _infra-init-scope SCOPE:
@@ -610,6 +614,7 @@ _infra-init-scope SCOPE:
     if [ "{{SCOPE}}" = "all" ]; then
         just _infra-do-init base
         just _infra-do-init runtime
+        just _infra-do-init grafana
     else
         just _infra-do-init {{SCOPE}}
     fi
@@ -622,6 +627,8 @@ _infra-plan-scope SCOPE:
         just _infra-do-plan base
         echo -e "{{CYAN}}--- Planning runtime ---{{NC}}"
         just _infra-do-plan runtime
+        echo -e "{{CYAN}}--- Planning grafana ---{{NC}}"
+        just _infra-do-plan grafana
     else
         just _infra-do-plan {{SCOPE}}
     fi
@@ -636,6 +643,8 @@ _infra-apply-scope SCOPE AUTO:
         just _infra-do-apply base {{AUTO}}
         echo -e "{{CYAN}}--- Deploying runtime ---{{NC}}"
         just _infra-do-apply runtime {{AUTO}}
+        echo -e "{{CYAN}}--- Deploying grafana ---{{NC}}"
+        just _infra-do-apply grafana {{AUTO}}
     else
         just _infra-do-apply {{SCOPE}} {{AUTO}}
     fi
@@ -653,7 +662,8 @@ _infra-destroy-scope SCOPE:
     fi
 
     if [ "{{SCOPE}}" = "all" ]; then
-        echo -e "{{YELLOW}}Destroying all infrastructure (runtime + base)...{{NC}}"
+        echo -e "{{YELLOW}}Destroying all infrastructure (grafana + runtime + base)...{{NC}}"
+        just _infra-do-destroy grafana
         just _infra-do-destroy runtime
         just _infra-do-destroy base
     else
@@ -666,6 +676,7 @@ _infra-validate-scope SCOPE:
     if [ "{{SCOPE}}" = "all" ]; then
         just _infra-do-validate base
         just _infra-do-validate runtime
+        just _infra-do-validate grafana
     else
         just _infra-do-validate {{SCOPE}}
     fi
@@ -678,6 +689,8 @@ _infra-output-scope SCOPE FORMAT:
         just _infra-do-output base "{{FORMAT}}"
         echo -e "{{CYAN}}--- Runtime outputs ---{{NC}}"
         just _infra-do-output runtime "{{FORMAT}}"
+        echo -e "{{CYAN}}--- Grafana outputs ---{{NC}}"
+        just _infra-do-output grafana "{{FORMAT}}"
     else
         just _infra-do-output {{SCOPE}} "{{FORMAT}}"
     fi
@@ -772,7 +785,8 @@ _infra-destroy-force-scope SCOPE:
     sleep 3
 
     if [ "{{SCOPE}}" = "all" ]; then
-        echo -e "{{YELLOW}}Force destroying all infrastructure (runtime + base)...{{NC}}"
+        echo -e "{{YELLOW}}Force destroying all infrastructure (grafana + runtime + base)...{{NC}}"
+        just _infra-do-destroy-force grafana
         just _infra-do-destroy-force runtime
         just _infra-do-destroy-force base
     else

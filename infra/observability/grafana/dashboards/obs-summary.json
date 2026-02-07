@@ -40,10 +40,20 @@
   ],
   "panels": [
     {
+      "type": "text",
+      "title": "",
+      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 0 },
+      "id": 7,
+      "options": {
+        "mode": "markdown",
+        "content": "# Observability Stack Summary\nIs the observability infrastructure itself healthy? This monitors the EC2 instance running Grafana, Mimir, Loki, Tempo, Pyroscope, and Alloy. If this machine is resource-starved, your monitoring data will have gaps or delays. All green means the stack has headroom. Check the container CPU breakdown to identify which service is consuming the most resources."
+      }
+    },
+    {
       "type": "stat",
       "title": "EC2 CPU %",
       "description": "Current CPU utilization of the observability EC2 instance. Green (<70%) means plenty of headroom. Yellow (70-90%) means the stack is working hard — consider whether recent traffic increases are temporary. Red (>90%) means queries will slow down and metric ingestion may lag.",
-      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 0 },
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 3 },
       "id": 1,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
@@ -76,7 +86,7 @@
       "type": "stat",
       "title": "EC2 Memory %",
       "description": "Current memory utilization of the observability EC2 instance. The observability stack (especially Mimir and Tempo) is memory-intensive. A steady climb over days suggests a memory leak in one of the services. Red (>90%) means OOM kill risk — the Linux kernel may terminate a container, causing data loss.",
-      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 0 },
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 3 },
       "id": 2,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
@@ -109,7 +119,7 @@
       "type": "stat",
       "title": "Load Average (1m)",
       "description": "1-minute load average — the number of processes waiting for CPU time. Compare against the number of CPU cores: a load of 2 on a 2-core machine means fully utilized. Load exceeding core count (yellow/red) means processes are queuing and performance degrades. High load with low CPU% suggests I/O wait (disk bottleneck).",
-      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 0 },
+      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 3 },
       "id": 3,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
@@ -142,7 +152,7 @@
       "type": "stat",
       "title": "Disk Usage %",
       "description": "Root filesystem usage on the observability EC2 instance. Mimir, Loki, and Tempo all store data on disk. A steadily climbing value means data retention is filling the disk. Red (>90%) is critical — a full disk will crash the observability stack. Consider adjusting retention periods or increasing the EBS volume size.",
-      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 0 },
+      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 3 },
       "id": 4,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
@@ -175,7 +185,7 @@
       "type": "timeseries",
       "title": "Container CPU Usage by Service",
       "description": "CPU consumption broken down by Docker container (Mimir, Loki, Tempo, Grafana, Alloy, etc.). Identifies which observability service is consuming the most CPU. If one service dominates, it may need resource limits adjusted or its workload reduced. During an incident where dashboards are slow, this panel shows whether a specific service is overloaded.",
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 5 },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 },
       "id": 5,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
@@ -204,7 +214,7 @@
     {
       "type": "text",
       "title": "Data Availability",
-      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 13 },
+      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 16 },
       "id": 6,
       "options": {
         "mode": "markdown",

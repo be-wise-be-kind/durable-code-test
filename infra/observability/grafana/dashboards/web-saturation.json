@@ -48,10 +48,20 @@
   ],
   "panels": [
     {
+      "type": "text",
+      "title": "",
+      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 0 },
+      "id": 8,
+      "options": {
+        "mode": "markdown",
+        "content": "# Saturation\nIs the backend running out of resources? CPU and memory utilization from ECS show whether Fargate tasks are hitting their limits. Red (>90%) means the task is resource-bound. If concurrency is climbing while CPU/memory are low, the bottleneck is external (database, downstream API)."
+      }
+    },
+    {
       "type": "timeseries",
       "title": "ECS CPU Utilization",
       "description": "CPU usage of backend and frontend ECS Fargate tasks as a percentage of their allocated CPU limit. Green (<70%) means headroom. Yellow (70-90%) means the task is working hard. Red (>90%) means CPU-bound — requests will queue and latency will spike. If this is red, check if scaling out or optimizing hot code paths (see Profiling dashboard) would help.",
-      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 0 },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 3 },
       "id": 1,
       "datasource": { "type": "cloudwatch", "uid": "cloudwatch" },
       "targets": [
@@ -114,7 +124,7 @@
       "type": "timeseries",
       "title": "ECS Memory Utilization",
       "description": "Memory usage of backend and frontend ECS Fargate tasks as a percentage of their allocated memory limit. A steadily rising line indicates a memory leak. A sudden jump to red (>90%) means OOM kill risk — ECS will terminate and replace the task, causing a brief outage. If memory is high, check the Profiling dashboard for memory allocation flame graphs.",
-      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 0 },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 3 },
       "id": 2,
       "datasource": { "type": "cloudwatch", "uid": "cloudwatch" },
       "targets": [
@@ -177,7 +187,7 @@
       "type": "timeseries",
       "title": "Request Concurrency",
       "description": "Number of HTTP requests being processed simultaneously by the backend. Peak and average lines help distinguish burst traffic from sustained load. Rising concurrency with flat CPU/memory means requests are waiting on something external (database, downstream service). Rising concurrency with high CPU means the backend itself is the bottleneck.",
-      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 0 },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 3 },
       "id": 3,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
@@ -220,7 +230,7 @@
       "type": "stat",
       "title": "Backend CPU %",
       "description": "Current backend CPU utilization. Red (>90%) means the backend is CPU-starved — latency and errors will follow.",
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 8 },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 11 },
       "id": 4,
       "datasource": { "type": "cloudwatch", "uid": "cloudwatch" },
       "targets": [
@@ -262,7 +272,7 @@
       "type": "stat",
       "title": "Backend Memory %",
       "description": "Current backend memory utilization. A steady climb over hours/days suggests a memory leak. Red (>90%) means OOM kill is imminent.",
-      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 8 },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 11 },
       "id": 5,
       "datasource": { "type": "cloudwatch", "uid": "cloudwatch" },
       "targets": [
@@ -304,7 +314,7 @@
       "type": "stat",
       "title": "Frontend CPU %",
       "description": "Current frontend (Nginx/static serving) CPU utilization. This should be low — the frontend is just serving static files. If elevated, check for abnormal traffic patterns.",
-      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 8 },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 11 },
       "id": 6,
       "datasource": { "type": "cloudwatch", "uid": "cloudwatch" },
       "targets": [
@@ -346,7 +356,7 @@
       "type": "stat",
       "title": "Frontend Memory %",
       "description": "Current frontend memory utilization. Should remain stable since the frontend serves static assets. A climb here may indicate a container configuration issue.",
-      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 8 },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 11 },
       "id": 7,
       "datasource": { "type": "cloudwatch", "uid": "cloudwatch" },
       "targets": [

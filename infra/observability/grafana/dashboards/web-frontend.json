@@ -48,9 +48,19 @@
   ],
   "panels": [
     {
+      "type": "text",
+      "title": "",
+      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 0 },
+      "id": 13,
+      "options": {
+        "mode": "markdown",
+        "content": "# Frontend\nHow is the user experience in the browser? Core Web Vitals (LCP, INP, CLS) from Google's performance standards show whether the page loads fast, responds to clicks quickly, and stays visually stable. Data comes from real user measurements via the Grafana Faro SDK. Green means good, yellow needs improvement, red means poor user experience."
+      }
+    },
+    {
       "type": "row",
       "title": "Core Web Vitals",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 3 },
       "id": 1,
       "collapsed": false
     },
@@ -58,7 +68,7 @@
       "type": "stat",
       "title": "LCP (Largest Contentful Paint)",
       "description": "How long until the main content is visible? LCP measures the time for the largest image or text block to render. Good: <2.5s | Needs Improvement: 2.5-4s | Poor: >4s. A red LCP means users are staring at a blank or partially loaded page. Common causes: slow API responses blocking render, large unoptimized images, or render-blocking JavaScript.",
-      "gridPos": { "h": 5, "w": 8, "x": 0, "y": 1 },
+      "gridPos": { "h": 5, "w": 8, "x": 0, "y": 4 },
       "id": 2,
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
@@ -91,7 +101,7 @@
       "type": "stat",
       "title": "INP (Interaction to Next Paint)",
       "description": "How responsive is the UI to clicks and keypresses? INP measures the delay between a user interaction and the next visual update. Good: <200ms | Needs Improvement: 200-500ms | Poor: >500ms. A red INP means the UI feels laggy or frozen. Common causes: heavy JavaScript on the main thread, large DOM re-renders, or synchronous API calls blocking the UI.",
-      "gridPos": { "h": 5, "w": 8, "x": 8, "y": 1 },
+      "gridPos": { "h": 5, "w": 8, "x": 8, "y": 4 },
       "id": 3,
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
@@ -124,7 +134,7 @@
       "type": "stat",
       "title": "CLS (Cumulative Layout Shift)",
       "description": "Is the page visually stable or do elements jump around? CLS measures unexpected layout shifts — when buttons, text, or images move after the page appears loaded. Good: <0.1 | Needs Improvement: 0.1-0.25 | Poor: >0.25. A red CLS means users may click the wrong button because the layout shifted. Common causes: images without dimensions, dynamically injected content, or web fonts causing text reflow.",
-      "gridPos": { "h": 5, "w": 8, "x": 16, "y": 1 },
+      "gridPos": { "h": 5, "w": 8, "x": 16, "y": 4 },
       "id": 4,
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
@@ -158,7 +168,7 @@
       "type": "timeseries",
       "title": "LCP Over Time",
       "description": "LCP trend over the selected time range. A sudden upward shift correlates with a deployment or backend degradation. A gradual climb may indicate growing page weight or slower API responses. Compare with backend Latency dashboard — if backend latency rose at the same time, the backend is the root cause.",
-      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 6 },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 9 },
       "id": 5,
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
@@ -196,7 +206,7 @@
       "type": "timeseries",
       "title": "INP Over Time",
       "description": "INP trend over time. Spikes correlate with heavy JavaScript execution or large React re-renders. If INP is bad but backend latency is fine, the problem is in frontend code. If INP spikes align with slow API calls, the UI is blocking while waiting for responses.",
-      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 6 },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 9 },
       "id": 6,
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
@@ -234,7 +244,7 @@
       "type": "timeseries",
       "title": "CLS Over Time",
       "description": "CLS trend over time. A step change after a deployment means new code introduced layout instability. CLS should be near-zero and stable. Unlike LCP and INP, CLS is not affected by backend performance — it is purely a frontend rendering issue.",
-      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 6 },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 9 },
       "id": 7,
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
@@ -272,7 +282,7 @@
     {
       "type": "row",
       "title": "JavaScript Errors & Sessions",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 17 },
       "id": 8,
       "collapsed": false
     },
@@ -280,7 +290,7 @@
       "type": "timeseries",
       "title": "JS Error Rate",
       "description": "JavaScript errors per 5-minute window from real user browsers. A spike after a deployment means the new code has a bug reaching production users. Persistent low-level errors may be browser compatibility issues. Check the Recent Frontend Errors log panel below for the actual error messages and stack traces.",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 15 },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 18 },
       "id": 9,
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
@@ -317,7 +327,7 @@
       "type": "stat",
       "title": "Active Sessions",
       "description": "Count of Faro measurement events in the last 5 minutes — a proxy for active user sessions. Use this to contextualize other metrics: a high JS error rate with low sessions means a few users are hitting a bug repeatedly. A drop to zero means Faro telemetry stopped arriving (check Alloy Faro receiver or frontend deployment).",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 15 },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 18 },
       "id": 10,
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
@@ -349,7 +359,7 @@
       "type": "logs",
       "title": "Recent Frontend Errors",
       "description": "Raw JavaScript error logs from user browsers via the Faro SDK. Each entry includes the error message, stack trace, and browser context. During an incident, scan these for patterns — the same error repeating across sessions points to a systematic bug. Expand any log line for full details including the URL and user agent.",
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 23 },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 26 },
       "id": 11,
       "datasource": { "type": "loki", "uid": "loki" },
       "targets": [
@@ -371,7 +381,7 @@
     {
       "type": "text",
       "title": "Web Vitals Thresholds Reference",
-      "gridPos": { "h": 5, "w": 24, "x": 0, "y": 31 },
+      "gridPos": { "h": 5, "w": 24, "x": 0, "y": 34 },
       "id": 12,
       "options": {
         "mode": "markdown",
