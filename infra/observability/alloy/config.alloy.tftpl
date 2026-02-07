@@ -6,10 +6,12 @@
 //     appropriate storage backends: metrics to Mimir via Prometheus remote write, logs to Loki,
 //     and traces to Tempo via OTLP. Frontend Faro telemetry routes logs to Loki and traces to Tempo.
 //     All backend service addresses use Docker Compose service names for DNS resolution.
+//     This file is a Terraform template (.tftpl) to allow CORS origin restriction based on the
+//     deployment domain name.
 // Dependencies: Mimir (9009), Loki (3100), Tempo (4317), running in the same Docker Compose stack
 // Exports: OTLP gRPC (4317), OTLP HTTP (4318), Faro HTTP (12347), Alloy UI (12345)
-// Environment: Static configuration; backend URLs use Docker service names
-// Related: docker-compose.yml for service definitions, component configs for storage backends
+// Environment: Terraform-templated; domain_name variable controls CORS origins
+// Related: docker-compose.yml for service definitions, observability-ec2.tf for templatefile call
 // Implementation: Pipeline architecture with receiver -> processor -> exporter pattern
 
 // =============================================================================
@@ -53,6 +55,8 @@ otelcol.processor.batch "default" {
 otelcol.exporter.otlphttp "mimir" {
   client {
     endpoint = "http://mimir:9009/otlp"
+    // SECURITY: insecure=true is safe here — all traffic stays on the Docker bridge
+    // network within a single EC2 instance. No data leaves the host unencrypted.
     tls {
       insecure = true
     }
@@ -90,6 +94,8 @@ loki.write "default" {
 otelcol.exporter.otlp "tempo" {
   client {
     endpoint = "tempo:4317"
+    // SECURITY: insecure=true is safe here — all traffic stays on the Docker bridge
+    // network within a single EC2 instance. No data leaves the host unencrypted.
     tls {
       insecure = true
     }
@@ -128,9 +134,21 @@ faro.receiver "default" {
   server {
     listen_address           = "0.0.0.0"
     listen_port              = 12347
+    // SECURITY: CORS restricts which origins can submit telemetry to /collect/*.
+    // When domain_name is set, only the application domain is allowed. The wildcard
+    // fallback exists only for local development without a domain.
+%{ if domain_name != "" ~}
+    cors_allowed_origins     = ["https://${domain_name}", "http://${domain_name}"]
+%{ else ~}
     cors_allowed_origins     = ["*"]
+%{ endif ~}
+    // SECURITY: api_key is intentionally empty. Faro API keys are embedded in
+    // browser JavaScript (visible to anyone via View Source) and provide zero
+    // security. CORS origin restriction + WAF rate limiting are the real defenses.
     api_key                  = ""
-    max_allowed_payload_size = "10MiB"
+    // Payload limit reduced from 10MiB — normal Faro payloads are <100KB.
+    // 4MiB prevents storage exhaustion from oversized payloads.
+    max_allowed_payload_size = "4MiB"
   }
 
   output {

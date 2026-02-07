@@ -1,11 +1,13 @@
 # Purpose: Security group for the Grafana observability EC2 instance
 # Scope: Network access control for observability stack ports from ALB and ECS services
 # Overview: Creates a security group in the main VPC that controls inbound access to the
-#     observability EC2 instance. Allows ingress from the ALB security group on ports 3001
-#     (Grafana UI) and 12347 (Alloy Faro receiver), and from the ECS tasks security group on
-#     ports 4317 (OTLP gRPC), 4318 (OTLP HTTP), and 4040 (Pyroscope push). Permits all egress
-#     for S3 access and package downloads. All resources are conditional on the enable_observability
-#     feature flag, ensuring zero cost when disabled.
+#     observability EC2 instance. Allows ingress from the ALB security group on port 12347
+#     (Alloy Faro receiver — the only observability endpoint on the public ALB), and from the
+#     ECS tasks security group on ports 4317 (OTLP gRPC), 4318 (OTLP HTTP), and 4040
+#     (Pyroscope push). Grafana (port 3001) has no ALB ingress rule — it is accessible only
+#     via SSM port forwarding. Permits all egress for S3 access and package downloads. All
+#     resources are conditional on the enable_observability feature flag, ensuring zero cost
+#     when disabled.
 # Dependencies: networking.tf (VPC, ALB SG, ECS tasks SG), variables.tf (enable_observability)
 # Exports: Security group ID consumed by runtime workspace EC2 instance
 # Configuration: Security group named with project-environment prefix for consistency
@@ -21,16 +23,7 @@ resource "aws_security_group" "observability" {
   description = "Security group for Grafana observability EC2 instance"
   vpc_id      = aws_vpc.main.id
 
-  # Grafana UI - from ALB
-  ingress {
-    description     = "Grafana UI from ALB"
-    from_port       = 3001
-    to_port         = 3001
-    protocol        = "tcp"
-    security_groups = [aws_security_group.alb.id]
-  }
-
-  # Alloy Faro receiver - from ALB
+  # Alloy Faro receiver - from ALB (only observability endpoint on public ALB)
   ingress {
     description     = "Alloy Faro receiver from ALB"
     from_port       = 12347
