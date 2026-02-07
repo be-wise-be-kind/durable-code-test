@@ -1,20 +1,22 @@
-# Purpose: Docker Compose orchestration for Locust load testing service
-# Scope: Single-service configuration for running Locust against deployed web instances
-# Overview: Defines the locust-master service that runs the Locust load testing framework
-#     with a web UI on port 8089. Targets external URLs (deployed web instances) configured
-#     via the LOCUST_HOST environment variable, which defaults to the LOAD_TEST_HOST value
-#     from the project .env file or can be overridden at runtime. Volume-mounts locustfiles,
-#     lib shared utility package, and profiles directory for live editing during test
-#     development. Supports mixed HTTP+WebSocket scenarios with configurable weight ratios
-#     via HTTP_WEIGHT and WS_WEIGHT environment variables. Workers are deferred to a later PR.
-# Dependencies: Docker Compose, Dockerfile in same directory, LOAD_TEST_HOST env var
-# Exports: Locust master service with web UI
-# Interfaces: Port 8089 (Locust web UI), LOCUST_HOST env var for target URL
+# Purpose: Docker Compose orchestration for Locust load testing services
+# Scope: Multi-service configuration for HTTP/WebSocket and browser-based load testing
+# Overview: Defines the locust-master service for HTTP/WebSocket load testing with a web UI on
+#     port 8089, and the locust-browser service for Playwright-based browser load testing on
+#     port 8090. The locust-master targets external URLs configured via LOCUST_HOST. The
+#     locust-browser service uses the browser Docker Compose profile so it only starts when
+#     explicitly requested (--profile browser), keeping default builds lightweight. Both services
+#     volume-mount locustfiles, lib, and profiles for live editing during test development.
+#     Supports mixed HTTP+WebSocket scenarios with configurable weight ratios via HTTP_WEIGHT
+#     and WS_WEIGHT environment variables.
+# Dependencies: Docker Compose, Dockerfile and Dockerfile.browser, LOAD_TEST_HOST env var
+# Exports: Locust master service (HTTP/WS) and locust-browser service (Playwright)
+# Interfaces: Port 8089 (HTTP/WS Locust UI), Port 8090 (Browser Locust UI), LOCUST_HOST and
+#     LOAD_TEST_FRONTEND_HOST env vars for target URLs
 # Environment: Local Docker runtime, targeting deployed web instances
-# Related: Dockerfile for image build, locustfiles/ for test scenarios, lib/ for shared utilities,
-#     profiles/ for YAML load profiles
-# Implementation: Single master service with volume mounts for locustfiles, lib, and profiles;
-#     env-based host config and weight ratio configuration
+# Related: Dockerfile for HTTP/WS image, Dockerfile.browser for Playwright image, locustfiles/
+#     for test scenarios, lib/ for shared utilities, profiles/ for YAML load profiles
+# Implementation: Two services with profile-based separation; browser service uses Docker Compose
+#     profiles to avoid building ~400MB Playwright image by default
 
 services:
   locust-master:
@@ -39,4 +41,25 @@ services:
       - ./locustfiles:/load-testing/locustfiles
       - ./lib:/load-testing/lib
       - ./profiles:/load-testing/profiles
+    command: []
+
+  locust-browser:
+    build:
+      context: .
+      dockerfile: Dockerfile.browser
+    container_name: durable-code-locust-browser
+    profiles:
+      - browser
+    ports:
+      - "8090:8089"
+    environment:
+      - LOCUST_HOST=${LOAD_TEST_HOST:-http://localhost:8000}
+      - LOCUST_LOCUSTFILE=locustfiles/browser_users.py
+      - PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+      - LOAD_TEST_FRONTEND_HOST=${LOAD_TEST_FRONTEND_HOST:-http://host.docker.internal:5173}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./locustfiles:/load-testing/locustfiles
+      - ./lib:/load-testing/lib
     command: []

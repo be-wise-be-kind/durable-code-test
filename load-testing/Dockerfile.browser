@@ -1,0 +1,38 @@
+# Purpose: Container image for Playwright-based browser load testing with Locust
+# Scope: Build configuration for browser load testing service using locust-plugins PlaywrightUser
+# Overview: Builds a Locust container with browser automation capabilities using Microsoft's
+#     official Playwright Python base image (ships Chromium pre-installed at /ms-playwright).
+#     Installs project dependencies including the optional browser extras (locust-plugins with
+#     Playwright integration). Copies locustfiles and the lib shared utility package into the
+#     container, and runs as a non-root user for security. Exposes port 8089 for the Locust
+#     web UI. Separated from the base Dockerfile to avoid adding ~400MB of browser binaries
+#     to the lightweight HTTP/WebSocket load testing image.
+# Dependencies: Microsoft Playwright Python base image, pyproject.toml for pip dependencies
+# Exports: Locust container image with browser-based load test scenarios
+# Interfaces: Port 8089 (Locust web UI), LOCUST_HOST and LOAD_TEST_FRONTEND_HOST env vars
+# Environment: Docker container runtime, targets deployed frontend and backend instances
+# Related: docker-compose.yml for orchestration (browser profile), locustfiles/browser_users.py,
+#     Dockerfile for HTTP/WS-only image
+# Implementation: Single-stage build on MS Playwright base, pip install with browser extras,
+#     non-root user execution
+
+FROM mcr.microsoft.com/playwright/python:v1.58.0-noble
+
+WORKDIR /load-testing
+
+COPY pyproject.toml .
+RUN pip install --no-cache-dir ".[browser]"
+
+COPY locustfiles/ locustfiles/
+COPY lib/ lib/
+
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+
+RUN useradd --create-home locust || true
+RUN chmod -R o+rx /ms-playwright
+RUN chown -R locust:locust /load-testing
+USER locust
+
+EXPOSE 8089
+
+ENTRYPOINT ["locust"]

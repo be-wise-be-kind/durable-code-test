@@ -30,6 +30,7 @@ ENV := env_var_or_default("ENV", "dev")
 
 # Load testing configuration
 LOAD_TEST_HOST := env_var_or_default("LOAD_TEST_HOST", "http://localhost:8000")
+LOAD_TEST_FRONTEND_HOST := env_var_or_default("LOAD_TEST_FRONTEND_HOST", "http://host.docker.internal:5173")
 
 # Colors for output
 CYAN := '\033[0;36m'
@@ -906,6 +907,12 @@ _load-test-dispatch SUBCOMMAND *ARGS:
         status)
             just _load-test-status
             ;;
+        browser-ui)
+            just _load-test-browser-ui
+            ;;
+        browser-stop)
+            just _load-test-browser-stop
+            ;;
         --list|list|help)
             just _load-test-help
             ;;
@@ -1029,6 +1036,8 @@ _load-test-help:
     @echo -e "  {{YELLOW}}run [ARGS]{{NC}}               Run headless load test with Locust arguments"
     @echo -e "  {{YELLOW}}stop{{NC}}                     Stop all Locust containers"
     @echo -e "  {{YELLOW}}status{{NC}}                   Show Locust container status"
+    @echo -e "  {{YELLOW}}browser-ui{{NC}}               Start Playwright browser load test UI on port 8090"
+    @echo -e "  {{YELLOW}}browser-stop{{NC}}             Stop browser load test containers"
     @echo -e "  {{YELLOW}}help{{NC}}                     Show this help message"
     @echo ""
     @echo -e "{{GREEN}}Profiles:{{NC}}"
@@ -1052,6 +1061,30 @@ _load-test-help:
     @echo -e "  {{CYAN}}just load-test stop{{NC}}                                       # Stop containers"
     @echo -e "  {{CYAN}}just load-test status{{NC}}                                     # Check status"
     @echo ""
+    @echo -e "{{GREEN}}Browser Load Testing:{{NC}}"
+    @echo -e "  {{CYAN}}just load-test browser-ui{{NC}}                                 # Start browser load test UI (port 8090)"
+    @echo -e "  {{CYAN}}just load-test browser-stop{{NC}}                               # Stop browser load test"
+    @echo -e "  Set {{YELLOW}}LOAD_TEST_FRONTEND_HOST{{NC}} in .env or pass via environment:"
+    @echo -e "  {{CYAN}}LOAD_TEST_FRONTEND_HOST=http://my-frontend:5173 just load-test browser-ui{{NC}}"
+    @echo ""
+
+# Internal: Start Locust browser load testing UI (detached)
+_load-test-browser-ui:
+    #!/usr/bin/env bash
+    echo -e "{{CYAN}}Starting Locust browser load testing UI...{{NC}}"
+    echo -e "{{YELLOW}}Backend target: {{LOAD_TEST_HOST}}{{NC}}"
+    echo -e "{{YELLOW}}Frontend target: {{LOAD_TEST_FRONTEND_HOST}}{{NC}}"
+    LOAD_TEST_HOST="{{LOAD_TEST_HOST}}" LOAD_TEST_FRONTEND_HOST="{{LOAD_TEST_FRONTEND_HOST}}" \
+        {{COMPOSE_CMD}} -f load-testing/docker-compose.yml --profile browser up -d --build locust-browser
+    echo -e "{{GREEN}}✓ Locust browser UI started!{{NC}}"
+    echo -e "{{YELLOW}}Web UI: http://localhost:8090{{NC}}"
+    echo -e "{{YELLOW}}Frontend target: {{LOAD_TEST_FRONTEND_HOST}}{{NC}}"
+
+# Internal: Stop Locust browser containers
+_load-test-browser-stop:
+    @echo -e "{{CYAN}}Stopping Locust browser load testing...{{NC}}"
+    @LOAD_TEST_HOST="{{LOAD_TEST_HOST}}" LOAD_TEST_FRONTEND_HOST="{{LOAD_TEST_FRONTEND_HOST}}" {{COMPOSE_CMD}} -f load-testing/docker-compose.yml --profile browser down
+    @echo -e "{{GREEN}}✓ Locust browser containers stopped{{NC}}"
 
 ################################################################################
 # GitHub Integration Targets
