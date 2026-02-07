@@ -1,0 +1,213 @@
+{
+  "_header": {
+    "purpose": "Observability stack summary dashboard displaying essential signals for infrastructure health assessment",
+    "scope": "High-level EC2 and container resource metrics with links to detail dashboards in the Observability folder",
+    "overview": "Provides a top-level summary of observability infrastructure health using stat panels for EC2 CPU, Memory, Load Average, and Disk Usage, plus a time series showing container CPU usage by service name. Includes a Data Availability status panel. Serves as the entry point for the Observability folder, linking to Saturation, USE, and Profiling dashboards for drill-down investigation.",
+    "dependencies": "Mimir datasource (uid: mimir), node_exporter metrics (node_cpu_seconds_total, node_memory_MemAvailable_bytes, node_memory_MemTotal_bytes, node_load1, node_filesystem_avail_bytes, node_filesystem_size_bytes), cAdvisor metrics (container_cpu_usage_seconds_total)",
+    "exports": "Provisioned Grafana dashboard accessible at /grafana/d/obs-summary",
+    "interfaces": "PromQL queries against node_exporter and cAdvisor metric names stored in Mimir",
+    "environment": "Identical across dev/staging/prod",
+    "related": "home.json for top-level navigation, obs-saturation.json, obs-use.json, obs-profiling.json",
+    "implementation": "Grafana dashboard JSON schema version 39 with stat and time series panels for infrastructure metrics"
+  },
+  "uid": "obs-summary",
+  "title": "Summary",
+  "description": "Essential signals for the observability stack",
+  "tags": ["observability"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": false,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [
+    {
+      "title": "Home",
+      "url": "/grafana/d/home",
+      "type": "link",
+      "icon": "home",
+      "keepTime": true,
+      "includeVars": false
+    },
+    {
+      "title": "Observability Dashboards",
+      "type": "dashboards",
+      "tags": ["observability"],
+      "asDropdown": true,
+      "keepTime": true,
+      "includeVars": true
+    }
+  ],
+  "panels": [
+    {
+      "type": "stat",
+      "title": "EC2 CPU %",
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 0 },
+      "id": 1,
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [
+        {
+          "expr": "1 - avg(rate(node_cpu_seconds_total{mode=\"idle\"}[$__rate_interval]))",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.7 },
+              { "color": "red", "value": 0.9 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "area"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "EC2 Memory %",
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 0 },
+      "id": 2,
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [
+        {
+          "expr": "1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.7 },
+              { "color": "red", "value": 0.9 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "area"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Load Average (1m)",
+      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 0 },
+      "id": 3,
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [
+        {
+          "expr": "node_load1",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 2 },
+              { "color": "red", "value": 4 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "area"
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Disk Usage %",
+      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 0 },
+      "id": 4,
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [
+        {
+          "expr": "(1 - (node_filesystem_avail_bytes{mountpoint=\"/\"} / node_filesystem_size_bytes{mountpoint=\"/\"})) * 100",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 70 },
+              { "color": "red", "value": 90 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"] },
+        "colorMode": "background",
+        "graphMode": "area"
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Container CPU Usage by Service",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 5 },
+      "id": 5,
+      "datasource": { "type": "prometheus", "uid": "mimir" },
+      "targets": [
+        {
+          "expr": "sum(rate(container_cpu_usage_seconds_total{name!=\"\"}[$__rate_interval])) by (name) * 100",
+          "legendFormat": "{{name}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "fillOpacity": 10
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "desc" },
+        "legend": { "displayMode": "table", "placement": "right", "calcs": ["mean", "max"] }
+      }
+    },
+    {
+      "type": "text",
+      "title": "Data Availability",
+      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 13 },
+      "id": 6,
+      "options": {
+        "mode": "markdown",
+        "content": "### Infrastructure Metrics Status\nThis dashboard uses **node_exporter** (`node_*`) and **cAdvisor** (`container_*`) metrics scraped by Alloy. Metrics refresh every 30 seconds."
+      }
+    }
+  ],
+  "time": { "from": "now-1h", "to": "now" },
+  "refresh": "30s",
+  "templating": { "list": [] }
+}

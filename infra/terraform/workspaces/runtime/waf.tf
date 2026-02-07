@@ -14,6 +14,24 @@
 # Related: ALB in alb.tf, CloudWatch metrics for WAF rule hits
 # Implementation: Regional WAF for ALB protection, metrics enabled for all rules
 
+# IP Set for load testing - bypass rate limiting
+resource "aws_wafv2_ip_set" "load_test_allowlist" {
+  name               = "${var.project_name}-${local.environment}-load-test-ips"
+  scope              = "REGIONAL"
+  ip_address_version = "IPV4"
+  addresses          = var.load_test_allowlist_ips
+
+  tags = merge(
+    local.common_tags,
+    var.additional_tags,
+    {
+      Name      = "${var.project_name}-${local.environment}-load-test-ips"
+      Component = "waf"
+      Purpose   = "Load testing IP allowlist to bypass rate limiting"
+    }
+  )
+}
+
 # AWS WAF Web ACL
 resource "aws_wafv2_web_acl" "main" {
   name  = "${var.project_name}-${local.environment}-waf"
@@ -21,6 +39,28 @@ resource "aws_wafv2_web_acl" "main" {
 
   default_action {
     allow {}
+  }
+
+  # Allow load testing IPs to bypass rate limiting
+  rule {
+    name     = "load-test-allowlist"
+    priority = 0
+
+    action {
+      allow {}
+    }
+
+    statement {
+      ip_set_reference_statement {
+        arn = aws_wafv2_ip_set.load_test_allowlist.arn
+      }
+    }
+
+    visibility_config {
+      cloudwatch_metrics_enabled = true
+      metric_name                = "${var.project_name}-${local.environment}-load-test-allow"
+      sampled_requests_enabled   = true
+    }
   }
 
   # Rate limiting rule - Block IPs exceeding request threshold

@@ -262,3 +262,9 @@ variable "observability_instance_type" {
     prod    = "t3.medium"
   }
 }
+
+variable "load_test_allowlist_ips" {
+  description = "CIDR blocks allowed to bypass WAF rate limiting for load testing"
+  type        = list(string)
+  default     = []
+}

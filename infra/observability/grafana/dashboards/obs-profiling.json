@@ -4,16 +4,16 @@
     "scope": "Continuous profiling analysis using Pyroscope datasource for CPU and memory profile types",
     "overview": "Provides flame graph visualization for CPU and memory profiles collected by Pyroscope. Includes CPU flame graph panel, memory allocation flame graph panel, CPU profile over time, and instructions for differential flame graph analysis. Profiles can be correlated with traces when trace_id tags are present (configured via profile_with_trace_context in profiling.py). The Tempo datasource tracesToProfiles configuration enables direct navigation from trace spans to associated flame graphs.",
     "dependencies": "Pyroscope datasource (uid: pyroscope), Tempo datasource (uid: tempo) for trace-to-profile links, profiling.py tag_wrapper for trace correlation",
-    "exports": "Provisioned Grafana dashboard accessible at /grafana/d/profiling",
+    "exports": "Provisioned Grafana dashboard accessible at /grafana/d/obs-profiling",
     "interfaces": "Pyroscope queries for process_cpu and memory profile types",
     "environment": "Identical across dev/staging/prod",
-    "related": "home.json for navigation, trace-analysis.json for trace-to-profile correlation, profiling.py for Pyroscope SDK configuration",
+    "related": "obs-summary.json for overview, web-traces.json for trace-to-profile correlation, profiling.py for Pyroscope SDK configuration",
     "implementation": "Grafana dashboard JSON schema version 39 with flamegraph panels using Pyroscope datasource"
   },
-  "uid": "profiling",
+  "uid": "obs-profiling",
   "title": "Profiling",
   "description": "CPU and memory flame graphs with trace correlation",
-  "tags": ["profiling", "pyroscope", "flame-graph", "cpu", "memory"],
+  "tags": ["observability"],
   "timezone": "browser",
   "schemaVersion": 39,
   "version": 1,
@@ -25,13 +25,25 @@
       "title": "Home",
       "url": "/grafana/d/home",
       "type": "link",
-      "icon": "external link"
+      "icon": "home",
+      "keepTime": true,
+      "includeVars": false
     },
     {
-      "title": "Trace Analysis",
-      "url": "/grafana/d/trace-analysis",
+      "title": "Summary",
+      "url": "/grafana/d/obs-summary",
       "type": "link",
-      "icon": "external link"
+      "icon": "dashboard",
+      "keepTime": true,
+      "includeVars": true
+    },
+    {
+      "title": "Observability Dashboards",
+      "type": "dashboards",
+      "tags": ["observability"],
+      "asDropdown": true,
+      "keepTime": true,
+      "includeVars": true
     }
   ],
   "templating": {
@@ -174,7 +186,7 @@
       "id": 8,
       "options": {
         "mode": "markdown",
-        "content": "### Trace-to-Profile Correlation\n\nProfiles are tagged with `trace_id` and `span_id` when the `profile_with_trace_context()` context manager is used in backend code. This enables:\n\n1. **Trace -> Profile**: From the [Trace Analysis](/grafana/d/trace-analysis) dashboard, click a span to see its associated flame graph\n2. **Profile Filtering**: Use Pyroscope label selector `{trace_id=\"<hex_id>\"}` to find profiles for a specific trace\n\n### Differential Flame Graphs\n\nTo compare profiles between two time periods:\n1. Open **Explore** > Select **Pyroscope** datasource\n2. Select profile type (CPU or Memory)\n3. Use the **Diff** query type\n4. Set baseline and comparison time ranges\n5. Red areas = increased CPU/memory usage, Blue areas = decreased usage"
+        "content": "### Trace-to-Profile Correlation\n\nProfiles are tagged with `trace_id` and `span_id` when the `profile_with_trace_context()` context manager is used in backend code. This enables:\n\n1. **Trace -> Profile**: From the [Traces](/grafana/d/web-traces) dashboard, click a span to see its associated flame graph\n2. **Profile Filtering**: Use Pyroscope label selector `{trace_id=\"<hex_id>\"}` to find profiles for a specific trace\n\n### Differential Flame Graphs\n\nTo compare profiles between two time periods:\n1. Open **Explore** > Select **Pyroscope** datasource\n2. Select profile type (CPU or Memory)\n3. Use the **Diff** query type\n4. Set baseline and comparison time ranges\n5. Red areas = increased CPU/memory usage, Blue areas = decreased usage"
       }
     }
   ],

@@ -4,16 +4,16 @@
     "scope": "EC2 and container infrastructure metrics using standard node_exporter and cAdvisor metric names",
     "overview": "Implements the USE (Utilization, Saturation, Errors) method for infrastructure monitoring. Uses node_exporter (node_*) and cAdvisor (container_*) metrics scraped by Alloy every 30 seconds and stored in Mimir. Both exporters run in the Docker Compose stack alongside the observability services.",
     "dependencies": "Mimir datasource (uid: mimir), node_exporter metrics (node_*), cAdvisor metrics (container_*)",
-    "exports": "Provisioned Grafana dashboard accessible at /grafana/d/infrastructure-use-method",
+    "exports": "Provisioned Grafana dashboard accessible at /grafana/d/obs-use",
     "interfaces": "PromQL queries against standard node_exporter and cAdvisor metric names",
     "environment": "Identical across dev/staging/prod; metrics populate when exporters are deployed",
-    "related": "home.json for navigation, golden-signals-overview.json for application-level signals",
+    "related": "obs-summary.json for overview, obs-saturation.json for quick saturation view",
     "implementation": "Grafana dashboard JSON schema version 39 with pre-built queries for standard infrastructure metrics"
   },
-  "uid": "infrastructure-use-method",
-  "title": "Infrastructure USE Method",
+  "uid": "obs-use",
+  "title": "USE",
   "description": "Utilization, Saturation, Errors for compute infrastructure",
-  "tags": ["infrastructure", "use-method", "compute"],
+  "tags": ["observability"],
   "timezone": "browser",
   "schemaVersion": 39,
   "version": 1,
@@ -25,13 +25,25 @@
       "title": "Home",
       "url": "/grafana/d/home",
       "type": "link",
-      "icon": "external link"
+      "icon": "home",
+      "keepTime": true,
+      "includeVars": false
     },
     {
-      "title": "Golden Signals",
-      "url": "/grafana/d/golden-signals-overview",
+      "title": "Summary",
+      "url": "/grafana/d/obs-summary",
       "type": "link",
-      "icon": "external link"
+      "icon": "dashboard",
+      "keepTime": true,
+      "includeVars": true
+    },
+    {
+      "title": "Observability Dashboards",
+      "type": "dashboards",
+      "tags": ["observability"],
+      "asDropdown": true,
+      "keepTime": true,
+      "includeVars": true
     }
   ],
   "panels": [

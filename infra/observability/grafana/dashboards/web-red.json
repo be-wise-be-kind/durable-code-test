@@ -1,19 +1,19 @@
 {
   "_header": {
-    "purpose": "Backend RED method dashboard with per-endpoint Rate, Errors, and Duration breakdowns",
+    "purpose": "Per-endpoint RED method dashboard with Rate, Errors, and Duration breakdowns using template variables",
     "scope": "Per-endpoint HTTP metrics analysis with template variables for method and path filtering",
-    "overview": "Implements the RED (Rate, Errors, Duration) method for backend API endpoint analysis. Provides per-endpoint breakdowns using Grafana template variables for HTTP method and path filtering. Includes request rate by path, error rate by path, duration histogram heatmap, and exemplar links to Tempo traces. Enables drill-down from aggregate Golden Signals to specific endpoint performance.",
-    "dependencies": "Mimir datasource (uid: mimir), Tempo datasource (uid: tempo) for exemplar links, backend metrics.py instruments",
-    "exports": "Provisioned Grafana dashboard accessible at /grafana/d/backend-red-method",
+    "overview": "Implements the RED (Rate, Errors, Duration) method for backend API endpoint analysis. Provides per-endpoint breakdowns using Grafana template variables for HTTP method and path filtering. Includes request rate by path, error rate by path, duration histogram heatmap, and exemplar links to Tempo traces. Enables drill-down from aggregate Web Summary to specific endpoint performance.",
+    "dependencies": "Mimir datasource (uid: mimir), Tempo datasource (uid: tempo) for exemplar links, backend metrics instruments",
+    "exports": "Provisioned Grafana dashboard accessible at /grafana/d/web-red",
     "interfaces": "PromQL queries with template variables $method and $path for endpoint filtering",
     "environment": "Identical across dev/staging/prod",
-    "related": "golden-signals-overview.json for aggregate view, trace-analysis.json for trace drill-down, metrics.py for metric definitions",
+    "related": "web-summary.json for aggregate view, web-traces.json for trace drill-down, backend metrics.py for metric definitions",
     "implementation": "Grafana dashboard JSON schema version 39 with template variables and exemplar-enabled queries"
   },
-  "uid": "backend-red-method",
-  "title": "Backend RED Method",
+  "uid": "web-red",
+  "title": "RED",
   "description": "Rate, Errors, Duration per endpoint with exemplar links",
-  "tags": ["red-method", "backend", "per-endpoint"],
+  "tags": ["web"],
   "timezone": "browser",
   "schemaVersion": 39,
   "version": 1,
@@ -25,13 +25,25 @@
       "title": "Home",
       "url": "/grafana/d/home",
       "type": "link",
-      "icon": "external link"
+      "icon": "home",
+      "keepTime": true,
+      "includeVars": false
     },
     {
-      "title": "Golden Signals",
-      "url": "/grafana/d/golden-signals-overview",
+      "title": "Summary",
+      "url": "/grafana/d/web-summary",
       "type": "link",
-      "icon": "external link"
+      "icon": "dashboard",
+      "keepTime": true,
+      "includeVars": true
+    },
+    {
+      "title": "Web Dashboards",
+      "type": "dashboards",
+      "tags": ["web"],
+      "asDropdown": true,
+      "keepTime": true,
+      "includeVars": true
     }
   ],
   "templating": {
@@ -264,7 +276,7 @@
       "options": {
         "calculate": false,
         "yAxis": { "unit": "s" },
-        "color": { "scheme": "Oranges", "mode": "scheme" },
+        "color": { "scheme": "Oranges", "mode": "scheme", "scale": "log" },
         "cellGap": 1,
         "tooltip": { "show": true }
       }

@@ -4,16 +4,16 @@
     "scope": "Frontend performance and error monitoring via Grafana Faro SDK telemetry",
     "overview": "Displays Core Web Vitals (LCP, INP, CLS) with threshold indicators following Google performance standards, JavaScript error rates, and session counts. Faro Web Vitals arrive as Loki logs (not Mimir metrics) because the Alloy Faro receiver outputs to logs and traces only, not metrics. Dashboard uses LogQL with logfmt parsing and unwrap for numeric extraction from structured log fields. The Alloy faro.receiver adds app and kind as Loki labels via extra_log_labels and loki.process pipeline. Includes threshold indicators (Good/Needs Improvement/Poor) per Google Web Vitals standards.",
     "dependencies": "Loki datasource (uid: loki) for Faro log data, Grafana Faro SDK in frontend sending to Alloy Faro receiver, Alloy faro.receiver with extra_log_labels and loki.process for label extraction",
-    "exports": "Provisioned Grafana dashboard accessible at /grafana/d/frontend-web-vitals",
+    "exports": "Provisioned Grafana dashboard accessible at /grafana/d/web-frontend",
     "interfaces": "LogQL queries against Faro-formatted logs with logfmt parsing and unwrap for metric extraction",
     "environment": "Identical across dev/staging/prod",
-    "related": "home.json for navigation, golden-signals-overview.json for backend metrics, alloy config.alloy for Faro receiver configuration",
+    "related": "web-summary.json for overview, alloy config.alloy for Faro receiver configuration",
     "implementation": "Grafana dashboard JSON schema version 39 with LogQL unwrap queries for Web Vitals extraction from Faro logfmt logs"
   },
-  "uid": "frontend-web-vitals",
-  "title": "Frontend Web Vitals",
+  "uid": "web-frontend",
+  "title": "Frontend",
   "description": "Core Web Vitals (LCP, INP, CLS) and JS error tracking from Faro SDK",
-  "tags": ["frontend", "web-vitals", "faro", "user-experience"],
+  "tags": ["web"],
   "timezone": "browser",
   "schemaVersion": 39,
   "version": 1,
@@ -25,13 +25,25 @@
       "title": "Home",
       "url": "/grafana/d/home",
       "type": "link",
-      "icon": "external link"
+      "icon": "home",
+      "keepTime": true,
+      "includeVars": false
     },
     {
-      "title": "Golden Signals",
-      "url": "/grafana/d/golden-signals-overview",
+      "title": "Summary",
+      "url": "/grafana/d/web-summary",
       "type": "link",
-      "icon": "external link"
+      "icon": "dashboard",
+      "keepTime": true,
+      "includeVars": true
+    },
+    {
+      "title": "Web Dashboards",
+      "type": "dashboards",
+      "tags": ["web"],
+      "asDropdown": true,
+      "keepTime": true,
+      "includeVars": true
     }
   ],
   "panels": [

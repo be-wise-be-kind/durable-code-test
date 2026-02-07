@@ -40,19 +40,28 @@ otelcol.processor.batch "default" {
   send_batch_size = 1000
 
   output {
-    metrics = [otelcol.exporter.prometheus.mimir.input]
+    metrics = [otelcol.exporter.otlphttp.mimir.input]
     logs    = [otelcol.exporter.loki.default.input]
     traces  = [otelcol.exporter.otlp.tempo.input]
   }
 }
 
 // =============================================================================
-// Metrics Export - OTLP metrics to Mimir via Prometheus remote write
+// Metrics Export - OTLP directly to Mimir (preserves exemplars)
 // =============================================================================
 
-otelcol.exporter.prometheus "mimir" {
-  forward_to = [prometheus.remote_write.mimir.receiver]
+otelcol.exporter.otlphttp "mimir" {
+  client {
+    endpoint = "http://mimir:9009/otlp"
+    tls {
+      insecure = true
+    }
+  }
 }
+
+// =============================================================================
+// Infrastructure Metrics Remote Write - Prometheus scraped metrics to Mimir
+// =============================================================================
 
 prometheus.remote_write "mimir" {
   endpoint {

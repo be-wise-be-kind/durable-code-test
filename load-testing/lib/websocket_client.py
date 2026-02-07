@@ -26,7 +26,7 @@ import json
 import time
 from urllib.parse import urlparse, urlunparse
 
-from websockets.exceptions import ConnectionClosed
+from websockets.exceptions import ConnectionClosed, InvalidStatus
 from websockets.sync.client import ClientConnection, connect
 
 from locust import events
@@ -74,7 +74,7 @@ class LocustWebSocketClient:
             self._ws = connect(url, open_timeout=DEFAULT_OPEN_TIMEOUT)
             elapsed_ms = (time.perf_counter() - start) * 1000
             self._fire_event(name, elapsed_ms, 0)
-        except (OSError, TimeoutError) as exc:
+        except (OSError, TimeoutError, InvalidStatus) as exc:
             elapsed_ms = (time.perf_counter() - start) * 1000
             self._fire_event(name, elapsed_ms, 0, exc)
             self._ws = None
