@@ -22,7 +22,7 @@ FRONTEND_URL := "http://localhost:" + FRONTEND_PORT
 BACKEND_URL := "http://localhost:" + BACKEND_PORT
 
 # Terraform configuration
-TERRAFORM_VERSION := "1.9.8"
+TERRAFORM_VERSION := "1.14.5"
 TERRAFORM_BIN := `if [ -x "$HOME/.tfenv/bin/terraform" ]; then echo "$HOME/.tfenv/bin/terraform"; elif command -v terraform >/dev/null 2>&1; then command -v terraform; else echo "terraform"; fi`
 AWS_REGION := env_var_or_default("AWS_REGION", "us-west-2")
 AWS_PROFILE := env_var_or_default("AWS_PROFILE", "terraform-deploy")
@@ -726,7 +726,7 @@ _infra-do-plan SCOPE:
 
     # Run plan - backend-config determines state path, no workspace needed
     AWS_PROFILE={{AWS_PROFILE}} AWS_REGION={{AWS_REGION}} \
-        {{TERRAFORM_BIN}} plan -var-file="$TFVARS_FILE"
+        {{TERRAFORM_BIN}} plan -lock-timeout=120s -var-file="$TFVARS_FILE"
 
     echo -e "{{GREEN}}✓ Plan complete for $SCOPE{{NC}}"
 
@@ -751,7 +751,7 @@ _infra-do-apply SCOPE AUTO:
 
     # Run apply - backend-config determines state path, no workspace needed
     if ! AWS_PROFILE={{AWS_PROFILE}} AWS_REGION={{AWS_REGION}} \
-        {{TERRAFORM_BIN}} apply -var-file="$TFVARS_FILE" $APPROVE_FLAG; then
+        {{TERRAFORM_BIN}} apply -lock-timeout=120s -var-file="$TFVARS_FILE" $APPROVE_FLAG; then
         echo -e "{{RED}}✗ Apply failed for $SCOPE{{NC}}"
         exit 1
     fi
@@ -771,7 +771,7 @@ _infra-do-destroy SCOPE:
 
     # Run destroy - backend-config determines state path, no workspace needed
     AWS_PROFILE={{AWS_PROFILE}} AWS_REGION={{AWS_REGION}} \
-        {{TERRAFORM_BIN}} destroy -var-file="$TFVARS_FILE"
+        {{TERRAFORM_BIN}} destroy -lock-timeout=120s -var-file="$TFVARS_FILE"
 
     echo -e "{{GREEN}}✓ Destroy complete for $SCOPE{{NC}}"
 
@@ -808,7 +808,7 @@ _infra-do-destroy-force SCOPE:
     # Run destroy with -refresh=false and -auto-approve
     # Backend-config determines state path, no workspace needed
     AWS_PROFILE={{AWS_PROFILE}} AWS_REGION={{AWS_REGION}} \
-        {{TERRAFORM_BIN}} destroy -var-file="$TFVARS_FILE" -refresh=false -auto-approve
+        {{TERRAFORM_BIN}} destroy -lock-timeout=120s -var-file="$TFVARS_FILE" -refresh=false -auto-approve
 
     echo -e "{{GREEN}}✓ Force destroy complete for $SCOPE{{NC}}"
 

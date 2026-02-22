@@ -7,7 +7,7 @@
 #     and tagging strategies. The base workspace includes VPC, NAT Gateways, ECR repositories,
 #     Route53 zones, ACM certificates, and the Application Load Balancer itself. These resources
 #     form the foundation that runtime resources depend upon via data sources.
-# Dependencies: AWS provider, S3 backend bucket, DynamoDB lock table, backend-config files
+# Dependencies: AWS provider, S3 backend bucket, backend-config files
 # Exports: Local values for workspace naming, environment extraction, and common tags
 # Configuration: Backend configuration provided via backend-config/base-{env}.hcl files
 # Environment: Supports dev, staging, and production with workspace-based separation

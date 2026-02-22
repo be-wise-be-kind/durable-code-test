@@ -355,28 +355,6 @@ resource "aws_iam_role_policy" "github_actions_terraform_state" {
   })
 }
 
-# Policy for DynamoDB State Locking
-resource "aws_iam_role_policy" "github_actions_terraform_lock" {
-  name = "${var.project_name}-${local.environment}-github-actions-terraform-lock"
-  role = aws_iam_role.github_actions.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "dynamodb:GetItem",
-          "dynamodb:PutItem",
-          "dynamodb:DeleteItem",
-          "dynamodb:DescribeTable"
-        ]
-        Resource = "arn:aws:dynamodb:${var.aws_region}:${data.aws_caller_identity.current.account_id}:table/durable-code-terraform-locks"
-      }
-    ]
-  })
-}
-
 # Policy for Infrastructure Management (VPC, ALB, ECS, etc.)
 resource "aws_iam_role_policy" "github_actions_infrastructure" {
   name = "${var.project_name}-${local.environment}-github-actions-infrastructure"
