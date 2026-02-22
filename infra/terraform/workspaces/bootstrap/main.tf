@@ -5,9 +5,9 @@
 #     OIDC provider and the IAM role with policies that GitHub Actions uses. These
 #     resources are permanent and should never be destroyed by automated workflows,
 #     as destroying them would break GitHub Actions' ability to deploy infrastructure.
-#     The S3 backend and DynamoDB table are created manually via setup-terraform-backend.sh
-#     and are not managed by Terraform to avoid circular dependencies.
-# Dependencies: S3 bucket and DynamoDB table (created via setup-terraform-backend.sh)
+#     The S3 backend is created manually via setup-terraform-backend.sh
+#     and is not managed by Terraform to avoid circular dependencies.
+# Dependencies: S3 bucket (created via setup-terraform-backend.sh)
 # Exports: GitHub OIDC provider ARN and IAM role ARN for use by GitHub Actions
 # Configuration: Backend configuration provided via backend-config/bootstrap-{env}.hcl
 # Environment: Supports dev, staging, and production

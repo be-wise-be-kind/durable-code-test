@@ -8,7 +8,7 @@
 #     ALB listeners and target groups, auto-scaling policies, and CloudWatch resources. These resources
 #     depend on the base workspace infrastructure via data sources and can be safely destroyed for
 #     cost optimization during non-business hours or development cycles.
-# Dependencies: AWS provider, S3 backend bucket, DynamoDB lock table, backend-config files, base workspace outputs
+# Dependencies: AWS provider, S3 backend bucket, backend-config files, base workspace outputs
 # Exports: Local values for workspace naming, environment extraction, and common tags
 # Configuration: Backend configuration provided via backend-config/runtime-{env}.hcl files
 # Environment: Supports dev, staging, and production with workspace-based separation

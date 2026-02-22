@@ -9,7 +9,7 @@
 #     safety checks, proper error handling, and informative output for operators. The runtime
 #     workspace can be safely destroyed and recreated for cost optimization without affecting
 #     persistent base resources like VPC, NAT Gateways, or ECR repositories.
-# Dependencies: Terraform, AWS CLI, base workspace must be deployed, backend S3/DynamoDB
+# Dependencies: Terraform, AWS CLI, base workspace must be deployed, backend S3
 # Exports: None (side effects: deploys AWS resources, modifies Terraform state)
 # Configuration: Environment parameter required, uses backend-config and tfvars files
 # Environment: Supports dev, staging, prod with environment-specific configurations
@@ -85,7 +85,7 @@ bucket         = "${PROJECT_NAME}-terraform-state"
 key            = "runtime/${ENV}/terraform.tfstate"
 region         = "us-west-2"
 encrypt        = true
-dynamodb_table = "terraform-state-lock"
+use_lockfile   = true
 EOF
     print_message "$GREEN" "✓ Backend config created"
 fi

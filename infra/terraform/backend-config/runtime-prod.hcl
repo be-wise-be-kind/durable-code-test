@@ -4,12 +4,12 @@
 #     ephemeral infrastructure resources like ECS services, ALB listeners, and target groups.
 #     This configuration ensures runtime infrastructure state is stored separately
 #     from base resources, enabling cost-optimized destroy/recreate cycles.
-# Dependencies: S3 bucket and DynamoDB table must exist for state storage
+# Dependencies: S3 bucket must exist for state storage and locking
 # Environment: Production environment runtime workspace
 
 bucket               = "durable-code-terraform-state"
 key                  = "runtime/prod/terraform.tfstate"
 region               = "us-west-2"
 encrypt              = true
-dynamodb_table       = "durable-code-terraform-locks"
+use_lockfile         = true
 workspace_key_prefix = ""  # Disable env:/ prefixing for predictable state paths
