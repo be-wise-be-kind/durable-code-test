@@ -30,10 +30,3 @@ provider "aws" {
     )
   }
 }
-
-provider "grafana" {
-  url        = var.grafana_url
-  auth       = "admin:${var.grafana_admin_password}"
-  retries    = 40
-  retry_wait = 15
-}

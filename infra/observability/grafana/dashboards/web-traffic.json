@@ -12,7 +12,7 @@
   },
   "uid": "web-traffic",
   "title": "Traffic",
-  "description": "Request rate, connections, and traffic analysis",
+  "description": "How much traffic is the backend handling? The left panel shows request rate by HTTP method, the right shows concurrent connections. During an incident, check here first to confirm traffic is actually reaching the backend. A drop to zero means traffic stopped arriving (DNS, ALB, or upstream issue). A spike means a surge or retry storm. Rising connections with flat request rate means requests are queuing — the backend cannot keep up.",
   "tags": ["web"],
   "timezone": "browser",
   "schemaVersion": 39,
@@ -48,9 +48,20 @@
   ],
   "panels": [
     {
+      "type": "text",
+      "title": "",
+      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 0 },
+      "id": 6,
+      "options": {
+        "mode": "markdown",
+        "content": "# Traffic\nHow much traffic is the backend handling? The left panel shows request rate by HTTP method, the right shows concurrent connections. A drop to zero means traffic stopped arriving. A spike means a surge or retry storm. Rising connections with flat request rate means requests are queuing."
+      }
+    },
+    {
       "type": "timeseries",
       "title": "Request Rate",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "description": "HTTP requests per second broken down by method (GET, POST, etc.). The total line shows overall throughput. Compare against your normal baseline. A sudden cliff means traffic stopped reaching the backend. A spike in POST requests during normal GET-heavy traffic may indicate a retry storm or attack.",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 3 },
       "id": 1,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
@@ -84,7 +95,8 @@
     {
       "type": "timeseries",
       "title": "Active Connections",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "description": "Concurrent in-flight HTTP requests over time. This metric reports the peak concurrent connections per collection interval. Rising connections alongside rising latency means request queuing — the backend is saturated. A flat line at zero between spikes is normal for bursty traffic patterns.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 3 },
       "id": 2,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
@@ -118,7 +130,8 @@
     {
       "type": "stat",
       "title": "Requests / sec",
-      "gridPos": { "h": 4, "w": 8, "x": 0, "y": 8 },
+      "description": "Current request throughput. Know your baseline — if this number is significantly lower than normal for this time of day, traffic may not be reaching the backend.",
+      "gridPos": { "h": 4, "w": 8, "x": 0, "y": 11 },
       "id": 3,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
@@ -148,7 +161,8 @@
     {
       "type": "stat",
       "title": "Total Requests (range)",
-      "gridPos": { "h": 4, "w": 8, "x": 8, "y": 8 },
+      "description": "Cumulative request count for the selected time range. Useful for comparing traffic volume across time windows — widen the range to see if today is lighter or heavier than usual.",
+      "gridPos": { "h": 4, "w": 8, "x": 8, "y": 11 },
       "id": 4,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
@@ -178,7 +192,8 @@
     {
       "type": "stat",
       "title": "Active Connections",
-      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 8 },
+      "description": "Current peak concurrent connections. This is the saturation signal for traffic. If connections are climbing while request rate is flat, requests are taking longer to complete and piling up.",
+      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 11 },
       "id": 5,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [

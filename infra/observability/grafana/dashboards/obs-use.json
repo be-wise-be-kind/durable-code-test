@@ -12,7 +12,7 @@
   },
   "uid": "obs-use",
   "title": "USE",
-  "description": "Utilization, Saturation, Errors for compute infrastructure",
+  "description": "The USE method (Utilization, Saturation, Errors) applied to the observability infrastructure. For every resource (CPU, memory, disk, network), this dashboard answers three questions: How busy is it? (Utilization) Is work queuing? (Saturation/Load) Are there hardware or driver errors? (Errors). During an incident where monitoring itself is slow or unreliable, start here. The left column shows host-level metrics (node_exporter), the right column shows per-container breakdown (cAdvisor). If the host is saturated, identify which container is the cause and consider resource limits or scaling.",
   "tags": ["observability"],
   "timezone": "browser",
   "schemaVersion": 39,
@@ -49,8 +49,18 @@
   "panels": [
     {
       "type": "text",
-      "title": "Data Availability",
+      "title": "",
       "gridPos": { "h": 3, "w": 24, "x": 0, "y": 0 },
+      "id": 14,
+      "options": {
+        "mode": "markdown",
+        "content": "# USE Method (Utilization, Saturation, Errors)\nFor every resource (CPU, memory, disk, network), this dashboard answers: How busy is it? Is work queuing? Are there errors? The left column shows host-level metrics (node_exporter), the right shows per-container breakdown (cAdvisor). If the host is saturated, identify which container is the cause."
+      }
+    },
+    {
+      "type": "text",
+      "title": "Data Availability",
+      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 3 },
       "id": 1,
       "options": {
         "mode": "markdown",
@@ -60,14 +70,15 @@
     {
       "type": "row",
       "title": "CPU Utilization",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 3 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 6 },
       "id": 2,
       "collapsed": false
     },
     {
       "type": "timeseries",
       "title": "CPU Utilization %",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "description": "Overall EC2 CPU utilization as a percentage. Green (<70%) means the instance has capacity. Yellow (70-85%) means growing load. Red (>85%) means CPU-bound — metric ingestion and query performance will degrade. Compare with Container CPU to identify which service is driving the load.",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 7 },
       "id": 3,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
@@ -106,7 +117,8 @@
     {
       "type": "timeseries",
       "title": "Container CPU Usage",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "description": "CPU usage per Docker container (Mimir, Loki, Tempo, Grafana, Alloy, etc.). Identifies which observability service is consuming CPU. Mimir typically uses the most during query evaluation. Tempo spikes during compaction. A container that suddenly dominates may have a runaway query or ingestion spike.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 7 },
       "id": 4,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
@@ -135,14 +147,15 @@
     {
       "type": "row",
       "title": "Memory Utilization",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 12 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 15 },
       "id": 5,
       "collapsed": false
     },
     {
       "type": "timeseries",
       "title": "Memory Utilization %",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 13 },
+      "description": "Overall EC2 memory utilization. A gradual upward trend over days suggests a memory leak in one of the observability containers. Red (>85%) means OOM kill risk. If memory is climbing, check Container Memory Usage to identify the offending service and consider restarting it.",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
       "id": 6,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
@@ -181,7 +194,8 @@
     {
       "type": "timeseries",
       "title": "Container Memory Usage",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 13 },
+      "description": "Memory consumption per Docker container in bytes. Mimir and Tempo are typically the largest consumers. A container whose memory grows without bound has a leak. Compare container memory totals against the host Memory Utilization % to understand how much headroom remains.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
       "id": 7,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
@@ -210,14 +224,15 @@
     {
       "type": "row",
       "title": "Disk & Network",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 21 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 24 },
       "id": 8,
       "collapsed": false
     },
     {
       "type": "timeseries",
       "title": "Disk Utilization %",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 22 },
+      "description": "Root filesystem utilization. Mimir, Loki, and Tempo all write data to disk. A steady climb means data is accumulating faster than retention policies clean it up. Red (>90%) is critical — a full disk will crash all observability services. Reduce retention periods in the respective configs or expand the EBS volume.",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 25 },
       "id": 9,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
@@ -256,7 +271,8 @@
     {
       "type": "timeseries",
       "title": "Network I/O",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 22 },
+      "description": "Network throughput in bytes per second for receive and transmit (excluding loopback). High receive traffic means lots of metrics/logs/traces being ingested. High transmit traffic means lots of dashboard queries or data being sent to remote storage. A sudden spike may indicate a scrape target producing excessive metrics or a query scanning too much data.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 25 },
       "id": 10,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
@@ -290,14 +306,15 @@
     {
       "type": "row",
       "title": "Saturation & Errors",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 30 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 33 },
       "id": 11,
       "collapsed": false
     },
     {
       "type": "timeseries",
       "title": "CPU Saturation (Load Average)",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 31 },
+      "description": "Load averages at 1m, 5m, and 15m intervals — the number of processes waiting for CPU or I/O. Compare against CPU core count to assess saturation. 1m load shows immediate pressure, 15m load shows sustained trend. If 1m is high but 15m is low, it is a transient spike (e.g., compaction). If all three are high and rising, the instance needs more CPU or fewer workloads.",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 34 },
       "id": 12,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
@@ -336,7 +353,8 @@
     {
       "type": "timeseries",
       "title": "Disk I/O Saturation",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 31 },
+      "description": "Fraction of time the disk is busy with I/O operations. A value near 1.0 (100%) means the disk is the bottleneck — reads and writes are queuing. This is common during Mimir or Tempo compaction. If sustained, consider faster EBS volume types (gp3 with provisioned IOPS) or reducing data retention to lower compaction load.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 34 },
       "id": 13,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [

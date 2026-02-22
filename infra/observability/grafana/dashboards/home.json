@@ -12,7 +12,7 @@
   },
   "uid": "home",
   "title": "Durable Code - Observability Home",
-  "description": "Navigation hub for all observability dashboards",
+  "description": "Start here during an incident. The four stat panels show the golden signals at a glance: request rate, error rate, latency, and saturation. Green means healthy, yellow means investigate, red means act. Drill into the Web or Observability folders below for detail.",
   "tags": ["home", "navigation"],
   "timezone": "browser",
   "schemaVersion": 39,
@@ -35,6 +35,7 @@
     {
       "type": "stat",
       "title": "Backend Request Rate",
+      "description": "Total HTTP requests per second hitting the backend. This is your traffic volume signal. A sudden drop to zero means the backend is unreachable. A sudden spike may indicate a traffic surge or retry storm. Drill into Traffic for per-endpoint breakdown.",
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 3 },
       "id": 2,
       "datasource": { "type": "prometheus", "uid": "mimir" },
@@ -67,6 +68,7 @@
     {
       "type": "stat",
       "title": "Error Rate",
+      "description": "Percentage of requests returning HTTP 400+ status codes. Green (<1%) is normal. Yellow (1-5%) means errors are elevated — check the Errors dashboard for status code breakdown. Red (>5%) means a significant portion of users are getting failures — investigate immediately.",
       "gridPos": { "h": 4, "w": 6, "x": 6, "y": 3 },
       "id": 3,
       "datasource": { "type": "prometheus", "uid": "mimir" },
@@ -99,6 +101,7 @@
     {
       "type": "stat",
       "title": "P99 Latency",
+      "description": "The slowest 1% of requests — the experience your worst-off users are having. Green (<500ms) is healthy. Yellow (500ms-2s) means tail latency is creeping up — check the Latency dashboard for percentile trends. Red (>2s) means something is blocking requests — check Traces for slow spans and Saturation for resource pressure.",
       "gridPos": { "h": 4, "w": 6, "x": 12, "y": 3 },
       "id": 4,
       "datasource": { "type": "prometheus", "uid": "mimir" },
@@ -131,6 +134,7 @@
     {
       "type": "stat",
       "title": "Active Connections",
+      "description": "Peak concurrent HTTP connections to the backend in the last collection interval. This is your saturation signal. If this number climbs while latency rises and error rate spikes, the backend is overloaded. Drill into Saturation for resource-level detail.",
       "gridPos": { "h": 4, "w": 6, "x": 18, "y": 3 },
       "id": 5,
       "datasource": { "type": "prometheus", "uid": "mimir" },

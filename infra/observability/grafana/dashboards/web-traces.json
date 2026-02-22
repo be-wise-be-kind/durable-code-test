@@ -12,7 +12,7 @@
   },
   "uid": "web-traces",
   "title": "Traces",
-  "description": "Distributed trace search, service graph, and span analysis",
+  "description": "Find and analyze individual request traces. The trace search panel shows recent traces — click any trace to see its full span waterfall, revealing exactly where time was spent. The service graph shows how services communicate. The error analysis section shows which span types are failing. Use this dashboard when you have identified a problem in the aggregate dashboards (Latency, Errors, RED) and need to find the root cause in a specific request.",
   "tags": ["web"],
   "timezone": "browser",
   "schemaVersion": 39,
@@ -64,16 +64,27 @@
   },
   "panels": [
     {
+      "type": "text",
+      "title": "",
+      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 0 },
+      "id": 13,
+      "options": {
+        "mode": "markdown",
+        "content": "# Traces\nFind and analyze individual request traces. Click any trace in the search panel to see its full span waterfall, revealing exactly where time was spent. The service graph shows how services communicate. Use this dashboard when you have identified a problem in the aggregate dashboards and need to find the root cause."
+      }
+    },
+    {
       "type": "row",
       "title": "Trace Search",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 3 },
       "id": 1,
       "collapsed": false
     },
     {
       "type": "traces",
       "title": "Recent Traces",
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 1 },
+      "description": "Live trace search from Tempo. Use the Service dropdown above to filter by service. Click any trace to open the full waterfall view showing every span, its duration, and relationships. Look for long spans (the bottleneck), error spans (red), and gaps between spans (waiting on external calls). From the waterfall, follow links to correlated logs and profiles.",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 4 },
       "id": 2,
       "datasource": { "type": "tempo", "uid": "tempo" },
       "targets": [
@@ -89,14 +100,15 @@
     {
       "type": "row",
       "title": "Duration Distribution",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 11 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
       "id": 3,
       "collapsed": false
     },
     {
       "type": "timeseries",
       "title": "Span Duration p50/p95/p99 (from Span Metrics)",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "description": "Latency percentiles derived from Tempo's span metrics generator (stored in Mimir). Unlike the Latency dashboard which shows HTTP-level metrics, these are trace-level and include internal spans like database calls and custom operations. A diverging p99 here that does not show on the HTTP metrics means an internal operation is slow.",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 15 },
       "id": 4,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
@@ -135,7 +147,8 @@
     {
       "type": "timeseries",
       "title": "Span Call Rate (from Span Metrics)",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "description": "How often each span type (operation) is called per second. Stacked bars show the operation mix. A sudden appearance of a new span type means new code paths are executing. An unexpected spike in a specific operation may indicate a retry loop or recursive call.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 15 },
       "id": 5,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
@@ -164,14 +177,15 @@
     {
       "type": "row",
       "title": "Service Graph",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 20 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 23 },
       "id": 6,
       "collapsed": false
     },
     {
       "type": "nodeGraph",
       "title": "Service Dependency Graph",
-      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 21 },
+      "description": "Visual map of service-to-service communication derived from trace data. Nodes are services, edges show call relationships. During an incident, this graph shows which services are talking to which — helping identify if a downstream dependency is the root cause. Edge thickness indicates call volume.",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 24 },
       "id": 7,
       "datasource": { "type": "tempo", "uid": "tempo" },
       "targets": [
@@ -185,14 +199,15 @@
     {
       "type": "row",
       "title": "Error Analysis",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 31 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 34 },
       "id": 8,
       "collapsed": false
     },
     {
       "type": "timeseries",
       "title": "Error Rate by Span Name",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 32 },
+      "description": "Which operations are producing errors? Each bar represents an operation type that returned an error status. This goes deeper than HTTP errors — it includes internal span errors like failed database queries or downstream timeouts. The span name tells you exactly which code path is failing.",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 35 },
       "id": 9,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
@@ -227,7 +242,8 @@
     {
       "type": "timeseries",
       "title": "Error Rate % by Service",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 32 },
+      "description": "Percentage of spans with error status by service. This answers: is the problem in my service or in a dependency? If the error rate is high for a downstream service but low for yours, the root cause is downstream. Green (<1%) is healthy, red (>5%) needs investigation.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 35 },
       "id": 10,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
@@ -264,14 +280,15 @@
     {
       "type": "row",
       "title": "Slowest Spans",
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 40 },
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 43 },
       "id": 11,
       "collapsed": false
     },
     {
       "type": "table",
       "title": "Slowest Span Types (p99)",
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 41 },
+      "description": "The 10 slowest operations ranked by their 99th percentile duration. This is your hit list for performance optimization — the operations at the top of this table contribute the most to tail latency. Click through to traces containing these spans to understand why they are slow.",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 44 },
       "id": 12,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [

@@ -240,18 +240,6 @@ variable "enable_observability" {
   default     = false
 }
 
-variable "grafana_admin_password" {
-  description = "Admin password for Grafana UI"
-  type        = string
-  default     = "admin"
-  sensitive   = true
-}
-
-variable "grafana_url" {
-  description = "Grafana API URL for Terraform provider. Requires SSM port-forward tunnel: aws ssm start-session --target <instance-id> --document-name AWS-StartPortForwardingSession --parameters portNumber=3001,localPortNumber=3001"
-  type        = string
-  default     = "http://localhost:3001/grafana/"
-}
 
 variable "observability_instance_type" {
   description = "EC2 instance type for observability stack"
@@ -261,6 +249,13 @@ variable "observability_instance_type" {
     staging = "t3.medium"
     prod    = "t3.medium"
   }
+}
+
+variable "grafana_admin_password" {
+  description = "Admin password for Grafana (used in EC2 user data)"
+  type        = string
+  sensitive   = true
+  default     = "admin"
 }
 
 variable "load_test_allowlist_ips" {

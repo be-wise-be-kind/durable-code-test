@@ -12,7 +12,7 @@
   },
   "uid": "obs-saturation",
   "title": "Saturation",
-  "description": "EC2 CPU, memory utilization, and load average for the observability stack",
+  "description": "Is the observability EC2 instance running out of resources? The time series panels show CPU and memory utilization trends — look for sustained climbs toward the red zone. The stat panels below give instant readings. If CPU is saturated, Grafana queries will time out and metric ingestion falls behind. If memory is saturated, containers risk OOM kills. Use the load average to distinguish CPU-bound (high load + high CPU) from I/O-bound (high load + low CPU) saturation. For per-container breakdown, check the Obs Summary dashboard.",
   "tags": ["observability"],
   "timezone": "browser",
   "schemaVersion": 39,
@@ -48,9 +48,20 @@
   ],
   "panels": [
     {
+      "type": "text",
+      "title": "",
+      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 0 },
+      "id": 6,
+      "options": {
+        "mode": "markdown",
+        "content": "# Observability Saturation\nIs the observability EC2 instance running out of resources? The time series show CPU and memory trends — look for sustained climbs toward the red zone. If CPU is saturated, queries will time out and metric ingestion falls behind. If memory is saturated, containers risk OOM kills."
+      }
+    },
+    {
       "type": "timeseries",
       "title": "EC2 CPU Utilization",
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "description": "CPU utilization trend for the observability EC2 instance. Green (<70%) is healthy. A sustained climb into yellow indicates growing load — check if metric ingestion volume has increased. Red (>90%) means CPU-bound: dashboard queries will be slow and metric scraping may miss intervals. The smooth line interpolation makes trends easier to spot than raw samples.",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 3 },
       "id": 1,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
@@ -89,7 +100,8 @@
     {
       "type": "timeseries",
       "title": "EC2 Memory Utilization",
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "description": "Memory utilization trend for the observability EC2 instance. A gradual upward slope over hours or days indicates a memory leak in one of the observability containers (Mimir and Tempo are common offenders). Red (>90%) means OOM kill risk — the kernel will terminate the container using the most memory, causing data loss and service restart.",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 3 },
       "id": 2,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
@@ -128,7 +140,8 @@
     {
       "type": "stat",
       "title": "CPU %",
-      "gridPos": { "h": 4, "w": 8, "x": 0, "y": 8 },
+      "description": "Current CPU utilization as a single number. Quick glance indicator — green means healthy, yellow means under pressure, red means saturated and impacting performance.",
+      "gridPos": { "h": 4, "w": 8, "x": 0, "y": 11 },
       "id": 3,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
@@ -160,7 +173,8 @@
     {
       "type": "stat",
       "title": "Memory %",
-      "gridPos": { "h": 4, "w": 8, "x": 8, "y": 8 },
+      "description": "Current memory utilization as a single number. If this is red, check the Obs Summary dashboard to identify which container is consuming the most memory and consider restarting it or adjusting its memory limits.",
+      "gridPos": { "h": 4, "w": 8, "x": 8, "y": 11 },
       "id": 4,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
@@ -192,7 +206,8 @@
     {
       "type": "stat",
       "title": "Load Average (1m)",
-      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 8 },
+      "description": "1-minute load average — processes waiting for CPU. Compare against CPU core count. Load exceeding core count means work is queuing. High load with low CPU% points to I/O wait (disk is the bottleneck, common when Mimir or Tempo compacts data).",
+      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 11 },
       "id": 5,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [

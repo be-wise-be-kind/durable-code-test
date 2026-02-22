@@ -1,20 +1,19 @@
 # Purpose: Grafana datasources, folders, dashboards, and organization preferences managed via Terraform provider
 # Scope: Grafana API-managed resources for the observability stack, conditional on enable_observability
 # Overview: Provisions Grafana datasources, folders, dashboards, and organization preferences using the
-#     Grafana Terraform provider instead of file-based provisioning. This approach pushes configuration
-#     via the Grafana HTTP API after the EC2 instance and Grafana container are running, avoiding
-#     user-data size constraints and ensuring dashboards are deployed to the running instance. Five
-#     datasources cover all observability pillars (Mimir, Loki, Tempo, Pyroscope, CloudWatch) with
-#     cross-pillar correlation configured. Two Grafana folders (Web, Observability) organize 13
-#     dashboards into a drilldown hierarchy loaded from JSON files in
-#     infra/observability/grafana/dashboards/. Organization preferences set the home dashboard.
-#     All resources depend on the EC2 instance being created. The Grafana provider connects via an
-#     SSM port-forward tunnel (localhost:3001), not through the ALB.
-# Dependencies: Grafana provider, observability EC2 instance, ALB routing, dashboard JSON files
+#     Grafana Terraform provider. This approach pushes configuration via the Grafana HTTP API after
+#     the EC2 instance and Grafana container are running. Five datasources cover all observability
+#     pillars (Mimir, Loki, Tempo, Pyroscope, CloudWatch) with cross-pillar correlation configured.
+#     Two Grafana folders (Web, Observability) organize 13 dashboards into a drilldown hierarchy
+#     loaded from JSON files in infra/observability/grafana/dashboards/. Organization preferences
+#     set the home dashboard. The Grafana provider connects via an SSM port-forward tunnel
+#     (localhost:3001), not through the ALB. This workspace is deployed independently from runtime
+#     to enable fast dashboard-only deployments.
+# Dependencies: Grafana provider, observability EC2 instance (runtime workspace), dashboard JSON files
 # Exports: Grafana datasource, folder, and dashboard resources for observability visualization
 # Configuration: Datasource URLs use Docker Compose service hostnames (resolved inside the container network)
 # Environment: Identical configuration across dev/staging/prod environments
-# Related: observability-ec2.tf for EC2 instance, observability-alb.tf for ALB routing, datasources.yml as reference
+# Related: runtime/observability-ec2.tf for EC2 instance, datasources.yml as reference
 # Implementation: Grafana provider API calls with dependency chain ensuring correct resource ordering
 
 # -----------------------------------------------------------------------------
@@ -40,10 +39,6 @@ resource "grafana_data_source" "mimir" {
       }
     ]
   })
-
-  depends_on = [
-    aws_instance.observability,
-  ]
 }
 
 resource "grafana_data_source" "loki" {
@@ -65,10 +60,6 @@ resource "grafana_data_source" "loki" {
       }
     ]
   })
-
-  depends_on = [
-    aws_instance.observability,
-  ]
 }
 
 resource "grafana_data_source" "tempo" {
@@ -117,10 +108,6 @@ resource "grafana_data_source" "tempo" {
       datasourceUid = "mimir"
     }
   })
-
-  depends_on = [
-    aws_instance.observability,
-  ]
 }
 
 resource "grafana_data_source" "pyroscope" {
@@ -130,10 +117,6 @@ resource "grafana_data_source" "pyroscope" {
   name = "Pyroscope"
   uid  = "pyroscope"
   url  = "http://pyroscope:4040"
-
-  depends_on = [
-    aws_instance.observability,
-  ]
 }
 
 resource "grafana_data_source" "cloudwatch" {
@@ -147,10 +130,6 @@ resource "grafana_data_source" "cloudwatch" {
     defaultRegion = var.aws_region
     authType      = "ec2_iam_role"
   })
-
-  depends_on = [
-    aws_instance.observability,
-  ]
 }
 
 # -----------------------------------------------------------------------------
@@ -170,8 +149,6 @@ resource "grafana_folder" "web" {
 
   title = "Web"
   uid   = "web"
-
-  depends_on = [aws_instance.observability]
 }
 
 resource "grafana_folder" "observability" {
@@ -179,8 +156,6 @@ resource "grafana_folder" "observability" {
 
   title = "Observability"
   uid   = "observability"
-
-  depends_on = [aws_instance.observability]
 }
 
 # -----------------------------------------------------------------------------

@@ -12,7 +12,7 @@
   },
   "uid": "web-summary",
   "title": "Summary",
-  "description": "Essential golden signals for the web application",
+  "description": "Web application health at a glance. The four stat panels are your golden signals: request rate (traffic), error rate (correctness), P99 latency (speed), and ECS CPU (saturation). If any panel turns red during an incident, use the Web Dashboards dropdown above to drill into the corresponding detail dashboard. The time series below shows request rate trends to help pinpoint when the problem started.",
   "tags": ["web"],
   "timezone": "browser",
   "schemaVersion": 39,
@@ -40,9 +40,20 @@
   ],
   "panels": [
     {
+      "type": "text",
+      "title": "",
+      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 0 },
+      "id": 6,
+      "options": {
+        "mode": "markdown",
+        "content": "# Summary\nEssential golden signals at a glance — request rate, error rate, p99 latency, and active connections. All four panels should be green during normal operation. Any panel turning yellow or red tells you which signal to investigate first. Drill into the dedicated dashboard for that signal using the links above."
+      }
+    },
+    {
       "type": "stat",
       "title": "Request Rate",
-      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 0 },
+      "description": "Total HTTP requests per second across all endpoints. This is your traffic signal. Compare against the time series below to see if the current rate is normal. A drop to zero means the backend is down. A sudden spike may indicate a retry storm or traffic surge.",
+      "gridPos": { "h": 5, "w": 6, "x": 0, "y": 3 },
       "id": 1,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
@@ -72,7 +83,8 @@
     {
       "type": "stat",
       "title": "Error Rate %",
-      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 0 },
+      "description": "Percentage of HTTP requests returning 400+ status codes. Green (<1%) is normal background noise. Yellow (1-5%) means errors are elevated — go to the Errors dashboard to see which status codes and endpoints are failing. Red (>5%) means significant user impact — triage immediately.",
+      "gridPos": { "h": 5, "w": 6, "x": 6, "y": 3 },
       "id": 2,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
@@ -104,7 +116,8 @@
     {
       "type": "stat",
       "title": "P99 Latency",
-      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 0 },
+      "description": "99th percentile request duration — the worst experience 1% of your users are having. Green (<500ms) is healthy. Yellow (500ms-2s) means tail latency is growing — check the Latency dashboard for percentile trends. Red (>2s) means slow requests are impacting users — investigate via Traces for slow spans.",
+      "gridPos": { "h": 5, "w": 6, "x": 12, "y": 3 },
       "id": 3,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
@@ -136,7 +149,8 @@
     {
       "type": "stat",
       "title": "ECS CPU Utilization",
-      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 0 },
+      "description": "Average CPU usage of the backend ECS Fargate task from CloudWatch. Green (<70%) means headroom. Yellow (70-90%) means the task is working hard — check if latency is also rising. Red (>90%) means CPU-bound — the task needs scaling or the workload needs optimization. Go to Saturation for full resource detail.",
+      "gridPos": { "h": 5, "w": 6, "x": 18, "y": 3 },
       "id": 4,
       "datasource": { "type": "cloudwatch", "uid": "cloudwatch" },
       "targets": [
@@ -177,7 +191,8 @@
     {
       "type": "timeseries",
       "title": "Request Rate",
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 5 },
+      "description": "Request rate over time broken down by HTTP method. Use this to establish a baseline and spot anomalies. A sudden cliff means traffic stopped arriving (DNS? load balancer? upstream?). A spike correlated with rising errors means a bad deployment or upstream failure is hammering the service. The table on the right shows mean and max for the selected time range.",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 },
       "id": 5,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [

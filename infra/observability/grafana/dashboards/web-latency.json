@@ -12,7 +12,7 @@
   },
   "uid": "web-latency",
   "title": "Latency",
-  "description": "Request latency breakdowns: p50, p95, p99, average, and maximum",
+  "description": "How fast are requests being served? The time series shows p50 (median user), p95 (slow users), and p99 (worst-off users) over time. During an incident, compare these three lines: if p99 spikes but p50 stays flat, a specific code path is slow — go to RED for per-endpoint breakdown, then Traces to find the slow span. If all percentiles rise together, the system is uniformly degraded — check Saturation for resource exhaustion.",
   "tags": ["web"],
   "timezone": "browser",
   "schemaVersion": 39,
@@ -48,9 +48,20 @@
   ],
   "panels": [
     {
+      "type": "text",
+      "title": "",
+      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 0 },
+      "id": 6,
+      "options": {
+        "mode": "markdown",
+        "content": "# Latency\nHow fast is the backend responding? The time series shows p50/p95/p99 latency trends — a widening gap between p50 and p99 means some requests are much slower than others. The stat panels show current values. Green is healthy, yellow needs investigation, red means users are experiencing slow responses. Drill into RED for per-endpoint breakdown or Traces to find the slow request."
+      }
+    },
+    {
       "type": "timeseries",
       "title": "Request Latency (p50 / p95 / p99)",
-      "gridPos": { "h": 8, "w": 16, "x": 0, "y": 0 },
+      "description": "Three percentile lines showing the latency distribution over time. p50 is the median — what most users experience. p95 captures the slower tail. p99 is the worst 1%. Healthy: all three lines close together and low. Warning: p99 diverging upward from p50 means a subset of requests is slow. Critical: all lines rising means systemic slowdown. Use the table on the right for exact mean/max values.",
+      "gridPos": { "h": 8, "w": 16, "x": 0, "y": 3 },
       "id": 1,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
@@ -99,7 +110,8 @@
     {
       "type": "stat",
       "title": "Current p99",
-      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 0 },
+      "description": "Latest 99th percentile latency. This is the worst experience 1% of users are having right now. Green (<500ms) is healthy. Red (>2s) means your slowest requests are painful — find them in the Traces dashboard.",
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 3 },
       "id": 2,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
@@ -131,7 +143,8 @@
     {
       "type": "stat",
       "title": "Current p50",
-      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 0 },
+      "description": "Latest median latency — what the typical user experiences. If this is red (>1s), the entire service is slow, not just tail requests. Compare with p99: a large gap means a bimodal distribution (some fast, some slow paths).",
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 3 },
       "id": 3,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
@@ -163,7 +176,8 @@
     {
       "type": "stat",
       "title": "Avg Latency",
-      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 4 },
+      "description": "Mean request duration across all endpoints. Averages hide outliers — a few very slow requests can pull this up while most are fast. Always compare with p50 and p99 for the full picture. If avg is much higher than p50, you have outlier slow requests pulling the mean.",
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 7 },
       "id": 4,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
@@ -195,7 +209,8 @@
     {
       "type": "stat",
       "title": "Max Latency",
-      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 4 },
+      "description": "The single slowest request in the time window (100th percentile from the histogram). This catches extreme outliers. If this is very high but p99 is fine, it is likely a one-off slow request. If both max and p99 are high, you have a systemic problem.",
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 7 },
       "id": 5,
       "datasource": { "type": "prometheus", "uid": "mimir" },
       "targets": [
